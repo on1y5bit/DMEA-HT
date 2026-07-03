@@ -177,3 +177,37 @@
   - seed 0: 0.8039.
   - seed 42: 0.7330.
   - seed 3407: 0.7817.
+
+## 2026-07-03 DMEA-v2 Evidence Weak Labels Design Before Edits
+
+### Motivation
+
+- Move the project from generic multimodal fusion toward explicit medical evidence roles.
+- Start with a low-risk Phase A that only augments the strict structural manifest with weak evidence labels.
+- Do not change the patient-level HT task, labels, splits, image paths, report text, or bio values.
+
+### Planned Changes
+
+- Add `scripts/build_evidence_weak_labels.py`.
+- Add `scripts/inspect_manifest_evidence_labels.py`.
+- Preserve every original manifest field and append evidence weak-label fields.
+- Generate report-derived text labels from fixed dictionaries for morphology, negative, uncertain, and diagnosis-hint evidence.
+- Generate `image_morphology_weak_label` only from report morphology/negative weak labels.
+- Generate `bio_missing_label` from `bio_missing_mask` and available bio metadata.
+- Keep bio abnormal labels conservative: use trusted abnormal flags only when explicitly requested; otherwise write `-1` when reference ranges are unavailable.
+- Generate `discordance_state_label` from text/bio evidence states.
+
+### Non-Negotiable Constraints
+
+- Do not rewrite `label`, `split`, or `patient_id`.
+- Do not use shortcut fields to derive labels.
+- Do not feed shortcut fields into a classifier.
+- Do not touch test for model selection.
+- Formal training remains three seeds: `0`, `42`, and `3407`.
+
+### Validation Plan
+
+- Run static compile checks for the new scripts.
+- Build evidence labels on the server from `manifest_distmatch_structmatch.jsonl`.
+- Inspect label distributions by split and label.
+- Record the generated evidence manifest path and distribution summary before any v2 model training.
