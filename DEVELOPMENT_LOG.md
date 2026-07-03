@@ -211,3 +211,43 @@
 - Build evidence labels on the server from `manifest_distmatch_structmatch.jsonl`.
 - Inspect label distributions by split and label.
 - Record the generated evidence manifest path and distribution summary before any v2 model training.
+
+## 2026-07-03 DMEA-v2 Evidence Weak Labels Actual Changes
+
+### Added
+
+- Added `scripts/build_evidence_weak_labels.py`.
+- Added `scripts/inspect_manifest_evidence_labels.py`.
+
+### Modified
+
+- No model forward path was changed.
+- No training loss was changed.
+- No patient labels, splits, image paths, report text, or bio values were changed.
+
+### Validation Results
+
+- Local static check passed:
+  - `python -m py_compile scripts/build_evidence_weak_labels.py scripts/inspect_manifest_evidence_labels.py`
+- Server static check passed in `/home/linruixin/chen/conda/envs/ma`.
+- Built evidence manifest:
+  - `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence.jsonl`
+- Rows written: 780.
+- Overall evidence label distribution:
+  - `txt_morphology_label`: 683 positive, 97 negative.
+  - `txt_negative_label`: 687 positive, 93 negative.
+  - `txt_uncertain_label`: 0 positive, 780 negative.
+  - `txt_diag_hint_label`: 0 positive, 780 negative.
+  - `bio_immune_abnormal_label`: 780 unknown.
+  - `bio_function_abnormal_label`: 780 unknown.
+  - `bio_missing_label`: 780 non-missing.
+  - `image_morphology_weak_label`: 683 positive, 85 negative, 12 unknown.
+  - `discordance_state_label`: 780 uncertain_or_insufficient.
+- Split distributions were inspected for train/val/test and retained the strict structural manifest sizes: train 602, val 94, test 84.
+- Test was not used for model selection or tuning.
+
+### Remaining Issues
+
+- Current manifest does not provide trusted bio abnormal/reference-range information, so immune/function weak labels are conservatively set to `-1`.
+- Discordance state is currently uninformative because bio abnormal evidence is unknown.
+- The next v2 training pass should initially enable text/image evidence weak supervision only, or first add trustworthy bio reference-range/abnormal flag derivation.
