@@ -251,3 +251,26 @@
 - Current manifest does not provide trusted bio abnormal/reference-range information, so immune/function weak labels are conservatively set to `-1`.
 - Discordance state is currently uninformative because bio abnormal evidence is unknown.
 - The next v2 training pass should initially enable text/image evidence weak supervision only, or first add trustworthy bio reference-range/abnormal flag derivation.
+
+## 2026-07-03 DMEA-v2 Evidence Weak Labels Phase B
+
+### Motivation
+
+- Audit and refine text/image weak evidence labels before enabling v2 evidence-supervised training.
+- Current bio abnormal labels are unavailable, so bio evidence and discordance losses remain disabled.
+- The Phase A distributions showed overly broad text morphology/negative positives and many morphology-negative overlaps.
+
+### Planned Changes
+
+- Add `scripts/audit_evidence_label_quality.py`.
+- Refine `scripts/build_evidence_weak_labels.py` with negation-aware morphology span matching.
+- Separate strong HT-relevant negative phrases from weak local negative findings.
+- Add top-level matched term lists and weak-label confidence fields.
+- Extend `scripts/inspect_manifest_evidence_labels.py` with joint counts, confidence summaries, top terms, and unknown-label summaries.
+
+### Constraints
+
+- Do not modify `dmea_ht/models.py`, `train.py`, or `dmea_ht/data.py`.
+- Do not start model training in this phase.
+- Keep `patient_id`, `split`, `label`, image paths, report text, bio values, and bio missing masks unchanged.
+- Keep bio immune/function abnormal labels as `-1` unless trusted reference-range or abnormal flag information exists.
