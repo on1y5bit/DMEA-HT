@@ -110,11 +110,15 @@ def visit_records(data_root: Path, label: int, patient_id: str, reports: Dict[st
     return sorted(visits, key=lambda item: item.date)
 
 
-def historical_visits(visits: List[VisitRecord], exclude_latest_anchor: bool) -> List[VisitRecord]:
-    if not exclude_latest_anchor or len(visits) <= 1:
+def historical_visits(visits: List[VisitRecord], history_cutoff: str) -> List[VisitRecord]:
+    if history_cutoff == "none" or len(visits) <= 1:
         return visits
-    history = visits[:-1]
-    return history or visits
+    if history_cutoff == "final_visit":
+        return visits[:-1]
+    if history_cutoff == "final_year":
+        final_year = max(visit.date[:4] for visit in visits if visit.date)
+        return [visit for visit in visits if visit.date[:4] < final_year]
+    raise ValueError(f"Unknown history_cutoff: {history_cutoff}")
 
 
 def split_map_from_base(base_manifest: Path | None, rows_for_split: List[Dict[str, Any]], seed: int) -> Dict[str, str]:
@@ -211,7 +215,7 @@ def build_distmatch_manifest(
     base_manifest: Path | None,
     max_images_per_visit: int,
     seed: int,
-    exclude_latest_anchor: bool,
+    history_cutoff: str,
 ) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
     rng = random.Random(seed)
     labels = label_patient_ids(data_root)
@@ -222,7 +226,7 @@ def build_distmatch_manifest(
     for patient_id, label in labels.items():
         group = table.get(patient_id)
         reports = reports_by_date(group)
-        visits = historical_visits(visit_records(data_root, label, patient_id, reports), exclude_latest_anchor)
+        visits = historical_visits(visit_records(data_root, label, patient_id, reports), history_cutoff)
         if not visits:
             continue
         bio_values, bio_missing_mask = latest_bio(group)
@@ -244,7 +248,12 @@ def build_distmatch_manifest(
         by_split_label[split][int(info["label"])].append(patient_id)
 
     rows: List[Dict[str, Any]] = []
-    summary: Dict[str, Any] = {"seed": seed, "max_images_per_visit": max_images_per_visit, "splits": {}}
+    summary: Dict[str, Any] = {
+        "seed": seed,
+        "history_cutoff": history_cutoff,
+        "max_images_per_visit": max_images_per_visit,
+        "splits": {},
+    }
     for split, label_groups in sorted(by_split_label.items()):
         pos_ids = label_groups.get(1, [])
         neg_ids = label_groups.get(0, [])
@@ -307,7 +316,12 @@ def main() -> None:
     parser.add_argument("--summary-out")
     parser.add_argument("--max-images-per-visit", type=int, default=4)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--include-latest-anchor", action="store_true")
+    parser.add_argument(
+        "--history-cutoff",
+        choices=["final_year", "final_visit", "none"],
+        default="final_year",
+        help="Which final follow-up information to remove before distmatch.",
+    )
     args = parser.parse_args()
 
     rows, summary = build_distmatch_manifest(
@@ -315,7 +329,7 @@ def main() -> None:
         base_manifest=Path(args.base_manifest) if args.base_manifest else None,
         max_images_per_visit=args.max_images_per_visit,
         seed=args.seed,
-        exclude_latest_anchor=not args.include_latest_anchor,
+        history_cutoff=args.history_cutoff,
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -332,4 +346,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

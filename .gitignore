@@ -11,3 +11,4 @@ reports/
 *.bundle
 .tmp_ssh_askpass.*
 .tmp_known_hosts
+.tmp_*/
