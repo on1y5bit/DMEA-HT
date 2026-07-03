@@ -90,6 +90,13 @@ def reports_by_date(group: pd.DataFrame | None) -> Dict[str, str]:
     return {date: "\n".join(parts) for date, parts in reports.items()}
 
 
+def group_for_visit_dates(group: pd.DataFrame | None, visit_dates: Iterable[str]) -> pd.DataFrame | None:
+    if group is None or group.empty:
+        return group
+    allowed = set(visit_dates)
+    return group[group["_date"].isin(allowed)].copy()
+
+
 def visit_records(data_root: Path, label: int, patient_id: str, reports: Dict[str, str]) -> List[VisitRecord]:
     patient_dir = data_root / str(label) / patient_id
     if not patient_dir.exists():
@@ -229,7 +236,8 @@ def build_distmatch_manifest(
         visits = historical_visits(visit_records(data_root, label, patient_id, reports), history_cutoff)
         if not visits:
             continue
-        bio_values, bio_missing_mask = latest_bio(group)
+        history_group = group_for_visit_dates(group, [visit.date for visit in visits])
+        bio_values, bio_missing_mask = latest_bio(history_group)
         patient_info[patient_id] = {
             "patient_id": patient_id,
             "label": label,
