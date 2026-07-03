@@ -76,7 +76,7 @@ EVIDENCE_LABEL_FIELDS = [
 
 
 def normalize_name(name: str) -> str:
-    return re.sub(r"[\s_\\-/()（）]+", "", str(name)).lower()
+    return re.sub(r"[\s_/\\()（）-]+", "", str(name)).lower()
 
 
 def matched_terms(text: str, terms: Iterable[str]) -> List[str]:
