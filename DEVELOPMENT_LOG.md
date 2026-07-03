@@ -81,3 +81,48 @@
 - The GitHub repository was empty at clone time, so this is the first project scaffold.
 - The server rejected non-interactive SSH because no key-based auth is available in this local environment. Password-based interactive SSH may need to be completed by the user, or a deploy key/session helper must be added.
 - The actual server data layout still needs live inspection. If `/data/csb/DMEA-HT/HT_2025.12_25/manifest.jsonl` does not exist, use `scripts/build_manifest_from_table.py` or adapt a small manifest builder after inspecting the data files.
+
+## 2026-07-03 Distmatch Design Before Edits
+
+### Correction
+
+- The earlier `manifest_matched_bins.jsonl` was coarse patient-level bin matching after manifest construction.
+- The intended distmatch must happen during data construction at the visit-history level.
+
+### Planned Distmatch Semantics
+
+1. Build per-patient visit histories from `/label/patient_id/date/*.jpg` and `all_patients.xlsx`.
+2. Preserve the original patient-level split from an existing base manifest when available.
+3. Work independently inside each split.
+4. Use `label=1` selected visit-count distribution as the empirical reference.
+5. Keep all valid `label=1` historical visits.
+6. For each `label=0` patient, sample a target visit count from the `label=1` empirical distribution, capped by that patient's available visits.
+7. Sample the selected negative visits from that patient's history, then sort by time.
+8. For every selected visit, use exactly the same image policy for both labels:
+   - keep at most `max_images_per_visit`,
+   - randomly sample if there are more,
+   - repeat-pad if there are fewer but at least one image,
+   - record `used_images`, `image_padding_count`, and selected visit metadata only for audit/logging.
+9. Do not change labels, task definition, or patient split.
+
+### Validation Plan
+
+- Generate a distmatch manifest on the server.
+- Audit `n_visits` and `n_images` shortcut proxy AUC after construction.
+- Compare against the previous original and coarse matched manifests.
+
+## 2026-07-03 Distmatch Actual Changes
+
+### Added
+
+- Added `scripts/build_distmatch_manifest.py`.
+- Added `configs/dmea_ht_distmatch.yaml`.
+- Extended shortcut logging/audit fields with `selected_n_visits`, `raw_n_visits`, `used_images`, `raw_n_images`, and `image_padding_count`.
+
+### Distmatch Behavior
+
+- Preserves existing patient-level split from `manifest.jsonl`.
+- Uses split-local `label=1` visit-count distribution as the target distribution.
+- Keeps all valid historical visits for `label=1`.
+- Resamples `label=0` visit counts from the split-local positive empirical distribution, capped by each patient's available history.
+- Applies the same per-visit image policy to both labels: sample up to `max_images_per_visit`, repeat-pad when fewer images exist, and keep audit-only counts in the manifest.

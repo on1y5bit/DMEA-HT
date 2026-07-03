@@ -16,10 +16,15 @@ from torch.utils.data import Dataset
 SHORTCUT_FIELDS = [
     "n_images",
     "n_visits",
+    "selected_n_visits",
+    "raw_n_visits",
+    "used_images",
+    "raw_n_images",
     "has_bio",
     "bio_missing_count",
     "report_length",
     "source_folder",
+    "image_padding_count",
     "padding_count",
 ]
 
@@ -243,4 +248,3 @@ def collate_patient_batch(batch: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     out["patient_id"] = [item["patient_id"] for item in batch]
     out["shortcuts"] = [item["shortcuts"] for item in batch]
     return out
-

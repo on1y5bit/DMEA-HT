@@ -7,7 +7,19 @@ import pandas as pd
 from .shortcut_bins import add_shortcut_bins
 
 
-DEFAULT_FIELDS = ["n_images_bin", "n_visits_bin", "has_bio_bin", "bio_missing_count_bin", "report_length_bin", "source_folder"]
+DEFAULT_FIELDS = [
+    "n_images_bin",
+    "n_visits_bin",
+    "selected_n_visits",
+    "raw_n_visits",
+    "used_images",
+    "raw_n_images",
+    "has_bio_bin",
+    "bio_missing_count_bin",
+    "report_length_bin",
+    "image_padding_count",
+    "source_folder",
+]
 
 
 def distribution_report(rows: Iterable[Dict[str, Any]], fields: List[str] | None = None) -> pd.DataFrame:
@@ -29,4 +41,3 @@ def distribution_report(rows: Iterable[Dict[str, Any]], fields: List[str] | None
                 }
             )
     return pd.DataFrame(records)
-

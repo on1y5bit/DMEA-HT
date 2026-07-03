@@ -18,7 +18,19 @@ from dmea_ht.metrics import compute_binary_metrics
 def shortcut_proxy_auc(rows: List[Dict[str, Any]]) -> pd.DataFrame:
     frame = pd.DataFrame(rows)
     y = frame["label"].astype(int)
-    fields = ["n_images", "n_visits", "has_bio", "bio_missing_count", "report_length", "source_folder"]
+    fields = [
+        "n_images",
+        "n_visits",
+        "selected_n_visits",
+        "raw_n_visits",
+        "used_images",
+        "raw_n_images",
+        "has_bio",
+        "bio_missing_count",
+        "report_length",
+        "image_padding_count",
+        "source_folder",
+    ]
     existing = [field for field in fields if field in frame.columns]
     if not existing or y.nunique() < 2:
         return pd.DataFrame([{"shortcut_only_AUC": 0.0, "shortcut_only_AUPRC": 0.0}])
