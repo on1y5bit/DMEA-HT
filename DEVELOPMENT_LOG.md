@@ -155,3 +155,25 @@
 
 - Added `scripts/match_manifest_structural_bins.py`.
 - Added `configs/dmea_ht_distmatch_structmatch.yaml`.
+
+### Server Validation
+
+- Server run directory: `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_distmatch_structmatch_auc_20260703_145921`.
+- Data root: `/data/csb/DMEA-HT/HT_2025.12_25`.
+- Manifest: `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch.jsonl`.
+- Strict structural manifest size: 780 patients.
+- Split/label counts:
+  - train: 301 positive, 301 negative.
+  - val: 47 positive, 47 negative.
+  - test: 42 positive, 42 negative.
+- Shortcut audit after strict structural matching:
+  - selected structural proxy AUC: 0.4967.
+  - visit/image-only proxy AUC: 0.3922.
+  - bio/report-only proxy AUC: 0.5387.
+- Three-seed formal training selected checkpoints by `val_AUC`.
+- Validation AUC: 0.7581 +/- 0.0171.
+- Test AUC: 0.7729 +/- 0.0363.
+- Per-seed test AUC:
+  - seed 0: 0.8039.
+  - seed 42: 0.7330.
+  - seed 3407: 0.7817.
