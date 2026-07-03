@@ -129,3 +129,29 @@
 - Applies the same per-visit image policy to both labels: sample up to `max_images_per_visit`, repeat-pad when fewer images exist, and keep audit-only counts in the manifest.
 - Updated distmatch to follow the DecAlign5090 data-construction behavior more closely: default `history_cutoff` is now `final_year` rather than dropping only the latest visit. `final_visit` and `none` remain available for ablation.
 - Fixed distmatch bio leakage: `bio_values` and `bio_missing_mask` are now derived only from rows whose dates remain after the history cutoff, rather than from the patient's latest overall table row.
+
+## 2026-07-03 Structural Match Design Before Edits
+
+### Motivation
+
+- DecAlign-style distmatch now controls visit/image structure to chance-level shortcut AUC.
+- The remaining selected-structure proxy signal comes mainly from bio missingness and report length, which are collection/text-structure shortcuts rather than medical evidence.
+
+### Planned Structural Match
+
+1. Start from `manifest_distmatch_final_year.jsonl`, not the raw manifest.
+2. Preserve patient-level split and labels.
+3. Inside each split, build a joint key from:
+   - `selected_n_visits`,
+   - `used_images`,
+   - `image_padding_count`,
+   - `has_bio`,
+   - `bio_missing_count`,
+   - split-local quantile bin of `report_length`.
+4. For each key, keep the same number of positive and negative patients.
+5. Emit `manifest_distmatch_structmatch.jsonl` for strict shortcut-control experiments.
+
+### Actual Changes
+
+- Added `scripts/match_manifest_structural_bins.py`.
+- Added `configs/dmea_ht_distmatch_structmatch.yaml`.
