@@ -65,6 +65,7 @@
   - `scripts/apply_sample_reweighting.py`
   - `scripts/match_manifest_by_bins.py`
   - `scripts/build_manifest_from_table.py`
+  - `scripts/inspect_table.py`
   - `scripts/run_server_mvp.sh`
 - Added `configs/dmea_ht_mvp.yaml`, `README.md`, and `requirements.txt`.
 
