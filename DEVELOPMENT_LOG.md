@@ -118,6 +118,7 @@
 - Added `scripts/build_distmatch_manifest.py`.
 - Added `configs/dmea_ht_distmatch.yaml`.
 - Extended shortcut logging/audit fields with `selected_n_visits`, `raw_n_visits`, `used_images`, `raw_n_images`, and `image_padding_count`.
+- Added `--fields` to `scripts/audit_shortcut_distribution.py` so selected-structure shortcut risk can be audited separately from raw audit-only structure.
 
 ### Distmatch Behavior
 

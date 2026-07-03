@@ -15,22 +15,25 @@ from dmea_ht.data import read_manifest
 from dmea_ht.metrics import compute_binary_metrics
 
 
-def shortcut_proxy_auc(rows: List[Dict[str, Any]]) -> pd.DataFrame:
+DEFAULT_PROXY_FIELDS = [
+    "n_images",
+    "n_visits",
+    "selected_n_visits",
+    "raw_n_visits",
+    "used_images",
+    "raw_n_images",
+    "has_bio",
+    "bio_missing_count",
+    "report_length",
+    "image_padding_count",
+    "source_folder",
+]
+
+
+def shortcut_proxy_auc(rows: List[Dict[str, Any]], fields: List[str] | None = None) -> pd.DataFrame:
     frame = pd.DataFrame(rows)
     y = frame["label"].astype(int)
-    fields = [
-        "n_images",
-        "n_visits",
-        "selected_n_visits",
-        "raw_n_visits",
-        "used_images",
-        "raw_n_images",
-        "has_bio",
-        "bio_missing_count",
-        "report_length",
-        "image_padding_count",
-        "source_folder",
-    ]
+    fields = fields or DEFAULT_PROXY_FIELDS
     existing = [field for field in fields if field in frame.columns]
     if not existing or y.nunique() < 2:
         return pd.DataFrame([{"shortcut_only_AUC": 0.0, "shortcut_only_AUPRC": 0.0}])
@@ -55,13 +58,15 @@ def main() -> None:
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--predictions")
     parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--fields", help="Comma-separated shortcut fields for proxy AUC. Defaults to all known audit fields.")
     args = parser.parse_args()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     rows = read_manifest(args.manifest)
 
     distribution_report(rows).to_csv(out_dir / "shortcut_distribution_before_matching.csv", index=False)
-    proxy = shortcut_proxy_auc(rows)
+    fields = [field.strip() for field in args.fields.split(",") if field.strip()] if args.fields else None
+    proxy = shortcut_proxy_auc(rows, fields=fields)
     proxy.to_csv(out_dir / "shortcut_proxy_auc.csv", index=False)
 
     if args.predictions:
