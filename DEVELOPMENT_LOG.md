@@ -65,8 +65,10 @@
   - `scripts/apply_sample_reweighting.py`
   - `scripts/match_manifest_by_bins.py`
   - `scripts/build_manifest_from_table.py`
+  - `scripts/build_manifest_from_dmea_layout.py`
   - `scripts/inspect_table.py`
   - `scripts/run_server_mvp.sh`
+- Added `configs/dmea_ht_smoke.yaml` for a one-seed, one-epoch server smoke run.
 - Added `configs/dmea_ht_mvp.yaml`, `README.md`, and `requirements.txt`.
 
 ### Minimal Local Checks

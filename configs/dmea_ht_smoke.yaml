@@ -1,0 +1,33 @@
+project:
+  name: dmea_ht_smoke
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_smoke.jsonl
+  output_dir: runs/dmea_ht_smoke
+
+model:
+  name: dmea_ht
+  variant: concat
+  hidden_dim: 64
+  text_vocab_size: 10000
+  text_max_length: 128
+  bio_dim: 7
+  max_images_per_patient: 2
+  image_size: 96
+  dropout: 0.10
+  use_patient_anchor: false
+  use_evidence_role: false
+  use_discordance: false
+
+training:
+  seeds: [0]
+  batch_size: 2
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 1
+  patience: 1
+  primary_metric: val_AUC
+  num_workers: 0
+
+loss:
+  cls_weight: 1.0
+
