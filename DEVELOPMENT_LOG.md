@@ -274,3 +274,60 @@
 - Do not start model training in this phase.
 - Keep `patient_id`, `split`, `label`, image paths, report text, bio values, and bio missing masks unchanged.
 - Keep bio immune/function abnormal labels as `-1` unless trusted reference-range or abnormal flag information exists.
+
+### Actual Changes
+
+- Added `scripts/audit_evidence_label_quality.py`.
+- Refined `scripts/build_evidence_weak_labels.py`:
+  - added `--negation-window`;
+  - added negation-aware morphology matching;
+  - separated strong HT-relevant negative terms from weak local negative terms;
+  - added `matched_*_terms` top-level fields;
+  - added weak-label confidence fields.
+- Extended `scripts/inspect_manifest_evidence_labels.py` with:
+  - overall/split/class distributions;
+  - morphology-negative joint counts;
+  - confidence summaries;
+  - top matched terms;
+  - unknown-label summaries.
+
+### Validation Results
+
+- Local static compile passed.
+- Server static compile passed in `/home/linruixin/chen/conda/envs/ma`.
+- Server repository synced to commit `100ca8c`.
+- Rebuilt evidence manifest:
+  - `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2.jsonl`
+- Inspection report:
+  - `/data/csb/DMEA-HT/HT_2025.12_25/evidence_label_inspect_v2.txt`
+- Audit CSV:
+  - `/data/csb/DMEA-HT/HT_2025.12_25/evidence_label_audit_samples_v2.csv`
+- Rows written: 780.
+- Updated overall evidence label distribution:
+  - `txt_morphology_label`: 680 positive, 100 negative.
+  - `txt_negative_label`: 311 strong negative, 469 non-strong-negative.
+  - `txt_uncertain_label`: 0 positive, 780 negative.
+  - `txt_diag_hint_label`: 0 positive, 780 negative.
+  - `bio_immune_abnormal_label`: 780 unknown.
+  - `bio_function_abnormal_label`: 780 unknown.
+  - `bio_missing_label`: 780 non-missing.
+  - `image_morphology_weak_label`: 680 positive, 14 negative, 86 unknown.
+  - `discordance_state_label`: 780 uncertain_or_insufficient.
+- Morphology/negative joint counts:
+  - `morph1_neg0`: 383.
+  - `morph0_neg1`: 14.
+  - `morph1_neg1`: 297.
+  - `morph0_neg0`: 86.
+- Mean confidence:
+  - `txt_morphology_confidence`: 0.7414.
+  - `txt_negative_confidence`: 0.4872.
+  - `image_morphology_weak_confidence`: 0.7594.
+- Audit CSV exported 238 rows with per-split sampling.
+- Test split was inspected only for weak-label distribution quality; no model selection or training was performed.
+
+### Remaining Issues
+
+- `morph1_neg1` remains common, likely because multi-visit reports can contain both positive morphology and negative/normal phrases across visits or findings.
+- Strong negative labels should be manually reviewed in the audit CSV before enabling `L_text_negative`.
+- Bio immune/function abnormal labels remain unknown, so bio evidence loss and discordance supervision remain disabled.
+- No Phase C model training was started.
