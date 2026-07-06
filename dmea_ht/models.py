@@ -179,6 +179,10 @@ class DMEAHTModel(nn.Module):
         self.anchor = PatientAnchorFusion(hidden_dim)
         self.discordance = DiscordanceFusion(hidden_dim, dropout)
         self.classifier = EvidenceConservationClassifier(hidden_dim)
+        self.use_text_morphology_head = bool(model_cfg.get("use_text_morphology_head", False))
+        self.use_image_morphology_head = bool(model_cfg.get("use_image_morphology_head", False))
+        self.text_morphology_head = nn.Linear(hidden_dim, 1) if self.use_text_morphology_head else None
+        self.image_morphology_head = nn.Linear(hidden_dim, 1) if self.use_image_morphology_head else None
         self.baseline_head = nn.Sequential(
             nn.Linear(hidden_dim * 3, hidden_dim),
             nn.GELU(),
@@ -186,12 +190,21 @@ class DMEAHTModel(nn.Module):
             nn.Linear(hidden_dim, 1),
         )
 
+    def _auxiliary_outputs(self, image_global: torch.Tensor, text_global: torch.Tensor) -> Dict[str, torch.Tensor]:
+        outputs: Dict[str, torch.Tensor] = {}
+        if self.text_morphology_head is not None:
+            outputs["text_morphology_logit"] = self.text_morphology_head(text_global).squeeze(-1)
+        if self.image_morphology_head is not None:
+            outputs["image_morphology_logit"] = self.image_morphology_head(image_global).squeeze(-1)
+        return outputs
+
     def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         image_tokens, image_global = self.image_encoder(batch["images"], batch["image_mask"])
         text_tokens, text_global = self.text_encoder(batch["report_input_ids"], batch["report_attention_mask"])
         bio_tokens, bio_global, bio_medical, _bio_observation = self.bio_encoder(
             batch["bio_values"], batch["bio_missing_mask"], batch["bio_abnormal_flags"]
         )
+        aux_outputs = self._auxiliary_outputs(image_global, text_global)
 
         if self.variant in {"image_only", "text_only", "bio_only", "concat"}:
             parts = {
@@ -201,7 +214,7 @@ class DMEAHTModel(nn.Module):
                 "concat": [image_global, text_global, bio_global],
             }[self.variant]
             logit = self.baseline_head(torch.cat(parts, dim=-1)).squeeze(-1)
-            return {"logit": logit, "prob": torch.sigmoid(logit)}
+            return {"logit": logit, "prob": torch.sigmoid(logit), **aux_outputs}
 
         evidence_tokens, evidence_scores, role_loss = self.evidence(image_tokens, text_tokens, bio_tokens)
         tokens = torch.cat([image_tokens, text_tokens, bio_tokens, evidence_tokens], dim=1)
@@ -209,10 +222,10 @@ class DMEAHTModel(nn.Module):
         discordance = self.discordance(image_global, text_global, bio_global)
         negative_token = evidence_tokens[:, self.evidence.roles.index("negative"), :]
         outputs = self.classifier(image_global, text_global, bio_medical, z_patient, negative_token)
+        outputs.update(aux_outputs)
         outputs["role_alignment_loss"] = role_loss
         for key, value in evidence_scores.items():
             outputs[f"evidence_{key}"] = value
         for key, value in discordance.items():
             outputs[key] = value.norm(dim=-1)
         return outputs
-

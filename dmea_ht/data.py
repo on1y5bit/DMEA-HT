@@ -28,6 +28,13 @@ SHORTCUT_FIELDS = [
     "padding_count",
 ]
 
+EVIDENCE_LABEL_DEFAULTS = {
+    "txt_morphology_label": -1,
+    "txt_morphology_confidence": 0.0,
+    "image_morphology_weak_label": -1,
+    "image_morphology_weak_confidence": 0.0,
+}
+
 
 def read_manifest(path: str | Path) -> List[Dict[str, Any]]:
     path = Path(path)
@@ -188,6 +195,19 @@ class PatientHTDataset(Dataset):
             return torch.tensor(mask, dtype=torch.float32)
         return (values == 0).float()
 
+    def _evidence_label(self, row: Dict[str, Any], key: str) -> int:
+        try:
+            return int(float(row.get(key, EVIDENCE_LABEL_DEFAULTS[key])))
+        except (TypeError, ValueError):
+            return int(EVIDENCE_LABEL_DEFAULTS[key])
+
+    def _evidence_confidence(self, row: Dict[str, Any], key: str) -> float:
+        try:
+            value = float(row.get(key, EVIDENCE_LABEL_DEFAULTS[key]))
+        except (TypeError, ValueError):
+            value = float(EVIDENCE_LABEL_DEFAULTS[key])
+        return max(0.0, min(1.0, value))
+
     def __getitem__(self, index: int) -> Dict[str, Any]:
         row = self.rows[index]
         paths = self._image_paths(row)
@@ -228,6 +248,16 @@ class PatientHTDataset(Dataset):
             "bio_missing_mask": bio_missing_mask,
             "bio_abnormal_flags": bio_abnormal_flags,
             "sample_weight": torch.tensor(float(row.get("sample_weight", 1.0)), dtype=torch.float32),
+            "txt_morphology_label": torch.tensor(self._evidence_label(row, "txt_morphology_label"), dtype=torch.long),
+            "txt_morphology_confidence": torch.tensor(
+                self._evidence_confidence(row, "txt_morphology_confidence"), dtype=torch.float32
+            ),
+            "image_morphology_weak_label": torch.tensor(
+                self._evidence_label(row, "image_morphology_weak_label"), dtype=torch.long
+            ),
+            "image_morphology_weak_confidence": torch.tensor(
+                self._evidence_confidence(row, "image_morphology_weak_confidence"), dtype=torch.float32
+            ),
             "shortcuts": shortcuts,
         }
 
@@ -243,6 +273,10 @@ def collate_patient_batch(batch: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         "bio_missing_mask",
         "bio_abnormal_flags",
         "sample_weight",
+        "txt_morphology_label",
+        "txt_morphology_confidence",
+        "image_morphology_weak_label",
+        "image_morphology_weak_confidence",
     ]
     out = {key: torch.stack([item[key] for item in batch]) for key in tensor_keys}
     out["patient_id"] = [item["patient_id"] for item in batch]

@@ -1,0 +1,45 @@
+project:
+  name: dmea_ht_v2_text_image_evidence
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2.jsonl
+  output_dir: runs/dmea_ht_v2_text_image_evidence
+
+model:
+  name: dmea_ht
+  variant: dmea
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_patient: 28
+  image_size: 224
+  dropout: 0.15
+  use_patient_anchor: true
+  use_evidence_role: true
+  use_discordance: true
+  use_text_morphology_head: true
+  use_image_morphology_head: true
+  use_text_negative_head: false
+  use_bio_evidence_heads: false
+  use_discordance_state_head: false
+
+training:
+  seeds: [0, 42, 3407]
+  batch_size: 4
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 30
+  patience: 8
+  primary_metric: val_AUC
+  num_workers: 2
+
+loss:
+  cls_weight: 1.0
+  text_morphology_weight: 0.03
+  image_morphology_weight: 0.03
+  text_negative_weight: 0.0
+  bio_immune_abnormal_weight: 0.0
+  bio_function_abnormal_weight: 0.0
+  discordance_state_weight: 0.0
+  counterfactual_weight: 0.0
+  matched_supcon_weight: 0.0

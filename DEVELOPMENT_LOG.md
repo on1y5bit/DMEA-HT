@@ -331,3 +331,26 @@
 - Strong negative labels should be manually reviewed in the audit CSV before enabling `L_text_negative`.
 - Bio immune/function abnormal labels remain unknown, so bio evidence loss and discordance supervision remain disabled.
 - No Phase C model training was started.
+
+## 2026-07-06 DMEA-v2 Phase C1 Text/Image Evidence Training
+
+### Motivation
+
+- Connect refined Phase B text/image morphology weak labels to training.
+- Keep bio and discordance supervision disabled because bio abnormal labels remain unknown.
+- Test whether evidence-role supervision improves patient-level HT prediction without reintroducing shortcut dependence.
+
+### Planned Changes
+
+- Update dataset loading for morphology evidence labels and confidence fields.
+- Add text/image morphology auxiliary heads.
+- Add confidence-weighted evidence BCE losses with ignore-label support.
+- Add Phase C1 configs for text-only evidence and text+image evidence.
+- Run syntax checks and server-side smoke/formal validation.
+
+### Constraints
+
+- Do not change task labels, patient splits, image paths, report text, or bio values.
+- Do not feed shortcut variables into classifier.
+- Do not enable negative, bio, discordance, counterfactual, or matched contrastive losses.
+- Select checkpoints by validation AUC only.

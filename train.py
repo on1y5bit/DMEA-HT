@@ -14,6 +14,7 @@ from tqdm import tqdm
 
 from dmea_ht.config import load_config
 from dmea_ht.data import PatientHTDataset, collate_patient_batch, patient_split, read_manifest
+from dmea_ht.evidence_losses import confidence_weighted_bce_with_logits
 from dmea_ht.metrics import compute_binary_metrics, summarize_metrics
 from dmea_ht.models import DMEAHTModel
 
@@ -64,21 +65,84 @@ def make_loaders(config: Dict[str, Any], rows: List[Dict[str, Any]]) -> Dict[str
     return loaders
 
 
-def run_epoch(model: DMEAHTModel, loader: DataLoader, optimizer: torch.optim.Optimizer | None, device: torch.device) -> Dict[str, Any]:
+def evidence_loss_terms(outputs: Dict[str, torch.Tensor], batch: Dict[str, Any], loss_cfg: Dict[str, Any]) -> Dict[str, torch.Tensor]:
+    terms: Dict[str, torch.Tensor] = {}
+    text_weight = float(loss_cfg.get("text_morphology_weight", 0.0))
+    image_weight = float(loss_cfg.get("image_morphology_weight", 0.0))
+    if text_weight > 0 and "text_morphology_logit" in outputs:
+        terms["text_morphology_loss"] = confidence_weighted_bce_with_logits(
+            outputs["text_morphology_logit"],
+            batch["txt_morphology_label"],
+            batch["txt_morphology_confidence"],
+        )
+    if image_weight > 0 and "image_morphology_logit" in outputs:
+        terms["image_morphology_loss"] = confidence_weighted_bce_with_logits(
+            outputs["image_morphology_logit"],
+            batch["image_morphology_weak_label"],
+            batch["image_morphology_weak_confidence"],
+        )
+    return terms
+
+
+def add_evidence_metrics(
+    metrics: Dict[str, Any],
+    prefix: str,
+    labels: List[int],
+    probs: List[float],
+    confidences: List[float],
+    losses: List[float],
+) -> None:
+    metrics[f"{prefix}_loss"] = float(np.mean(losses)) if losses else 0.0
+    metrics[f"valid_{prefix}_count"] = int(len(labels))
+    metrics[f"mean_{prefix}_confidence"] = float(np.mean(confidences)) if confidences else 0.0
+    if labels:
+        evidence_metrics = compute_binary_metrics(labels, probs)
+        metrics[f"{prefix}_auc"] = evidence_metrics["AUC"]
+        metrics[f"{prefix}_acc"] = evidence_metrics["ACC"]
+    else:
+        metrics[f"{prefix}_auc"] = 0.0
+        metrics[f"{prefix}_acc"] = 0.0
+
+
+def run_epoch(
+    model: DMEAHTModel,
+    loader: DataLoader,
+    optimizer: torch.optim.Optimizer | None,
+    device: torch.device,
+    loss_cfg: Dict[str, Any],
+) -> Dict[str, Any]:
     is_train = optimizer is not None
     model.train(is_train)
     labels: List[int] = []
     probs: List[float] = []
     losses: List[float] = []
+    text_morphology_labels: List[int] = []
+    text_morphology_probs: List[float] = []
+    text_morphology_confidences: List[float] = []
+    text_morphology_losses: List[float] = []
+    image_morphology_labels: List[int] = []
+    image_morphology_probs: List[float] = []
+    image_morphology_confidences: List[float] = []
+    image_morphology_losses: List[float] = []
     predictions: List[Dict[str, Any]] = []
     criterion = torch.nn.BCEWithLogitsLoss(reduction="none")
+    cls_weight = float(loss_cfg.get("cls_weight", 1.0))
+    text_weight = float(loss_cfg.get("text_morphology_weight", 0.0))
+    image_weight = float(loss_cfg.get("image_morphology_weight", 0.0))
 
     for batch in tqdm(loader, leave=False):
         batch = move_batch(batch, device)
         with torch.set_grad_enabled(is_train):
             outputs = model(batch)
             raw_loss = criterion(outputs["logit"], batch["label"])
-            loss = (raw_loss * batch["sample_weight"]).mean()
+            loss = cls_weight * (raw_loss * batch["sample_weight"]).mean()
+            evidence_terms = evidence_loss_terms(outputs, batch, loss_cfg)
+            if "text_morphology_loss" in evidence_terms:
+                loss = loss + text_weight * evidence_terms["text_morphology_loss"]
+                text_morphology_losses.append(float(evidence_terms["text_morphology_loss"].detach().cpu()))
+            if "image_morphology_loss" in evidence_terms:
+                loss = loss + image_weight * evidence_terms["image_morphology_loss"]
+                image_morphology_losses.append(float(evidence_terms["image_morphology_loss"].detach().cpu()))
             if "role_alignment_loss" in outputs:
                 loss = loss + outputs["role_alignment_loss"] * 0.0
             if is_train:
@@ -92,6 +156,19 @@ def run_epoch(model: DMEAHTModel, loader: DataLoader, optimizer: torch.optim.Opt
         labels.extend(batch_labels)
         probs.extend(batch_probs)
 
+        if "text_morphology_logit" in outputs:
+            valid = (batch["txt_morphology_label"] != -1) & (batch["txt_morphology_confidence"] > 0)
+            if bool(valid.any().item()):
+                text_morphology_labels.extend(batch["txt_morphology_label"][valid].detach().cpu().numpy().astype(int).tolist())
+                text_morphology_probs.extend(torch.sigmoid(outputs["text_morphology_logit"][valid]).detach().cpu().numpy().tolist())
+                text_morphology_confidences.extend(batch["txt_morphology_confidence"][valid].detach().cpu().numpy().tolist())
+        if "image_morphology_logit" in outputs:
+            valid = (batch["image_morphology_weak_label"] != -1) & (batch["image_morphology_weak_confidence"] > 0)
+            if bool(valid.any().item()):
+                image_morphology_labels.extend(batch["image_morphology_weak_label"][valid].detach().cpu().numpy().astype(int).tolist())
+                image_morphology_probs.extend(torch.sigmoid(outputs["image_morphology_logit"][valid]).detach().cpu().numpy().tolist())
+                image_morphology_confidences.extend(batch["image_morphology_weak_confidence"][valid].detach().cpu().numpy().tolist())
+
         for i, patient_id in enumerate(batch["patient_id"]):
             row = {
                 "patient_id": patient_id,
@@ -102,11 +179,30 @@ def run_epoch(model: DMEAHTModel, loader: DataLoader, optimizer: torch.optim.Opt
             for key in ("e_img", "e_text", "e_bio", "e_synergy", "e_negative", "d_img_txt", "d_img_bio", "d_txt_bio"):
                 if key in outputs:
                     row[key] = float(outputs[key].detach().cpu()[i])
+            for key in ("text_morphology_logit", "image_morphology_logit"):
+                if key in outputs:
+                    row[key] = float(outputs[key].detach().cpu()[i])
             row.update(batch["shortcuts"][i])
             predictions.append(row)
 
     metrics = compute_binary_metrics(labels, probs)
     metrics["loss"] = float(np.mean(losses)) if losses else 0.0
+    add_evidence_metrics(
+        metrics,
+        "text_morphology",
+        text_morphology_labels,
+        text_morphology_probs,
+        text_morphology_confidences,
+        text_morphology_losses,
+    )
+    add_evidence_metrics(
+        metrics,
+        "image_morphology",
+        image_morphology_labels,
+        image_morphology_probs,
+        image_morphology_confidences,
+        image_morphology_losses,
+    )
     return {"metrics": metrics, "predictions": predictions}
 
 
@@ -128,8 +224,8 @@ def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, ou
     stale = 0
 
     for epoch in range(1, epochs + 1):
-        run_epoch(model, loaders["train"], optimizer, device)
-        val_result = run_epoch(model, loaders["val"], None, device)
+        run_epoch(model, loaders["train"], optimizer, device, config.get("loss", {}))
+        val_result = run_epoch(model, loaders["val"], None, device, config.get("loss", {}))
         val_auc = float(val_result["metrics"]["AUC"])
         if val_auc > best_auc:
             best_auc = val_auc
@@ -144,8 +240,8 @@ def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, ou
     if best_state is not None:
         model.load_state_dict(best_state)
 
-    val_result = run_epoch(model, loaders["val"], None, device)
-    test_result = run_epoch(model, loaders["test"], None, device)
+    val_result = run_epoch(model, loaders["val"], None, device, config.get("loss", {}))
+    test_result = run_epoch(model, loaders["test"], None, device, config.get("loss", {}))
     checkpoints = out_dir / "checkpoints"
     checkpoints.mkdir(parents=True, exist_ok=True)
     torch.save({"model": model.state_dict(), "config": config, "seed": seed, "best_epoch": best_epoch}, checkpoints / f"seed_{seed}_best.pt")
@@ -189,7 +285,30 @@ def main() -> None:
     for split in ("val", "test"):
         split_rows = [row for row in metrics_rows if row["split"] == split]
         summary = {"split": split}
-        summary.update(summarize_metrics(split_rows, ["AUC", "AUPRC", "ACC", "F1", "Sensitivity", "Specificity", "Precision", "Recall", "Balanced_ACC"]))
+        summary.update(
+            summarize_metrics(
+                split_rows,
+                [
+                    "AUC",
+                    "AUPRC",
+                    "ACC",
+                    "F1",
+                    "Sensitivity",
+                    "Specificity",
+                    "Precision",
+                    "Recall",
+                    "Balanced_ACC",
+                    "text_morphology_auc",
+                    "text_morphology_acc",
+                    "valid_text_morphology_count",
+                    "mean_text_morphology_confidence",
+                    "image_morphology_auc",
+                    "image_morphology_acc",
+                    "valid_image_morphology_count",
+                    "mean_image_morphology_confidence",
+                ],
+            )
+        )
         summary_rows.append(summary)
     pd.DataFrame(summary_rows).to_csv(out_dir / "reports" / "metrics_summary.csv", index=False)
     cm_cols = ["seed", "split", "TN", "FP", "FN", "TP"]
