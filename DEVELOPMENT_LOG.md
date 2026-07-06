@@ -670,3 +670,51 @@
 - Server static compile in `/home/linruixin/chen/conda/envs/ma`.
 - Server-side execution under `/home/linruixin/chen/project/DMEA-HT`.
 - Training runs will use `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2.jsonl`.
+
+### Actual Changes
+
+- Added C4 extended-seed C1 config:
+  - `configs/dmea_ht_v2_c4_c1_text_morphology_extended_seeds.yaml`.
+- Added C4 one-seed pilot configs:
+  - `configs/dmea_ht_v2_c4_c1_weight_w0005_pilot.yaml`;
+  - `configs/dmea_ht_v2_c4_c1_weight_w001_pilot.yaml`;
+  - `configs/dmea_ht_v2_c4_c1_weight_w003_pilot.yaml`;
+  - `configs/dmea_ht_v2_c4_c1_weight_w005_pilot.yaml`;
+  - `configs/dmea_ht_v2_c4_c1_weight_w007_pilot.yaml`;
+  - `configs/dmea_ht_v2_c4_c1_weight_w010_pilot.yaml`.
+- Added Phase C4 report collector:
+  - `scripts/collect_phase_c4_stability_and_pilots.py`.
+- No changes were made to:
+  - `dmea_ht/models.py`;
+  - `dmea_ht/data.py`;
+  - `train.py`.
+
+### Launch Status
+
+- Local static compile passed:
+  - `python -m py_compile scripts/collect_phase_c4_stability_and_pilots.py`.
+- Local config parsing passed for all C4 configs.
+- Code was pushed to GitHub at:
+  - `d61f401`.
+- Server was synced by bundle because GitHub TLS pull was unreliable in Phase C3.
+- Server static compile passed.
+- Server background driver launched:
+  - `/home/linruixin/chen/project/DMEA-HT/phase_c4_driver_20260706.sh`.
+- Server background PID:
+  - `2012593`.
+- Server driver log:
+  - `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c4/phase_c4_driver_20260706.log`.
+- Planned run directories:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_text_morphology_extended_seeds_20260706`;
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_weight_w0005_pilot_20260706`;
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_weight_w001_pilot_20260706`;
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_weight_w003_pilot_20260706`;
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_weight_w005_pilot_20260706`;
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_weight_w007_pilot_20260706`;
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_weight_w010_pilot_20260706`.
+
+### Remaining Issues
+
+- Phase C4 training/report generation is running in the background.
+- No final C4 metrics are available yet.
+- Do not use test metrics for any Phase C4 selection decision once results are available.
