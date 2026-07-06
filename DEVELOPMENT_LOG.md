@@ -428,3 +428,43 @@
 - Do not feed shortcut variables into classifier.
 - Do not enable negative, bio, discordance, counterfactual, matched SupCon, or image BCE losses.
 - Select by validation AUC only.
+
+### Actual Changes
+
+- Added `TextEvidenceAnchor` with query attention over text tokens.
+- Added config switches:
+  - `use_text_evidence_anchor`;
+  - `fuse_text_morphology_anchor`.
+- Fused `text_morphology_anchor` into patient-level fusion only when enabled by config.
+- Extended prediction CSV diagnostics with:
+  - `pred_prob`;
+  - `txt_morphology_label`;
+  - `txt_morphology_confidence`;
+  - `matched_morphology_terms`;
+  - `text_morphology_prob`;
+  - `text_morphology_anchor_norm`;
+  - `text_morphology_anchor_mean`.
+- Added validation-derived threshold script:
+  - `scripts/evaluate_thresholds.py`.
+- Added C2 configs:
+  - `configs/dmea_ht_v2_c2_text_anchor_w001.yaml`;
+  - `configs/dmea_ht_v2_c2_text_anchor_w003.yaml`;
+  - `configs/dmea_ht_v2_c2_text_anchor_w005.yaml`;
+  - `configs/dmea_ht_v2_c2_text_anchor_w010.yaml`;
+  - `configs/dmea_ht_v2_c2_text_anchor_smoke.yaml`.
+
+### Validation Results
+
+- Local static compile passed.
+- Server static compile passed in `/home/linruixin/chen/conda/envs/ma`.
+- Server C2 synthetic forward check passed.
+- Server C2 smoke run completed:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c2_text_anchor_smoke_20260706`.
+- Threshold analysis smoke check completed:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c2_text_anchor_smoke_20260706/thresholds/seed_0`.
+- Smoke prediction CSV contains anchor diagnostics and matched morphology term fields.
+
+### Remaining Issues
+
+- Formal C2 weight scan still needs to complete for weights 0.01, 0.03, 0.05, and 0.10.
+- Shortcut audit and threshold reports must be run after each formal C2 run.
