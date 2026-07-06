@@ -24,9 +24,52 @@ def maybe_float(value: Any) -> float | None:
         return None
 
 
-def gate_rows_from_comparison(frame: pd.DataFrame, min_val_auc_delta: float, max_residual_spearman: float) -> pd.DataFrame:
+def normalize_model_id(value: Any) -> str:
+    text = str(value)
+    aliases = {
+        "c1_text": "c1_text_morphology_only",
+        "c1_text_image": "c1_text_image_evidence",
+        "c2_w001": "c2_text_anchor_w0.01",
+        "c2_w003": "c2_text_anchor_w0.03",
+        "c2_w005": "c2_text_anchor_w0.05",
+        "c2_w010": "c2_text_anchor_w0.10",
+    }
+    return aliases.get(text, text)
+
+
+def attach_shortcut_audit(frame: pd.DataFrame, audit_path: str | None) -> pd.DataFrame:
+    if not audit_path:
+        return frame
+    path = Path(audit_path)
+    if not path.exists():
+        return frame
+    audit = pd.read_csv(path)
+    if audit.empty or "model_id" not in audit.columns:
+        return frame
+    audit["model_id"] = audit["model_id"].map(normalize_model_id)
+    pooled = audit[(audit["split"].astype(str) == "val") & (audit["seed"].astype(str) == "pooled")]
+    keep = pooled[["model_id", "max_abs_spearman", "linear_r2_prob_from_shortcuts", "shortcut_only_label_auc_audit_only"]]
+    keep = keep.rename(
+        columns={
+            "max_abs_spearman": "max_abs_prediction_shortcut_spearman",
+            "linear_r2_prob_from_shortcuts": "linear_r2_prob_from_shortcuts_val",
+            "shortcut_only_label_auc_audit_only": "shortcut_only_label_auc_audit_only_val",
+        }
+    )
+    frame = frame.copy()
+    frame["model_id"] = frame["model_id"].map(normalize_model_id)
+    return frame.merge(keep, on="model_id", how="left")
+
+
+def gate_rows_from_comparison(
+    frame: pd.DataFrame,
+    min_val_auc_delta: float,
+    max_residual_spearman: float,
+    shortcut_audit: str | None = None,
+) -> pd.DataFrame:
     if frame.empty:
         return pd.DataFrame()
+    frame = attach_shortcut_audit(frame, shortcut_audit)
     best_val = float(frame["val_auc_mean"].max())
     rows: List[Dict[str, Any]] = []
     for _, row in frame.iterrows():
@@ -175,6 +218,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--comparison-table")
     parser.add_argument("--proposal")
     parser.add_argument("--out-dir", required=True)
+    parser.add_argument("--shortcut-audit", help="Optional shortcut_residual_audit.csv to merge into comparison decisions.")
     parser.add_argument("--min-val-auc-delta", type=float, default=0.0)
     parser.add_argument("--max-residual-spearman", type=float, default=0.40)
     return parser.parse_args()
@@ -186,7 +230,14 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     frames: List[pd.DataFrame] = []
     if args.comparison_table:
-        frames.append(gate_rows_from_comparison(read_table(Path(args.comparison_table)), args.min_val_auc_delta, args.max_residual_spearman))
+        frames.append(
+            gate_rows_from_comparison(
+                read_table(Path(args.comparison_table)),
+                args.min_val_auc_delta,
+                args.max_residual_spearman,
+                args.shortcut_audit,
+            )
+        )
     if args.proposal:
         frames.append(gate_rows_from_proposal(Path(args.proposal), args.min_val_auc_delta, args.max_residual_spearman))
     summary = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
