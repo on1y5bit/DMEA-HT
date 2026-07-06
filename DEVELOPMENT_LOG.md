@@ -503,3 +503,35 @@
   - C2 w=0.10: 0.3287.
 - C2 did not beat C1 text morphology only on validation AUC. By the validation-only selection rule, the current main candidate remains C1 text morphology only.
 - Among C2 variants, w=0.05 is the best validation-AUC C2 setting, but it is not promoted over C1.
+
+## 2026-07-06 DMEA-v2 Phase C3 Result Consolidation and Decision Gate
+
+### Plan
+
+- Do not build new model modules or launch new formal training.
+- Do not modify `dmea_ht/models.py`, `dmea_ht/data.py`, `train.py`, existing model configs, labels, splits, or data.
+- Consolidate strict MVP, C1, and C2 completed runs using validation AUC as the only promotion metric.
+- Treat test metrics as reporting-only and never use them for model selection.
+- Audit prediction residual association with selected structural shortcut fields:
+  - `selected_n_visits`;
+  - `used_images`;
+  - `image_padding_count`;
+  - `has_bio`;
+  - `bio_missing_count`;
+  - `report_length`.
+- Generate Phase C3 reports under `analysis_reports/phase_c3/`.
+- Add a reusable decision-gate script and documentation for future candidates.
+- Run static compile for all new scripts before server execution.
+
+### Expected Outputs
+
+- `analysis_reports/phase_c3/model_comparison_table.csv`
+- `analysis_reports/phase_c3/model_comparison_report.md`
+- `analysis_reports/phase_c3/c1_evidence_effects_val.csv`
+- `analysis_reports/phase_c3/c1_evidence_effects_test_reporting_only.csv`
+- `analysis_reports/phase_c3/c1_evidence_effects_report.md`
+- `analysis_reports/phase_c3/shortcut_residual_audit.csv`
+- `analysis_reports/phase_c3/shortcut_residual_audit_report.md`
+- `analysis_reports/phase_c3/decision_gate.md`
+- `analysis_reports/phase_c3/decision_gate_summary.csv`
+- `analysis_reports/phase_c3/phase_c3_final_report.md`
