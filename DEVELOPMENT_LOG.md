@@ -354,3 +354,48 @@
 - Do not feed shortcut variables into classifier.
 - Do not enable negative, bio, discordance, counterfactual, or matched contrastive losses.
 - Select checkpoints by validation AUC only.
+
+### Actual Changes
+
+- Added morphology evidence fields to `PatientHTDataset` with safe defaults for old manifests.
+- Added confidence-weighted BCE evidence loss with ignore support for `-1` labels.
+- Added optional text and image morphology auxiliary heads.
+- Added Phase C1 configs:
+  - `configs/dmea_ht_v2_text_morphology_only.yaml`;
+  - `configs/dmea_ht_v2_text_image_evidence.yaml`;
+  - `configs/dmea_ht_v2_text_image_evidence_smoke.yaml`.
+- Updated training/evaluation metrics to log evidence-head diagnostics.
+
+### Validation Results
+
+- Local static compile passed.
+- Server static compile passed in `/home/linruixin/chen/conda/envs/ma`.
+- Server synthetic forward/loss check passed.
+- Server smoke run completed:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_text_image_evidence_smoke_20260706`.
+- Formal text morphology only run completed:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_text_morphology_only_20260706`.
+  - validation AUC: 0.7782 +/- 0.0350.
+  - validation AUPRC: 0.7872 +/- 0.0503.
+  - validation F1: 0.6140 +/- 0.1058.
+  - validation sensitivity: 0.5177 +/- 0.1597.
+  - validation specificity: 0.8582 +/- 0.0747.
+  - validation balanced accuracy: 0.6879 +/- 0.0430.
+  - test AUC: 0.7819 +/- 0.0148.
+- Formal text + image morphology run completed:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_text_image_evidence_20260706`.
+  - validation AUC: 0.7691 +/- 0.0223.
+  - validation AUPRC: 0.7743 +/- 0.0323.
+  - validation F1: 0.6287 +/- 0.0119.
+  - validation sensitivity: 0.5461 +/- 0.0123.
+  - validation specificity: 0.8085 +/- 0.0369.
+  - validation balanced accuracy: 0.6773 +/- 0.0163.
+  - test AUC: 0.7927 +/- 0.0199.
+- Relative to the strict MVP validation AUC of 0.7581 +/- 0.0171, both C1 variants remained competitive; text morphology only gave the best validation AUC.
+- Test metrics are recorded for reporting only and were not used for model selection.
+
+### Remaining Issues
+
+- Shortcut audit for Phase C1 predictions still needs to be completed before accepting a clean improvement.
+- `text_morphology_auc` is zero in the diagnostic CSV because valid text morphology labels are single-class in validation/test, so AUC is not defined and the metric helper safely returns 0.
+- `image_morphology_auc` is diagnostic only and should not drive checkpoint selection.
