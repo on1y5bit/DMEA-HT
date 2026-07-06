@@ -165,6 +165,44 @@ class EvidenceConservationClassifier(nn.Module):
         }
 
 
+class TextEvidenceAnchor(nn.Module):
+    def __init__(self, hidden_dim: int, dropout: float, num_heads: int = 4) -> None:
+        super().__init__()
+        self.query = nn.Parameter(torch.randn(1, 1, hidden_dim) * 0.02)
+        self.attn = nn.MultiheadAttention(hidden_dim, num_heads=num_heads, batch_first=True)
+        self.anchor_proj = nn.Sequential(
+            nn.LayerNorm(hidden_dim),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.LayerNorm(hidden_dim),
+        )
+        self.morphology_head = nn.Linear(hidden_dim, 1)
+
+    def forward(
+        self,
+        text_feature: torch.Tensor,
+        text_tokens: torch.Tensor | None = None,
+        attention_mask: torch.Tensor | None = None,
+    ) -> Dict[str, torch.Tensor]:
+        if text_tokens is not None:
+            batch = text_tokens.shape[0]
+            query = self.query.expand(batch, -1, -1)
+            key_padding_mask = attention_mask == 0 if attention_mask is not None else None
+            attended, _ = self.attn(query, text_tokens, text_tokens, key_padding_mask=key_padding_mask)
+            source = attended.squeeze(1)
+        else:
+            source = text_feature
+        anchor = self.anchor_proj(source)
+        logit = self.morphology_head(anchor).squeeze(-1)
+        return {
+            "text_morphology_anchor": anchor,
+            "text_morphology_logit": logit,
+            "text_morphology_prob": torch.sigmoid(logit),
+        }
+
+
 class DMEAHTModel(nn.Module):
     def __init__(self, config: Dict) -> None:
         super().__init__()
@@ -181,7 +219,14 @@ class DMEAHTModel(nn.Module):
         self.classifier = EvidenceConservationClassifier(hidden_dim)
         self.use_text_morphology_head = bool(model_cfg.get("use_text_morphology_head", False))
         self.use_image_morphology_head = bool(model_cfg.get("use_image_morphology_head", False))
-        self.text_morphology_head = nn.Linear(hidden_dim, 1) if self.use_text_morphology_head else None
+        self.use_text_evidence_anchor = bool(model_cfg.get("use_text_evidence_anchor", False))
+        self.fuse_text_morphology_anchor = bool(model_cfg.get("fuse_text_morphology_anchor", False))
+        self.text_evidence_anchor = (
+            TextEvidenceAnchor(hidden_dim, dropout) if self.use_text_evidence_anchor and self.use_text_morphology_head else None
+        )
+        self.text_morphology_head = (
+            nn.Linear(hidden_dim, 1) if self.use_text_morphology_head and self.text_evidence_anchor is None else None
+        )
         self.image_morphology_head = nn.Linear(hidden_dim, 1) if self.use_image_morphology_head else None
         self.baseline_head = nn.Sequential(
             nn.Linear(hidden_dim * 3, hidden_dim),
@@ -190,10 +235,20 @@ class DMEAHTModel(nn.Module):
             nn.Linear(hidden_dim, 1),
         )
 
-    def _auxiliary_outputs(self, image_global: torch.Tensor, text_global: torch.Tensor) -> Dict[str, torch.Tensor]:
+    def _auxiliary_outputs(
+        self,
+        image_global: torch.Tensor,
+        text_global: torch.Tensor,
+        text_tokens: torch.Tensor,
+        attention_mask: torch.Tensor,
+    ) -> Dict[str, torch.Tensor]:
         outputs: Dict[str, torch.Tensor] = {}
+        if self.text_evidence_anchor is not None:
+            outputs.update(self.text_evidence_anchor(text_global, text_tokens, attention_mask))
         if self.text_morphology_head is not None:
-            outputs["text_morphology_logit"] = self.text_morphology_head(text_global).squeeze(-1)
+            logit = self.text_morphology_head(text_global).squeeze(-1)
+            outputs["text_morphology_logit"] = logit
+            outputs["text_morphology_prob"] = torch.sigmoid(logit)
         if self.image_morphology_head is not None:
             outputs["image_morphology_logit"] = self.image_morphology_head(image_global).squeeze(-1)
         return outputs
@@ -204,7 +259,7 @@ class DMEAHTModel(nn.Module):
         bio_tokens, bio_global, bio_medical, _bio_observation = self.bio_encoder(
             batch["bio_values"], batch["bio_missing_mask"], batch["bio_abnormal_flags"]
         )
-        aux_outputs = self._auxiliary_outputs(image_global, text_global)
+        aux_outputs = self._auxiliary_outputs(image_global, text_global, text_tokens, batch["report_attention_mask"])
 
         if self.variant in {"image_only", "text_only", "bio_only", "concat"}:
             parts = {
@@ -217,7 +272,10 @@ class DMEAHTModel(nn.Module):
             return {"logit": logit, "prob": torch.sigmoid(logit), **aux_outputs}
 
         evidence_tokens, evidence_scores, role_loss = self.evidence(image_tokens, text_tokens, bio_tokens)
-        tokens = torch.cat([image_tokens, text_tokens, bio_tokens, evidence_tokens], dim=1)
+        token_parts = [image_tokens, text_tokens, bio_tokens, evidence_tokens]
+        if self.fuse_text_morphology_anchor and "text_morphology_anchor" in aux_outputs:
+            token_parts.append(aux_outputs["text_morphology_anchor"].unsqueeze(1))
+        tokens = torch.cat(token_parts, dim=1)
         z_patient = self.anchor(tokens)
         discordance = self.discordance(image_global, text_global, bio_global)
         negative_token = evidence_tokens[:, self.evidence.roles.index("negative"), :]

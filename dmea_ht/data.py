@@ -259,6 +259,7 @@ class PatientHTDataset(Dataset):
                 self._evidence_confidence(row, "image_morphology_weak_confidence"), dtype=torch.float32
             ),
             "shortcuts": shortcuts,
+            "matched_morphology_terms": parse_maybe_list(row.get("matched_morphology_terms")),
         }
 
 
@@ -281,4 +282,5 @@ def collate_patient_batch(batch: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     out = {key: torch.stack([item[key] for item in batch]) for key in tensor_keys}
     out["patient_id"] = [item["patient_id"] for item in batch]
     out["shortcuts"] = [item["shortcuts"] for item in batch]
+    out["matched_morphology_terms"] = [item["matched_morphology_terms"] for item in batch]
     return out

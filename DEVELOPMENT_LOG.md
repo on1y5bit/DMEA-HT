@@ -404,3 +404,27 @@
 - The default shortcut audit field set includes raw audit-only fields such as `raw_n_visits` and `raw_n_images`; that all-field manifest proxy is not the strict selected-structure control criterion.
 - `text_morphology_auc` is zero in the diagnostic CSV because valid text morphology labels are single-class in validation/test, so AUC is not defined and the metric helper safely returns 0.
 - `image_morphology_auc` is diagnostic only and should not drive checkpoint selection.
+
+## 2026-07-06 DMEA-v2 Phase C2 Text Evidence Anchor Refinement
+
+### Motivation
+
+- C1 showed text morphology supervision improves validation AUC over the strict MVP.
+- Text+image morphology did not improve validation AUC over text-only, so image BCE supervision remains disabled.
+- C2 upgrades text morphology supervision from an auxiliary head into a fused Text Evidence Anchor.
+
+### Planned Changes
+
+- Add `TextEvidenceAnchor`.
+- Optionally fuse `text_morphology_anchor` into patient-level fusion.
+- Add C2 weight-scan configs.
+- Add validation-derived threshold analysis.
+- Extend evidence diagnostics.
+- Run selected-structure shortcut audit after formal runs.
+
+### Constraints
+
+- Do not change labels, splits, image paths, report text, or bio values.
+- Do not feed shortcut variables into classifier.
+- Do not enable negative, bio, discordance, counterfactual, matched SupCon, or image BCE losses.
+- Select by validation AUC only.

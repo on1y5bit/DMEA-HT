@@ -174,7 +174,11 @@ def run_epoch(
                 "patient_id": patient_id,
                 "label": batch_labels[i],
                 "prob": float(batch_probs[i]),
+                "pred_prob": float(batch_probs[i]),
                 "logit": float(outputs["logit"].detach().cpu()[i]),
+                "txt_morphology_label": int(batch["txt_morphology_label"].detach().cpu()[i]),
+                "txt_morphology_confidence": float(batch["txt_morphology_confidence"].detach().cpu()[i]),
+                "matched_morphology_terms": "|".join(str(term) for term in batch["matched_morphology_terms"][i]),
             }
             for key in ("e_img", "e_text", "e_bio", "e_synergy", "e_negative", "d_img_txt", "d_img_bio", "d_txt_bio"):
                 if key in outputs:
@@ -182,6 +186,12 @@ def run_epoch(
             for key in ("text_morphology_logit", "image_morphology_logit"):
                 if key in outputs:
                     row[key] = float(outputs[key].detach().cpu()[i])
+            if "text_morphology_prob" in outputs:
+                row["text_morphology_prob"] = float(outputs["text_morphology_prob"].detach().cpu()[i])
+            if "text_morphology_anchor" in outputs:
+                anchor = outputs["text_morphology_anchor"].detach().cpu()[i]
+                row["text_morphology_anchor_norm"] = float(anchor.norm())
+                row["text_morphology_anchor_mean"] = float(anchor.mean())
             row.update(batch["shortcuts"][i])
             predictions.append(row)
 
