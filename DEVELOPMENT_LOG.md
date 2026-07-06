@@ -535,3 +535,99 @@
 - `analysis_reports/phase_c3/decision_gate.md`
 - `analysis_reports/phase_c3/decision_gate_summary.csv`
 - `analysis_reports/phase_c3/phase_c3_final_report.md`
+
+### Actual Changes
+
+- Added Phase C3 result consolidation script:
+  - `scripts/collect_phase_c3_model_comparison.py`.
+- Added strict MVP vs C1 text evidence prediction-delta analysis:
+  - `scripts/analyze_c1_evidence_effects.py`.
+- Added prediction/shortcut residual audit:
+  - `scripts/audit_prediction_shortcut_residual.py`.
+- Added reusable decision-gate script:
+  - `scripts/apply_decision_gate.py`.
+- Added decision-gate documentation:
+  - `docs/decision_gate.md`.
+- Kept Phase C3 analysis-only:
+  - no model module changes;
+  - no dataset/manifest construction changes;
+  - no `train.py` changes;
+  - no existing training config changes;
+  - no new formal training launched.
+
+### Validation Results
+
+- Local static compile passed for all four new scripts.
+- Server static compile passed in `/home/linruixin/chen/conda/envs/ma`.
+- Server GitHub pull was blocked by transient HTTP/TLS transport failures, so the local `main` branch was synced to the server via `DMEA-HT_phasec3.bundle`.
+- Server code head after sync:
+  - `a1af16a`.
+- Server Phase C3 reports generated under:
+  - `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c3`.
+- Generated report files:
+  - `model_comparison_table.csv`;
+  - `model_comparison_report.md`;
+  - `c1_evidence_effects_val.csv`;
+  - `c1_evidence_effects_test_reporting_only.csv`;
+  - `c1_evidence_effects_report.md`;
+  - `shortcut_residual_audit.csv`;
+  - `shortcut_residual_audit_report.md`;
+  - `decision_gate.md`;
+  - `decision_gate_summary.csv`;
+  - `phase_c3_final_report.md`.
+
+### Consolidated Results
+
+- Current main candidate by validation-only rule:
+  - C1 text morphology only.
+- C1 text morphology only:
+  - validation AUC: 0.7782 +/- 0.0350;
+  - test AUC, reporting-only: 0.7819 +/- 0.0148;
+  - decision gate: `PASS_CURRENT`.
+- Strict MVP reference:
+  - validation AUC: 0.7581 +/- 0.0171;
+  - test AUC, reporting-only: 0.7729 +/- 0.0363;
+  - decision gate: `REFERENCE`.
+- C1 text + image evidence:
+  - validation AUC: 0.7691 +/- 0.0223;
+  - decision gate: `FAIL`, because it did not beat current best validation AUC.
+- Best C2 variant by validation AUC:
+  - C2 text anchor w=0.05;
+  - validation AUC: 0.7746 +/- 0.0173;
+  - decision gate: `FAIL`, because it did not beat current best validation AUC.
+- All other C2 variants also failed promotion under the validation-AUC gate.
+
+### C1 Evidence Effect Summary
+
+- Validation split:
+  - 282 patient-seed prediction rows;
+  - mean C1-MVP probability delta: -0.2014;
+  - mean C1-MVP absolute-error delta: -0.0080, where negative is better.
+- Test split, reporting-only:
+  - 252 patient-seed prediction rows;
+  - mean C1-MVP probability delta: -0.1785;
+  - mean C1-MVP absolute-error delta: 0.0024.
+
+### Shortcut Residual Gate Summary
+
+- Decision-gate summary now includes pooled validation `max_abs_prediction_shortcut_spearman`.
+- Pooled validation residual Spearman values:
+  - strict MVP: 0.1737;
+  - C1 text morphology only: 0.1796;
+  - C1 text + image evidence: 0.1593;
+  - C2 w=0.01: 0.1749;
+  - C2 w=0.03: 0.1685;
+  - C2 w=0.05: 0.1650;
+  - C2 w=0.10: 0.1309.
+- Pandas emitted constant-input Spearman warnings for constant shortcut columns during server audit; this is expected for fields with no within-split variance and does not stop report generation.
+
+### Decision
+
+- No new improvement is claimed in Phase C3.
+- The current main candidate remains C1 text morphology only.
+- Future training should not start directly from a new idea. A candidate should first pass the documented pilot gate:
+  - unchanged patient-level split and task definition;
+  - static compile;
+  - validation-AUC improvement over the current main candidate;
+  - shortcut residual audit without a new structural shortcut concern;
+  - test metrics used only for reporting.
