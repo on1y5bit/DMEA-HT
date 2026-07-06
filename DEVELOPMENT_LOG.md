@@ -631,3 +631,42 @@
   - validation-AUC improvement over the current main candidate;
   - shortcut residual audit without a new structural shortcut concern;
   - test metrics used only for reporting.
+
+## 2026-07-06 DMEA-v2 Phase C4 C1 Stability and Pilot Weight Sweep
+
+### Plan
+
+- Keep Phase C4 narrow: verify C1 text morphology stability and run a one-seed text morphology loss-weight pilot sweep.
+- Do not introduce a new architecture module.
+- Do not modify labels, splits, manifests, image paths, report text, bio values, or task definition.
+- Do not modify `dmea_ht/models.py`, `dmea_ht/data.py`, or `train.py`.
+- Do not enable image morphology BCE, text negative loss, bio evidence loss, discordance-state loss, counterfactual loss, matched SupCon, or new anchor-fusion losses.
+- Keep validation AUC as the primary decision metric.
+- Treat test metrics as reporting-only.
+- Reuse Phase C3 decision-gate logic and selected structural shortcut residual auditing.
+
+### Planned Changes
+
+- Add a C1 text morphology extended-seed config using seeds `[0, 1, 2, 3, 4, 42, 3407]`.
+- Add one-seed pilot configs for text morphology loss weights:
+  - 0.005;
+  - 0.01;
+  - 0.03;
+  - 0.05;
+  - 0.07;
+  - 0.10.
+- Add `scripts/collect_phase_c4_stability_and_pilots.py` to generate:
+  - `analysis_reports/phase_c4/c1_extended_seed_summary.csv`;
+  - `analysis_reports/phase_c4/c1_extended_seed_report.md`;
+  - `analysis_reports/phase_c4/c1_weight_pilot_summary.csv`;
+  - `analysis_reports/phase_c4/c1_weight_pilot_report.md`;
+  - `analysis_reports/phase_c4/decision_gate_phase_c4_summary.csv`;
+  - `analysis_reports/phase_c4/decision_gate_phase_c4_report.md`;
+  - `analysis_reports/phase_c4/phase_c4_final_report.md`.
+
+### Planned Validation
+
+- Local static compile for the new C4 collector script.
+- Server static compile in `/home/linruixin/chen/conda/envs/ma`.
+- Server-side execution under `/home/linruixin/chen/project/DMEA-HT`.
+- Training runs will use `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2.jsonl`.
