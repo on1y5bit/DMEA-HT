@@ -396,6 +396,11 @@
 
 ### Remaining Issues
 
-- Shortcut audit for Phase C1 predictions still needs to be completed before accepting a clean improvement.
+- Shortcut audit with the selected-structure field set remained chance-level:
+  - fields: `selected_n_visits`, `used_images`, `image_padding_count`, `has_bio`, `bio_missing_count`, `report_length`.
+  - shortcut-only AUC: 0.4967.
+  - shortcut-only AUPRC: 0.5150.
+- Prediction/shortcut Spearman correlations were generally modest. The largest observed absolute correlations were around 0.35 for `n_images`/`n_visits` in some test seeds and around 0.31 for `report_length`.
+- The default shortcut audit field set includes raw audit-only fields such as `raw_n_visits` and `raw_n_images`; that all-field manifest proxy is not the strict selected-structure control criterion.
 - `text_morphology_auc` is zero in the diagnostic CSV because valid text morphology labels are single-class in validation/test, so AUC is not defined and the metric helper safely returns 0.
 - `image_morphology_auc` is diagnostic only and should not drive checkpoint selection.
