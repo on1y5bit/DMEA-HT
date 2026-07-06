@@ -466,5 +466,40 @@
 
 ### Remaining Issues
 
-- Formal C2 weight scan still needs to complete for weights 0.01, 0.03, 0.05, and 0.10.
-- Shortcut audit and threshold reports must be run after each formal C2 run.
+- Formal C2 weight scan completed for weights 0.01, 0.03, 0.05, and 0.10.
+- Formal run directories:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c2_text_anchor_w001_20260706`
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c2_text_anchor_w003_20260706`
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c2_text_anchor_w005_20260706`
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c2_text_anchor_w010_20260706`
+- Comparison table:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c2_text_anchor_comparison_20260706.csv`
+- C2 validation AUC results:
+  - w=0.01: 0.7709 +/- 0.0227.
+  - w=0.03: 0.7691 +/- 0.0114.
+  - w=0.05: 0.7746 +/- 0.0173.
+  - w=0.10: 0.7687 +/- 0.0252.
+- C2 validation AUPRC results:
+  - w=0.01: 0.7757 +/- 0.0273.
+  - w=0.03: 0.7711 +/- 0.0328.
+  - w=0.05: 0.7710 +/- 0.0309.
+  - w=0.10: 0.7774 +/- 0.0265.
+- C2 test AUC results, recorded for reporting only:
+  - w=0.01: 0.7884 +/- 0.0081.
+  - w=0.03: 0.7851 +/- 0.0162.
+  - w=0.05: 0.7906 +/- 0.0023.
+  - w=0.10: 0.7806 +/- 0.0231.
+- Threshold reports were generated for every C2 formal seed under each run's `thresholds/seed_*` directory.
+- Selected-structure shortcut audit remained chance-level for every compared run:
+  - shortcut-only AUC: 0.4967.
+  - shortcut-only AUPRC: 0.5150.
+- Maximum absolute prediction/shortcut Spearman correlation:
+  - Strict MVP: 0.2478.
+  - C1 text morphology only: 0.3529.
+  - C1 text + image morphology: 0.3356.
+  - C2 w=0.01: 0.3354.
+  - C2 w=0.03: 0.3656.
+  - C2 w=0.05: 0.3366.
+  - C2 w=0.10: 0.3287.
+- C2 did not beat C1 text morphology only on validation AUC. By the validation-only selection rule, the current main candidate remains C1 text morphology only.
+- Among C2 variants, w=0.05 is the best validation-AUC C2 setting, but it is not promoted over C1.
