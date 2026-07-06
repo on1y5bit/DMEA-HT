@@ -701,9 +701,11 @@
 - Server background driver launched:
   - `/home/linruixin/chen/project/DMEA-HT/phase_c4_driver_20260706.sh`.
 - Server background PID:
-  - `2012593`.
+  - initial launch `2012593` failed immediately because the generated shell driver expanded `$PY`, `$MANIFEST`, and `$OUT_DATE` while writing the script.
+  - fixed driver relaunched as PID `2157540`.
 - Server driver log:
   - `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c4/phase_c4_driver_20260706.log`.
+  - failed initial launch log preserved as `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c4/phase_c4_driver_20260706.failed.log`.
 - Planned run directories:
   - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_text_morphology_extended_seeds_20260706`;
   - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c4_c1_weight_w0005_pilot_20260706`;
