@@ -1,0 +1,6 @@
+candidate,positive_abs_error_delta_vs_mvp,negative_abs_error_delta_vs_mvp,positive_negative_gap,sensitivity,specificity,positive_preservation_decision
+C1 text morphology only bad seeds,0.2082918357658893,-0.1716288048377696,0.143,,,FAIL: helps negatives but substantially harms positives.
+C1 text morphology only good seeds,0.14273010503421438,-0.17986803865126264,0.2168,,,WARNING: better AUC seeds still show positive harm in C5.
+C6 delay_w001_start5,0.16901348080116171,-0.14416614470752417,0.1548373401891571,0.6028368794326241,0.7234042553191489,FAIL: no C6 candidate passed the positive-preservation/formal gate.
+C6 w001,0.17459065757084188,-0.152531087715575,0.1576251064275279,0.5815602836879433,0.75177304964539,FAIL: no C6 candidate passed the positive-preservation/formal gate.
+C6 w0005,0.13601193067135536,-0.1094316407932457,0.153104386404685,0.6737588652482268,0.652482269503546,FAIL: no C6 candidate passed the positive-preservation/formal gate.

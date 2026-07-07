@@ -1,0 +1,7 @@
+branch,last_phase_evaluated,best_validation_auc,best_decision,allowed_future_use,forbidden_future_use,notes
+strict_mvp,C3/C7,0.7581,current_main_path / stable_reference,main/reference,none,Use validation metrics for selection; test metrics remain reporting-only.
+text_morphology_bce,C6,0.804,ablation_only_unstable,ablation/report-only,main-path promotion or formal training without a new positive-preserving formulation and gate,C4 stability failed and C5/C6 showed positive-preservation concerns.
+text_image_morphology_bce,C3,,failed_ablation,ablation/report-only,direct BCE training target in the main path,Do not enable image morphology BCE from this branch.
+text_evidence_anchor,C2/C3,,failed_ablation,ablation/report-only,promotion based on anchor variants that failed C3,C2 did not rescue the evidence branch.
+c6_delayed_text_morphology,C6,0.745,partial_no_formal,diagnostic-only unless new positive-preservation gate is approved,formal evaluation from current C6 candidate,Best C6 candidate by validation AUC but still below strict MVP reference.
+c6_low_weight_text_morphology,C6,0.7438,failed_or_partial_no_formal,diagnostic-only unless new positive-preservation gate is approved,formal evaluation from current low-weight candidates,Low-weight candidates did not pass the C6 stabilization gate.

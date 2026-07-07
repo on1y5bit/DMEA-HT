@@ -1021,3 +1021,42 @@
 - Recommended next step:
   - do not expand architecture;
   - either demote C1 from the main path, or run a very small follow-up focused specifically on positive preservation / calibration rather than stronger evidence loss.
+
+## 2026-07-07 DMEA-v2 Phase C7 Demote Unstable Evidence BCE and Re-center Main Path
+
+### Plan
+
+- Keep Phase C7 analysis/documentation-only.
+- Do not train.
+- Do not modify model/data/training code.
+- Consolidate C1-C6 evidence and formally demote unstable text morphology BCE branches.
+- Restore strict structural matched DMEA-MVP as the current main path.
+- Update future decision gate with positive-preservation requirements.
+
+### Actual Changes
+
+- Added `scripts/collect_phase_c7_route_correction_report.py`.
+- Generated Phase C7 reports under `analysis_reports/phase_c7`.
+- No model/data/training changes.
+- No new training launched.
+
+### Generated Reports
+
+- `main_path_decision_summary.csv`
+- `evidence_bce_failure_timeline.csv`
+- `evidence_bce_failure_report.md`
+- `ablation_status_table.csv`
+- `positive_preservation_summary.csv`
+- `decision_gate_update.md`
+- `phase_c7_final_report.md`
+- `inputs_used_and_missing.csv`
+- `phase_c6_csv_appendix.csv`
+
+### Decision
+
+- Current main path: strict structural matched DMEA-MVP.
+- C1 text morphology BCE: ablation-only / unstable.
+- C1 text + image evidence: failed ablation.
+- C2 text anchor: failed ablation.
+- C6 stabilization candidates: no formal evaluation justified.
+- Future weak-evidence-supervised candidates must pass a positive-preservation gate and bad-seed pilot before formal training.
