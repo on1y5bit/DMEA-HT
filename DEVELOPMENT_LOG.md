@@ -1309,3 +1309,24 @@
 - Any pilot must keep patient-level split, task definition, labels, and test isolation unchanged.
 - Shortcut/audit variables must remain outside the classifier.
 - A pilot must be validation-selected, stress-seed checked, and followed by positive-preservation plus shortcut residual audits.
+
+## 2026-07-07 DMEA-v2 Phase C12 Report-Construction Pilot
+
+### Plan
+
+- Keep C12 as a low-cost report-construction pilot before any architecture change.
+- Build a new manifest from the strict structural matched evidence manifest.
+- Do not change patient IDs, labels, split assignment, image paths, bio values, or task definition.
+- Do not use test predictions or labels for selecting the pilot.
+- Do not use model predictions inside the report filter.
+- Apply only deterministic text-construction rules motivated by C11 low-risk hypotheses:
+  - remove benign/nodule thyroid morphology clauses when the latest thyroid visit lacks diffuse HT-like evidence;
+  - optionally require latest diffuse HT-like evidence before retaining thyroid morphology clauses as HT-positive report evidence.
+- Preserve negative thyroid clauses and diagnostic/diffuse HT-like clauses.
+- Recompute evidence weak labels after filtering because text labels must match the pilot report text.
+- Write a manifest-level audit report covering:
+  - row/split/label invariance;
+  - report length changes by split and label;
+  - text evidence label changes by split and label;
+  - positive-preservation risk using validation patients.
+- Only launch training after the C12 manifest audit shows the pilot did not change labels/splits and has a defensible positive-preservation profile.
