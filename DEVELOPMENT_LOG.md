@@ -1135,3 +1135,21 @@
 - C1/C2/C6 remain ablation-only.
 - Next-phase recommendation: `RETURN_TO_DATA_AUDIT`.
 - Test metrics remain reporting-only and were not used for the Phase C8 decision.
+
+## 2026-07-07 DMEA-v2 Phase C9 Strict MVP False-Positive Data Audit
+
+### Plan
+
+- Keep Phase C9 analysis-only.
+- Do not train or modify model/data/training code.
+- Use strict structural matched DMEA-MVP as the current main path.
+- Focus on validation false positives identified by Phase C8:
+  - long-report false positives;
+  - multi-visit false positives;
+  - negative-evidence-positive false positives;
+  - high-confidence false positives;
+  - morphology/negative evidence overlap;
+  - possible patient-level report aggregation artifacts.
+- Treat shortcut fields as audit-only.
+- Use test outputs only as reporting-only if inspected.
+- Produce a data-audit report before proposing any model or data-construction change.
