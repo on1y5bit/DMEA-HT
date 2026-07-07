@@ -52,6 +52,26 @@ def fmt(value: Any, digits: int = 4) -> str:
         return "NA"
 
 
+def frame_to_markdown(frame: pd.DataFrame, index: bool = False) -> str:
+    table = frame.reset_index() if index else frame.copy()
+    if table.empty:
+        return "_No rows._"
+    cols = [str(col) for col in table.columns]
+    lines = ["| " + " | ".join(cols) + " |", "| " + " | ".join("---" for _ in cols) + " |"]
+    for _, row in table.iterrows():
+        values = []
+        for col in table.columns:
+            value = row[col]
+            if isinstance(value, float):
+                values.append(fmt(value))
+            elif pd.isna(value):
+                values.append("NA")
+            else:
+                values.append(str(value).replace("|", "/"))
+        lines.append("| " + " | ".join(values) + " |")
+    return "\n".join(lines)
+
+
 def prob_column(frame: pd.DataFrame) -> str:
     if "pred_prob" in frame.columns:
         return "pred_prob"
@@ -404,15 +424,15 @@ def write_patient_delta_report(delta: pd.DataFrame, out_dir: Path) -> None:
         "",
         "## Mean Effects",
         "",
-        grouped.to_markdown(),
+        frame_to_markdown(grouped, index=True),
         "",
         "## Most Improved",
         "",
-        improved.to_markdown(index=False),
+        frame_to_markdown(improved, index=False),
         "",
         "## Most Harmed",
         "",
-        harmed.to_markdown(index=False),
+        frame_to_markdown(harmed, index=False),
     ]
     (out_dir / "c1_vs_mvp_patient_delta_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -427,11 +447,11 @@ def write_stratified_report(strata: pd.DataFrame, out_dir: Path) -> None:
         "",
         "## Most Improved Strata",
         "",
-        focus.to_markdown(index=False),
+        frame_to_markdown(focus, index=False),
         "",
         "## Most Harmed Strata",
         "",
-        harmed.to_markdown(index=False),
+        frame_to_markdown(harmed, index=False),
     ]
     (out_dir / "c1_vs_mvp_stratified_delta_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -444,11 +464,11 @@ def write_distribution_report(dist: pd.DataFrame, seed_summary: pd.DataFrame, ou
         "",
         "## Seed-Level Separation",
         "",
-        seed_summary[["seed", "seed_group", "val_auc", "positive_pred_mean", "negative_pred_mean", "pos_neg_pred_gap"]].to_markdown(index=False),
+        frame_to_markdown(seed_summary[["seed", "seed_group", "val_auc", "positive_pred_mean", "negative_pred_mean", "pos_neg_pred_gap"]], index=False),
         "",
         "## Distribution By Seed And Label",
         "",
-        dist.to_markdown(index=False),
+        frame_to_markdown(dist, index=False),
     ]
     (out_dir / "c1_prediction_distribution_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
@@ -462,11 +482,11 @@ def write_shortcut_report(residual: pd.DataFrame, out_dir: Path) -> None:
         "",
         "## Per-Seed Max Absolute Spearman",
         "",
-        max_rows.to_markdown(index=False),
+        frame_to_markdown(max_rows, index=False),
         "",
         "## Field-Level Residuals",
         "",
-        residual.to_markdown(index=False),
+        frame_to_markdown(residual, index=False),
     ]
     (out_dir / "c1_seed_shortcut_residual_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 

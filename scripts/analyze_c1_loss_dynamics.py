@@ -26,6 +26,34 @@ def value(row: pd.Series, col: str) -> Any:
     return row[col] if col in row and not pd.isna(row[col]) else pd.NA
 
 
+def fmt(value: Any, digits: int = 4) -> str:
+    try:
+        if value is None or pd.isna(value):
+            return "NA"
+        return f"{float(value):.{digits}f}"
+    except (TypeError, ValueError):
+        return "NA"
+
+
+def frame_to_markdown(frame: pd.DataFrame) -> str:
+    if frame.empty:
+        return "_No rows._"
+    cols = [str(col) for col in frame.columns]
+    lines = ["| " + " | ".join(cols) + " |", "| " + " | ".join("---" for _ in cols) + " |"]
+    for _, row in frame.iterrows():
+        values = []
+        for col in frame.columns:
+            item = row[col]
+            if isinstance(item, float):
+                values.append(fmt(item))
+            elif pd.isna(item):
+                values.append("NA")
+            else:
+                values.append(str(item).replace("|", "/"))
+        lines.append("| " + " | ".join(values) + " |")
+    return "\n".join(lines)
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Analyze available C1 extended-seed loss/checkpoint dynamics.")
     parser.add_argument("--c1-extended-run-dir", required=True)
@@ -83,7 +111,7 @@ def main() -> None:
         "",
         "## Available Columns",
         "",
-        frame.to_markdown(index=False),
+        frame_to_markdown(frame),
         "",
         "Interpretation:",
         "",
