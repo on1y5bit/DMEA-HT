@@ -815,3 +815,82 @@
   - `python -m py_compile scripts/analyze_c1_seed_failure_modes.py scripts/analyze_c1_loss_dynamics.py scripts/collect_phase_c5_report.py`.
 - Server static compile in `/home/linruixin/chen/conda/envs/ma`.
 - Server-side analysis execution using completed run outputs only.
+
+### Actual Changes
+
+- Added `scripts/analyze_c1_seed_failure_modes.py`.
+- Added `scripts/analyze_c1_loss_dynamics.py`.
+- Added `scripts/collect_phase_c5_report.py`.
+- No changes were made to:
+  - `dmea_ht/models.py`;
+  - `dmea_ht/data.py`;
+  - `train.py`;
+  - manifests;
+  - labels or splits.
+
+### Validation Results
+
+- Local static compile passed.
+- Server static compile passed in `/home/linruixin/chen/conda/envs/ma`.
+- Server analysis completed under:
+  - `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c5`.
+- Initial server run exposed two environment/data-format issues, both fixed without adding dependencies:
+  - removed pandas `to_markdown()` dependency on optional `tabulate`;
+  - handled list-valued `matched_morphology_terms`.
+
+### Generated Reports
+
+- `c1_seed_failure_summary.csv`
+- `c1_seed_failure_report.md`
+- `c1_vs_mvp_patient_delta_val.csv`
+- `c1_vs_mvp_patient_delta_report.md`
+- `c1_vs_mvp_stratified_delta.csv`
+- `c1_vs_mvp_stratified_delta_report.md`
+- `c1_prediction_distribution_by_seed.csv`
+- `c1_prediction_distribution_report.md`
+- `c1_loss_dynamics_by_seed.csv`
+- `c1_loss_dynamics_report.md`
+- `c1_seed_shortcut_residual.csv`
+- `c1_seed_shortcut_residual_report.md`
+- `phase_c5_final_report.md`
+
+### Key Findings
+
+- Good seed mean validation AUC:
+  - 0.7933.
+- Bad seed mean validation AUC:
+  - 0.7430.
+- Good seed mean positive-negative prediction gap:
+  - 0.2168.
+- Bad seed mean positive-negative prediction gap:
+  - 0.1430.
+- Bad seed mean validation sensitivity/specificity:
+  - 0.5603 / 0.7660.
+- Good seed mean validation sensitivity/specificity:
+  - 0.5851 / 0.8085.
+- Bad seed maximum residual shortcut Spearman:
+  - 0.2291.
+- Good seed maximum residual shortcut Spearman:
+  - 0.2744.
+- Therefore, bad seeds do not appear to fail because of stronger selected-structure shortcut residual coupling.
+- C1 vs MVP validation patient-delta analysis:
+  - for bad seeds and negative labels, mean abs-error delta was -0.1716, so C1 helps negatives by pushing probabilities downward;
+  - for bad seeds and positive labels, mean abs-error delta was +0.2083, so C1 strongly harms positives;
+  - for good seeds and positive labels, mean abs-error delta was also positive but smaller at +0.1427.
+- Loss/checkpoint diagnostics:
+  - bad seeds selected earlier best epochs: seed 1 epoch 14, seed 3 epoch 10, seed 42 epoch 13;
+  - good seeds generally selected later epochs: seed 0 epoch 30, seed 2 epoch 28, seed 4 epoch 28, seed 3407 epoch 23;
+  - bad seeds had higher available `text_morphology_loss` in final best-state metrics.
+- Per-epoch train/validation loss curves are not currently logged, so overfitting timing and evidence-loss dominance cannot be proven from existing artifacts.
+
+### Final C5 Decision
+
+- C1 text morphology only remains unstable and should not be treated as a stable main model.
+- Most likely failure cause:
+  - optimization variance / checkpoint instability, with C1 tending to push probabilities downward and disproportionately harm positive cases in bad seeds.
+- Less likely primary cause:
+  - residual selected-structure shortcut coupling.
+- Recommended next phase direction:
+  - `A. Optimization stabilization first`.
+- Do not start a new architecture phase.
+- If a follow-up training phase is approved, first add better training-curve logging and run a small stabilization pilot rather than expanding evidence losses.
