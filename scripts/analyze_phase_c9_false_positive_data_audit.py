@@ -52,10 +52,18 @@ def frame_to_markdown(frame: pd.DataFrame) -> str:
             value = row[col]
             if isinstance(value, float):
                 values.append(fmt(value))
-            elif pd.isna(value):
-                values.append("NA")
+            elif isinstance(value, (list, tuple, set)):
+                values.append(str(list(value)).replace("|", "/"))
+            elif isinstance(value, dict):
+                values.append(json.dumps(value, ensure_ascii=False).replace("|", "/"))
             else:
-                values.append(str(value).replace("|", "/"))
+                try:
+                    if pd.isna(value):
+                        values.append("NA")
+                    else:
+                        values.append(str(value).replace("|", "/"))
+                except (TypeError, ValueError):
+                    values.append(str(value).replace("|", "/"))
         lines.append("| " + " | ".join(values) + " |")
     return "\n".join(lines)
 
