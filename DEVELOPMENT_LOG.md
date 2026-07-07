@@ -1466,3 +1466,65 @@
 - Recommendation: `DESIGN_C13_TEMPORAL_OR_LONG_REPORT_RECALL_PILOT_AFTER_STRESS_SEEDS`.
 - Do not start a C13 training pilot until C12 stress-seed metrics are collected.
 - If stress seeds confirm the same FN-heavy pattern, the next pilot should target temporal or long-report recall rather than undoing the C12 false-positive report filter.
+
+## 2026-07-07 DMEA-v2 Phase C12 Stress-Seed Result
+
+### Actual Changes
+
+- Collected C12 stress-seed training outputs from `runs/dmea_ht_v2_c12_report_filter_stress_seeds`.
+- Generated stress-seed reports under `analysis_reports/phase_c12_stress`.
+- No model or data construction changes were made in this collection step.
+
+### Generated Reports
+
+- `c12_stress_metrics_by_seed.csv`
+- `c12_stress_metrics_summary.csv`
+- `c12_stress_confusion_matrix_by_seed.csv`
+- `strict_mvp_error_taxonomy_summary.csv`
+- `strict_mvp_evidence_strata_val.csv`
+- `shortcut_residual/shortcut_residual_audit.csv`
+- `phase_c12_stress_decision_report.md`
+
+### Key Findings
+
+- Validation AUC by stress seed:
+  - seed 1: 0.7773;
+  - seed 3: 0.7691;
+  - seed 42: 0.7429.
+- Validation AUC mean / std:
+  - 0.7631 / 0.0180.
+- Validation AUPRC mean / std:
+  - 0.7794 / 0.0251.
+- Seed 42 has high sensitivity but very low specificity:
+  - sensitivity 0.9574;
+  - specificity 0.1064;
+  - FP 42.
+- Stress error taxonomy:
+  - `morphology_positive_false_negative`: 28 errors;
+  - `long_report_or_multivisit_uncertainty`: 22 errors;
+  - `high_confidence_false_positive`: 13 errors.
+- Shortcut residual audit remains acceptable:
+  - pooled validation max abs Spearman: 0.0946;
+  - pooled validation linear R2 from shortcut fields: 0.0373;
+  - pooled validation shortcut-only label AUC audit-only: 0.4918.
+
+### Stress Decision
+
+- Recommendation: `DO_NOT_PROMOTE_C12_FORMALLY`.
+- C12 remains a useful report-construction direction but is not stable enough for formal model selection.
+- Next action: `DESIGN_C13_TEMPORAL_FOCUS_REPORT_PILOT`.
+- C13 should preserve the C12 false-positive filter while placing thyroid-relevant latest and diffuse/morphology clauses before full report text to reduce long-report and multi-visit truncation under `text_max_length=256`.
+
+## 2026-07-07 DMEA-v2 Phase C13 Temporal-Focus Report Pilot
+
+### Plan
+
+- Build a new C13 manifest from the C12 report-filter manifest.
+- Keep labels, split assignment, patient IDs, images, bio values, and task definition unchanged.
+- Preserve the C12 false-positive report filter.
+- Do not use labels, predictions, or test-selected information in the text construction rule.
+- Add a deterministic report-text prefix containing thyroid-relevant latest and historical clauses before the full report text.
+- Target the observed long-report and multi-visit failure mode under `text_max_length=256`.
+- Recompute evidence weak labels after report text construction.
+- Audit row/split/label invariance and whether thyroid morphology/diffuse evidence appears more often in the first 256 characters.
+- Launch at most a single-seed pilot only if the manifest audit passes.
