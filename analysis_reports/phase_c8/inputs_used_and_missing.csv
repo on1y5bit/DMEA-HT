@@ -1,0 +1,15 @@
+path,status,notes
+analysis_reports/phase_c8/strict_mvp_error_taxonomy_summary.csv,loaded,12 rows
+analysis_reports/phase_c8/strict_mvp_overall_metrics.csv,loaded,2 rows
+analysis_reports/phase_c8/strict_mvp_evidence_strata_val.csv,loaded,22 rows
+analysis_reports/phase_c8/strict_mvp_high_confidence_errors_val.csv,loaded,13 rows
+analysis_reports/phase_c8/strict_mvp_shortcut_strata_val.csv,loaded,12 rows
+analysis_reports/phase_c7/phase_c7_final_report.md,loaded,8201 chars
+analysis_reports/phase_c8/inputs_used_and_missing.csv,loaded,7 rows
+/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2.jsonl,loaded,780 manifest rows
+/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_distmatch_structmatch_auc_20260703_145921/predictions/val_predictions_seed_0.csv,loaded,94 rows
+/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_distmatch_structmatch_auc_20260703_145921/predictions/val_predictions_seed_3407.csv,loaded,94 rows
+/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_distmatch_structmatch_auc_20260703_145921/predictions/val_predictions_seed_42.csv,loaded,94 rows
+/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_distmatch_structmatch_auc_20260703_145921/predictions/test_predictions_seed_0.csv,loaded,84 rows
+/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_distmatch_structmatch_auc_20260703_145921/predictions/test_predictions_seed_3407.csv,loaded,84 rows
+/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_distmatch_structmatch_auc_20260703_145921/predictions/test_predictions_seed_42.csv,loaded,84 rows

@@ -1060,3 +1060,78 @@
 - C2 text anchor: failed ablation.
 - C6 stabilization candidates: no formal evaluation justified.
 - Future weak-evidence-supervised candidates must pass a positive-preservation gate and bad-seed pilot before formal training.
+
+## 2026-07-07 DMEA-v2 Phase C8 Strict MVP Evidence Diagnostics and Error Taxonomy
+
+### Plan
+
+- Keep Phase C8 analysis-only.
+- Do not train or modify model/data/training code.
+- Analyze strict structural matched DMEA-MVP as the current main path.
+- Generate patient-level error taxonomy, evidence strata, high-confidence error review, and shortcut-audit strata.
+- Use validation split for all route decisions.
+- Treat test metrics as reporting-only.
+
+### Actual Changes
+
+- Added `scripts/analyze_strict_mvp_error_taxonomy.py`.
+- Added `scripts/analyze_strict_mvp_evidence_strata.py`.
+- Added `scripts/collect_phase_c8_report.py`.
+- No model/data/training changes.
+- No new training launched.
+
+### Validation Results
+
+- Local static compile passed.
+- Server static compile passed under `/home/linruixin/chen/conda/envs/ma`.
+- Server C8 analysis completed under:
+  - `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c8`.
+
+### Generated Reports
+
+- `strict_mvp_error_cases_val.csv`
+- `strict_mvp_error_cases_test_reporting_only.csv`
+- `strict_mvp_error_taxonomy_summary.csv`
+- `strict_mvp_error_taxonomy_report.md`
+- `strict_mvp_evidence_strata_val.csv`
+- `strict_mvp_evidence_strata_test_reporting_only.csv`
+- `strict_mvp_high_confidence_errors_val.csv`
+- `strict_mvp_high_confidence_errors_test_reporting_only.csv`
+- `strict_mvp_shortcut_strata_val.csv`
+- `strict_mvp_evidence_diagnostics_report.md`
+- `strict_mvp_overall_metrics.csv`
+- `phase_c8_final_report.md`
+
+### Key Findings
+
+- Validation-only strict MVP recap:
+  - AUC 0.7443;
+  - AUPRC 0.7192;
+  - sensitivity/specificity at threshold 0.5: 0.8865 / 0.4326;
+  - positive-negative prediction gap: 0.1797;
+  - validation false negatives / false positives: 16 / 80.
+- Validation error taxonomy:
+  - `long_report_or_multivisit_uncertainty`: 25 errors, all false positives;
+  - `other_error`: 25 errors, 1 false negative and 24 false positives;
+  - `morphology_positive_false_negative`: 15 errors, all false negatives;
+  - `high_confidence_false_positive`: 12 errors;
+  - `morphology_low_confidence_false_positive`: 10 errors;
+  - `borderline_error`: 9 errors.
+- Evidence strata:
+  - morphology-positive stratum had AUC 0.7331 and high false-positive rate 0.5983;
+  - negative-evidence-positive stratum had specificity 0.2745 and false-positive rate 0.7255;
+  - medium negative-confidence stratum had weaker ranking, AUC 0.5767 and gap 0.0518.
+- High-confidence errors:
+  - 13 validation high-confidence error rows were found;
+  - these were dominated by high-confidence false positives.
+- Selected structural audit observations:
+  - no validation audit bin exceeded the configured large-concentration threshold;
+  - report-length top quartile had weaker AUC 0.6094 and higher error rate 0.4348, but this is a diagnostic caution signal only;
+  - selected visit/image high bins had lower AUC 0.6809 than low bins 0.8581, also audit-only and not causal evidence.
+
+### Final C8 Decision
+
+- Current main path remains: strict structural matched DMEA-MVP.
+- C1/C2/C6 remain ablation-only.
+- Next-phase recommendation: `RETURN_TO_DATA_AUDIT`.
+- Test metrics remain reporting-only and were not used for the Phase C8 decision.
