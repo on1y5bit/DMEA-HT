@@ -967,6 +967,57 @@
 
 ### Remaining Issues
 
-- C6 pilots are running in the background.
-- No final C6 metrics are available yet.
-- Test metrics remain reporting-only and must not be used for C6 decisions.
+- C6 pilots finished on the server.
+- Reports were generated under:
+  - `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c6`.
+- Test metrics remain reporting-only and were not used for C6 decisions.
+
+### Final Results
+
+- A collector ranking bug was found after the first report pass:
+  - string sorting placed `STABILIZATION_FAIL` before `STABILIZATION_PARTIAL_NEEDS_MORE_ANALYSIS`;
+  - the collector was fixed to rank decisions explicitly as PASS, PARTIAL, then FAIL;
+  - reports were regenerated on the server after the fix.
+- C6 validation-only summary:
+  - `delay_w001_start5`:
+    - validation AUC 0.7450 +/- 0.0070;
+    - validation AUPRC 0.7254;
+    - sensitivity/specificity 0.6028 / 0.7234;
+    - positive-negative prediction gap 0.1548;
+    - max absolute shortcut residual Spearman 0.2257;
+    - selected epoch mean/min/max 16.3 / 13 / 22;
+    - decision `STABILIZATION_PARTIAL_NEEDS_MORE_ANALYSIS`.
+  - `w001`:
+    - validation AUC 0.7438 +/- 0.0090;
+    - validation AUPRC 0.7282;
+    - sensitivity/specificity 0.5816 / 0.7518;
+    - positive-negative prediction gap 0.1576;
+    - max absolute shortcut residual Spearman 0.2225;
+    - selected epoch mean/min/max 16.3 / 13 / 22;
+    - decision `STABILIZATION_PARTIAL_NEEDS_MORE_ANALYSIS`.
+  - `w0005`:
+    - validation AUC 0.7421 +/- 0.0135;
+    - validation AUPRC 0.7288;
+    - sensitivity/specificity 0.6738 / 0.6525;
+    - positive-negative prediction gap 0.1531;
+    - max absolute shortcut residual Spearman 0.1983;
+    - selected epoch mean/min/max 13.7 / 10 / 17;
+    - decision `STABILIZATION_FAIL`.
+- Positive preservation audit vs strict MVP:
+  - all candidates still helped many negative-label patients by lowering predicted probabilities;
+  - all candidates still harmed most positive-label patients by lowering positive probabilities relative to MVP;
+  - `w0005` harmed positives least but failed the validation AUC gate;
+  - `delay_w001_start5` had the best C6 validation AUC but still failed to reach the strict MVP reference.
+- Shortcut residual audit:
+  - no candidate showed an alarming prediction-shortcut residual rank correlation;
+  - the main remaining problem is positive preservation / optimization behavior, not obvious residual shortcut dominance.
+
+### Final C6 Decision
+
+- No C6 candidate reached `STABILIZATION_PASS_RECOMMEND_FORMAL`.
+- The best ranked candidate is `delay_w001_start5`, but it is only `STABILIZATION_PARTIAL_NEEDS_MORE_ANALYSIS`.
+- C6 does not justify launching a formal evaluation run.
+- C1 text morphology supervision should remain unstable / ablation-only for now.
+- Recommended next step:
+  - do not expand architecture;
+  - either demote C1 from the main path, or run a very small follow-up focused specifically on positive preservation / calibration rather than stronger evidence loss.
