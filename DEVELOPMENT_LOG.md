@@ -1208,3 +1208,43 @@
   - morphology/negative evidence overlap inside the same patient history.
 - Treat all structural fields as audit-only.
 - Use validation errors only for route decisions.
+
+### Actual Changes
+
+- Added `scripts/analyze_phase_c10_fp_report_source_audit.py`.
+- Generated Phase C10 reports under `analysis_reports/phase_c10`.
+- No model/data/training changes.
+- No new training launched.
+
+### Generated Reports
+
+- `c10_fp_visit_source_audit_val.csv`
+- `c10_fp_patient_source_summary_val.csv`
+- `c10_fp_source_flag_summary_val.csv`
+- `phase_c10_final_report.md`
+
+### Key Findings
+
+- False-positive patients audited:
+  - 37.
+- Patients with any thyroid morphology hit:
+  - 27 / 37.
+- Patients with non-thyroid morphology hit:
+  - 6 / 37.
+- Patients with thyroid positive/negative overlap:
+  - 17 / 37.
+- Patients with benign/nodular mimic signal:
+  - 8 / 37.
+- Patients whose latest visit has negative thyroid cues:
+  - 24 / 37.
+- Patients with early positive and latest negative conflict:
+  - 12 / 37.
+- Highest-priority examples include repeated false positives where low/uneven echo or nodule language coexists with negative or benign thyroid cues across longitudinal visits.
+
+### C10 Decision
+
+- Recommendation: `AUDIT_TEMPORAL_EVIDENCE_CONFLICT_BEFORE_TRAINING`.
+- Do not start training yet.
+- Before any pilot, define and audit a report-construction or evidence-filtering hypothesis that targets temporal evidence conflict without changing labels, splits, or feeding shortcut variables into the classifier.
+- Strict MVP remains the current main path.
+- C1/C2/C6 remain ablation-only.
