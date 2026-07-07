@@ -1379,3 +1379,36 @@
 - A single-seed training pilot has been launched, but no AUC conclusion is available yet.
 - Do not select a final model or start stress seeds until C12 single-seed validation metrics are collected and audited.
 - Test metrics remain reporting-only and must not drive pilot selection.
+
+### C12 Single-Seed Training Result
+
+- C12 single-seed pilot completed on server.
+- Seed:
+  - 0.
+- Best epoch:
+  - 25.
+- Validation AUC / AUPRC:
+  - 0.7936 / 0.8055.
+- Validation sensitivity / specificity at threshold 0.5:
+  - 0.5745 / 0.7872.
+- Validation FN / FP:
+  - 20 / 10.
+- Validation positive-negative probability gap:
+  - 0.2047.
+- Main validation error type:
+  - `morphology_positive_false_negative`: 18 / 30 validation errors.
+- Shortcut residual audit:
+  - validation max abs Spearman: 0.2394;
+  - validation linear R2 from shortcut fields: 0.0821;
+  - validation shortcut-only label AUC audit-only: 0.3332.
+
+### C12 Stress-Seed Decision
+
+- Recommendation: `ALLOW_C12_STRESS_SEED_PILOT`.
+- Rationale:
+  - single-seed validation AUC improved over the strict MVP C8 route;
+  - false positives are reduced, consistent with the report-filter hypothesis;
+  - shortcut-only label AUC remains below chance in the audit;
+  - false negatives now dominate, so the pilot cannot be promoted from one seed.
+- Added `configs/dmea_ht_v2_c12_report_filter_stress_seeds.yaml` for seeds `[1, 3, 42]`.
+- Stress-seed results must be collected before any formal selection or model claim.

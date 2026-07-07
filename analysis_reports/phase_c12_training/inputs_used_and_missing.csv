@@ -1,0 +1,4 @@
+path,status,notes
+/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c12_report_filter_pilot.jsonl,loaded,780 manifest rows
+/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c12_report_filter_pilot/predictions/val_predictions_seed_0.csv,loaded,94 rows
+/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c12_report_filter_pilot/predictions/test_predictions_seed_0.csv,loaded,84 rows
