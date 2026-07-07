@@ -1,0 +1,2 @@
+split,label,n_positive,n_with_prefix,mean_first256_morphology_before,mean_first256_morphology_after,mean_first256_diffuse_before,mean_first256_diffuse_after,n_txt_morphology_changed,n_image_weak_changed
+val,1,47,47,2.3191489361702127,2.8297872340425534,0.7446808510638298,1.553191489361702,0,0

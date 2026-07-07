@@ -1528,3 +1528,44 @@
 - Recompute evidence weak labels after report text construction.
 - Audit row/split/label invariance and whether thyroid morphology/diffuse evidence appears more often in the first 256 characters.
 - Launch at most a single-seed pilot only if the manifest audit passes.
+
+### Actual Changes
+
+- Added `scripts/build_phase_c13_temporal_focus_manifest.py`.
+- Added `configs/dmea_ht_v2_c13_temporal_focus_pilot.yaml`.
+- Built server manifest:
+  - `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl`.
+- Generated manifest audit reports under `analysis_reports/phase_c13_temporal_focus`.
+- No model architecture, label, split, image, or bio changes.
+
+### Generated Reports
+
+- `c13_temporal_focus_patient_audit.csv`
+- `c13_temporal_focus_split_label_summary.csv`
+- `c13_temporal_focus_positive_focus_val.csv`
+- `phase_c13_temporal_focus_manifest_audit_report.md`
+
+### Key Findings
+
+- Input rows:
+  - 780.
+- Output rows:
+  - 780.
+- Invariance issues:
+  - 0.
+- Split/label counts remained unchanged:
+  - train: 301 / 301;
+  - val: 47 / 47;
+  - test: 42 / 42.
+- Validation label-positive first-256 evidence exposure:
+  - morphology mean before / after: 2.3191 / 2.8298;
+  - diffuse mean before / after: 0.7447 / 1.5532.
+- Validation label-positive weak-label damage:
+  - `txt_morphology_label` changed: 0 / 47;
+  - `image_morphology_weak_label` changed: 0 / 47.
+
+### C13 Manifest Decision
+
+- Recommendation: `ALLOW_C13_SINGLE_SEED_TEMPORAL_FOCUS_PILOT`.
+- The pilot is allowed because it preserves split/label invariants, does not change weak labels, and directly targets long-report truncation by increasing thyroid evidence exposure inside the model's first 256 text tokens.
+- C13 remains a pilot until validation metrics and shortcut residuals are collected.
