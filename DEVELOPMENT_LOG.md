@@ -1330,3 +1330,52 @@
   - text evidence label changes by split and label;
   - positive-preservation risk using validation patients.
 - Only launch training after the C12 manifest audit shows the pilot did not change labels/splits and has a defensible positive-preservation profile.
+
+### Actual Changes
+
+- Added `scripts/build_phase_c12_report_filter_pilot_manifest.py`.
+- Added `configs/dmea_ht_v2_c12_report_filter_pilot.yaml`.
+- Built server manifest:
+  - `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c12_report_filter_pilot.jsonl`.
+- Generated manifest audit reports under `analysis_reports/phase_c12`.
+- Launched C12 single-seed training pilot on server:
+  - PID: `1370618`;
+  - log: `phase_c12_train_20260707_153025.log`;
+  - output dir: `runs/dmea_ht_v2_c12_report_filter_pilot`.
+
+### Generated Reports
+
+- `c12_report_filter_patient_audit.csv`
+- `c12_report_filter_split_label_summary.csv`
+- `c12_report_filter_label_change_summary.csv`
+- `c12_report_filter_positive_preservation_val.csv`
+- `phase_c12_manifest_audit_report.md`
+
+### Key Findings
+
+- Input rows:
+  - 780.
+- Output rows:
+  - 780.
+- Invariance issues:
+  - 0.
+- Split/label counts remained unchanged:
+  - train: 301 / 301;
+  - val: 47 / 47;
+  - test: 42 / 42.
+- Validation label-positive preservation risk:
+  - filtered positives: 0 / 47;
+  - `txt_morphology_label` changed positives: 0 / 47;
+  - `image_morphology_weak_label` changed positives: 0 / 47.
+- Validation label-negative impact:
+  - filtered negatives: 4 / 47;
+  - `txt_morphology_label` changed negatives: 2 / 47.
+- Recommendation:
+  - `ALLOW_C12_SINGLE_SEED_TRAINING_PILOT`.
+
+### C12 Decision
+
+- Manifest construction passed the invariance and validation positive-preservation gates.
+- A single-seed training pilot has been launched, but no AUC conclusion is available yet.
+- Do not select a final model or start stress seeds until C12 single-seed validation metrics are collected and audited.
+- Test metrics remain reporting-only and must not drive pilot selection.
