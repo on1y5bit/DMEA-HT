@@ -1153,3 +1153,41 @@
 - Treat shortcut fields as audit-only.
 - Use test outputs only as reporting-only if inspected.
 - Produce a data-audit report before proposing any model or data-construction change.
+
+### Actual Changes
+
+- Added `scripts/analyze_phase_c9_false_positive_data_audit.py`.
+- Generated Phase C9 reports under `analysis_reports/phase_c9`.
+- No model/data/training changes.
+- No new training launched.
+
+### Generated Reports
+
+- `c9_fp_patient_audit_val.csv`
+- `c9_fp_flag_summary_val.csv`
+- `c9_fp_high_priority_cases_val.csv`
+- `phase_c9_final_report.md`
+
+### Key Findings
+
+- Unique validation false-positive patients:
+  - 37.
+- False-positive patients present across all three formal seeds:
+  - 20 / 37.
+- False-positive patients with at least one high-confidence false-positive seed:
+  - 9 / 37.
+- False-positive patients with morphology/negative-evidence overlap:
+  - 19 / 37.
+- False-positive patients with `txt_negative_label=1`:
+  - 14 / 37.
+- False-positive patients with suspected aggregation artifact:
+  - 16 / 37.
+- High-priority examples show repeated cases where positive morphology terms such as low/uneven echo coexist with negative terms such as uniform echo or no abnormal blood flow across concatenated longitudinal reports.
+
+### C9 Decision
+
+- Recommendation: `DATA_CONSTRUCTION_AUDIT_BEFORE_MODEL_CHANGE`.
+- Do not start a model change yet.
+- Before any training pilot, manually review high-priority false-positive patients and verify whether positive morphology terms are historical, negated, contradicted, benign nodular findings, or mixed with later negative evidence.
+- Strict MVP remains the current main path.
+- C1/C2/C6 remain ablation-only.

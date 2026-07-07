@@ -1,0 +1,10 @@
+flag,n_patients,fraction_of_fp_patients
+persistent_fp_all_formal_seeds,20,0.5405405405405406
+high_confidence_fp_seed_count,9,0.24324324324324326
+morphology_negative_evidence_overlap,19,0.5135135135135135
+negative_evidence_positive,14,0.3783783783783784
+weak_negative_conflict,13,0.35135135135135137
+morphology_only_fp,12,0.32432432432432434
+long_report_q4,9,0.24324324324324326
+multi_visit_q4,15,0.40540540540540543
+aggregation_artifact_suspected,16,0.43243243243243246
