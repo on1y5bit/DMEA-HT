@@ -1191,3 +1191,20 @@
 - Before any training pilot, manually review high-priority false-positive patients and verify whether positive morphology terms are historical, negated, contradicted, benign nodular findings, or mixed with later negative evidence.
 - Strict MVP remains the current main path.
 - C1/C2/C6 remain ablation-only.
+
+## 2026-07-07 DMEA-v2 Phase C10 False-Positive Report Source Audit
+
+### Plan
+
+- Keep Phase C10 analysis-only.
+- Do not train or modify model/data/training code.
+- Use C9 high-priority strict MVP false-positive patients as the audit target.
+- Split patient-level concatenated reports into visit-level blocks where possible.
+- Audit whether false-positive evidence is driven by:
+  - thyroid-relevant morphology text;
+  - non-thyroid sections such as breast, carotid, cardiac, abdominal, pelvic, or urinary reports;
+  - benign/nodular thyroid findings rather than diffuse HT-like thyroiditis;
+  - historical positive text contradicted by later negative or benign text;
+  - morphology/negative evidence overlap inside the same patient history.
+- Treat all structural fields as audit-only.
+- Use validation errors only for route decisions.
