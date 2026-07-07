@@ -924,3 +924,49 @@
 - Server static compile under `/home/linruixin/chen/conda/envs/ma`.
 - Server-side pilot execution using:
   - `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2.jsonl`.
+
+### Actual Changes
+
+- Updated `train.py` with per-epoch diagnostics:
+  - `metrics_by_epoch.csv`;
+  - train/validation total loss;
+  - classification loss;
+  - text morphology loss;
+  - validation AUC/AUPRC and threshold metrics;
+  - validation positive/negative probability means;
+  - validation positive-negative prediction gap;
+  - selected-by-validation-AUC epoch flag.
+- Added config-controlled delayed text morphology loss:
+  - `loss.text_morphology_start_epoch`;
+  - default-compatible behavior is epoch 0.
+- Added C6 bad-seed pilot configs:
+  - `configs/dmea_ht_v2_c6_badseed_weight_w0005.yaml`;
+  - `configs/dmea_ht_v2_c6_badseed_weight_w001.yaml`;
+  - `configs/dmea_ht_v2_c6_badseed_delay_text_morphology.yaml`.
+- Added C6 collector:
+  - `scripts/collect_phase_c6_stabilization_report.py`.
+
+### Launch Status
+
+- Local static compile passed.
+- Local C6 config parsing passed.
+- Code was pushed to GitHub at:
+  - `2b44c36`.
+- Server synced by bundle.
+- Server static compile passed.
+- Server background driver launched:
+  - `/home/linruixin/chen/project/DMEA-HT/phase_c6_driver_20260707.sh`.
+- Server background PID:
+  - `2956962`.
+- Server driver log:
+  - `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c6/phase_c6_driver_20260707.log`.
+- Planned C6 run directories:
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c6_badseed_weight_w0005_20260707`;
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c6_badseed_weight_w001_20260707`;
+  - `/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c6_badseed_delay_text_morphology_20260707`.
+
+### Remaining Issues
+
+- C6 pilots are running in the background.
+- No final C6 metrics are available yet.
+- Test metrics remain reporting-only and must not be used for C6 decisions.
