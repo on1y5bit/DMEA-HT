@@ -60,8 +60,17 @@ def confidence_bin(value: Any) -> str:
 
 
 def terms_present(value: Any) -> str:
-    if value is None or pd.isna(value):
+    if value is None:
         return "absent"
+    if isinstance(value, (list, tuple, set)):
+        return "present" if len(value) > 0 else "absent"
+    if isinstance(value, dict):
+        return "present" if len(value) > 0 else "absent"
+    try:
+        if pd.isna(value):
+            return "absent"
+    except (TypeError, ValueError):
+        pass
     text = str(value).strip()
     if not text or text in {"[]", "NA", "nan", "None"}:
         return "absent"
