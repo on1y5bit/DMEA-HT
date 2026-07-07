@@ -1265,3 +1265,47 @@
 - For every hypothesis, report false-positive capture and label-positive patient flag rate as a positive-preservation risk proxy.
 - Only consider a later pilot if a hypothesis captures false positives without flagging many label-positive patients.
 - Test metrics remain unused.
+
+### Actual Changes
+
+- Added `scripts/analyze_phase_c11_report_filter_hypotheses.py`.
+- Generated Phase C11 reports under `analysis_reports/phase_c11`.
+- No model/data/training changes.
+- No new training launched.
+
+### Generated Reports
+
+- `c11_report_filter_patient_table_val.csv`
+- `c11_report_filter_hypothesis_summary_val.csv`
+- `c11_positive_preservation_risk_val.csv`
+- `phase_c11_final_report.md`
+
+### Key Findings
+
+- Validation patients audited:
+  - 94.
+- Mean-threshold false-positive patients:
+  - 24.
+- Label-positive patients used for positive-preservation risk:
+  - 47.
+- `benign_nodule_without_latest_diffuse`:
+  - captured 11 / 24 mean-threshold false positives;
+  - flagged 5 / 47 label-positive patients;
+  - recommendation status: `PILOT_ELIGIBLE_LOW_POSITIVE_RISK`.
+- `require_latest_diffuse_ht_like`:
+  - captured 9 / 24 mean-threshold false positives;
+  - flagged 4 / 47 label-positive patients;
+  - recommendation status: `PILOT_ELIGIBLE_LOW_POSITIVE_RISK`.
+- `positive_negative_overlap_review` captured false positives but also flagged 35 / 47 label-positive patients, so it remains audit-only.
+- `latest_negative_suppresses_history` also has high positive-preservation risk and should not be used as a broad filter yet.
+- `non_thyroid_morphology_only` flagged no label-positive patients but only captured 3 / 24 false positives, so it is case-review only.
+
+### C11 Decision
+
+- Recommendation: `ALLOW_REPORT_FILTER_PILOT_FOR_LOW_RISK_HYPOTHESIS`.
+- Next step may be a low-cost report-construction pilot using only low-risk hypotheses, especially:
+  - benign/nodule morphology without latest diffuse HT-like evidence;
+  - requiring latest diffuse HT-like evidence before treating morphology as HT-positive evidence.
+- Any pilot must keep patient-level split, task definition, labels, and test isolation unchanged.
+- Shortcut/audit variables must remain outside the classifier.
+- A pilot must be validation-selected, stress-seed checked, and followed by positive-preservation plus shortcut residual audits.

@@ -1,0 +1,6 @@
+hypothesis,n_flagged_all_val,n_flagged_mean_fp,mean_fp_capture_rate,n_flagged_label1_positive,positive_patient_flag_rate,n_flagged_true_positive,true_positive_flag_rate,n_flagged_false_negative,precision_for_mean_fp_among_flagged,recommendation_status
+positive_negative_overlap_review,58,11,0.4583333333333333,35,0.7446808510638298,32,0.7441860465116279,3,0.1896551724137931,AUDIT_MORE_HIGH_POSITIVE_RISK
+latest_negative_suppresses_history,30,7,0.2916666666666667,16,0.3404255319148936,14,0.32558139534883723,2,0.23333333333333334,AUDIT_MORE_HIGH_POSITIVE_RISK
+non_thyroid_morphology_only,5,3,0.125,0,0.0,0,0.0,0,0.6,CASE_REVIEW_ONLY
+benign_nodule_without_latest_diffuse,24,11,0.4583333333333333,5,0.10638297872340426,5,0.11627906976744186,0,0.4583333333333333,PILOT_ELIGIBLE_LOW_POSITIVE_RISK
+require_latest_diffuse_ht_like,20,9,0.375,4,0.0851063829787234,4,0.09302325581395349,0,0.45,PILOT_ELIGIBLE_LOW_POSITIVE_RISK
