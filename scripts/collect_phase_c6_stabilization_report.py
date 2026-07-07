@@ -234,6 +234,15 @@ def candidate_summary(candidate: str, run_dir: Path, manifest: pd.DataFrame, mvp
     return summary, residual, pos
 
 
+def decision_rank(decision: str) -> int:
+    order = {
+        "STABILIZATION_PASS_RECOMMEND_FORMAL": 0,
+        "STABILIZATION_PARTIAL_NEEDS_MORE_ANALYSIS": 1,
+        "STABILIZATION_FAIL": 2,
+    }
+    return order.get(str(decision), 99)
+
+
 def write_report(path: Path, title: str, body: str, frame: pd.DataFrame | None = None) -> None:
     lines = [f"# {title}", "", body.strip(), ""]
     if frame is not None:
@@ -269,16 +278,19 @@ def main() -> None:
         positive_frames.append(positive)
         epoch_frames.append(read_epoch_metrics(run_dir, name))
 
-    summary_df = pd.DataFrame(summaries).sort_values(["stabilization_decision", "val_auc_mean"], ascending=[True, False])
+    summary_df = pd.DataFrame(summaries)
+    summary_df["_decision_rank"] = summary_df["stabilization_decision"].map(decision_rank)
+    summary_df = summary_df.sort_values(["_decision_rank", "val_auc_mean"], ascending=[True, False])
+    summary_for_output = summary_df.drop(columns=["_decision_rank"])
     residual_df = pd.concat(residual_frames, ignore_index=True) if residual_frames else pd.DataFrame()
     positive_df = pd.concat(positive_frames, ignore_index=True) if positive_frames else pd.DataFrame()
     epoch_df = pd.concat(epoch_frames, ignore_index=True) if epoch_frames else pd.DataFrame()
 
-    summary_df.to_csv(out_dir / "c6_badseed_pilot_summary.csv", index=False)
+    summary_for_output.to_csv(out_dir / "c6_badseed_pilot_summary.csv", index=False)
     epoch_df.to_csv(out_dir / "c6_epoch_dynamics.csv", index=False)
     positive_df.to_csv(out_dir / "c6_positive_preservation.csv", index=False)
     residual_df.to_csv(out_dir / "c6_shortcut_residual_audit.csv", index=False)
-    summary_df[["candidate_name", "stabilization_decision", "failure_reason"]].to_csv(
+    summary_for_output[["candidate_name", "stabilization_decision", "failure_reason"]].to_csv(
         out_dir / "c6_decision_gate_summary.csv", index=False
     )
 
@@ -286,7 +298,7 @@ def main() -> None:
         out_dir / "c6_badseed_pilot_report.md",
         "Phase C6 Bad-Seed Pilot Summary",
         "Validation-only comparison against original C1 bad-seed mean AUC 0.7430, gap 0.1430, and strict MVP AUC 0.7581.",
-        summary_df,
+        summary_for_output,
     )
     write_report(
         out_dir / "c6_epoch_dynamics_report.md",
@@ -306,7 +318,7 @@ def main() -> None:
         "Audit only. Shortcut fields are never model inputs or labels.",
         residual_df,
     )
-    best = summary_df.iloc[0] if not summary_df.empty else None
+    best = summary_for_output.iloc[0] if not summary_for_output.empty else None
     final_lines = [
         "# Phase C6 Final Report",
         "",
@@ -331,7 +343,7 @@ def main() -> None:
             "",
             "## Decision Table",
             "",
-            frame_to_markdown(summary_df),
+            frame_to_markdown(summary_for_output),
         ]
     )
     (out_dir / "c6_final_report.md").write_text("\n".join(final_lines) + "\n", encoding="utf-8")
