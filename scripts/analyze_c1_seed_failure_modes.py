@@ -278,8 +278,15 @@ def quantile_bin(series: pd.Series, value: Any, prefix: str) -> str:
 
 
 def terms_present(value: Any) -> str:
-    if value is None or pd.isna(value):
+    if value is None:
         return "absent"
+    if isinstance(value, (list, tuple, set)):
+        return "present" if len(value) > 0 else "absent"
+    try:
+        if pd.isna(value):
+            return "absent"
+    except (TypeError, ValueError):
+        pass
     text = str(value).strip()
     return "present" if text and text not in {"[]", "nan", "None"} else "absent"
 
