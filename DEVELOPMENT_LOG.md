@@ -894,3 +894,33 @@
   - `A. Optimization stabilization first`.
 - Do not start a new architecture phase.
 - If a follow-up training phase is approved, first add better training-curve logging and run a small stabilization pilot rather than expanding evidence losses.
+
+## 2026-07-07 DMEA-v2 Phase C6 Optimization Stabilization and Positive Preservation Pilot
+
+### Plan
+
+- Keep Phase C6 focused on stabilizing existing C1 text morphology supervision.
+- Do not add architecture modules.
+- Do not modify labels, splits, manifests, image paths, report text, bio values, or shortcut handling.
+- Modify `train.py` only for:
+  - per-epoch diagnostics;
+  - `text_morphology_start_epoch`;
+  - positive/negative validation probability summaries.
+- Add bad-seed pilot configs for seeds `[1, 3, 42]`:
+  - text morphology weight 0.005;
+  - text morphology weight 0.010;
+  - delayed text morphology start at epoch 5 with weight 0.010.
+- Add a C6 collector to compare bad-seed pilots against:
+  - strict MVP reference;
+  - original C1 bad-seed performance;
+  - C4 extended C1 bad-seed subset.
+- Use validation metrics only for decisions.
+- Treat test metrics as reporting-only.
+
+### Planned Validation
+
+- Local static compile:
+  - `python -m py_compile scripts/collect_phase_c6_stabilization_report.py train.py`.
+- Server static compile under `/home/linruixin/chen/conda/envs/ma`.
+- Server-side pilot execution using:
+  - `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2.jsonl`.

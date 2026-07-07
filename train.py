@@ -116,6 +116,7 @@ def run_epoch(
     labels: List[int] = []
     probs: List[float] = []
     losses: List[float] = []
+    cls_losses: List[float] = []
     text_morphology_labels: List[int] = []
     text_morphology_probs: List[float] = []
     text_morphology_confidences: List[float] = []
@@ -135,7 +136,8 @@ def run_epoch(
         with torch.set_grad_enabled(is_train):
             outputs = model(batch)
             raw_loss = criterion(outputs["logit"], batch["label"])
-            loss = cls_weight * (raw_loss * batch["sample_weight"]).mean()
+            cls_loss = cls_weight * (raw_loss * batch["sample_weight"]).mean()
+            loss = cls_loss
             evidence_terms = evidence_loss_terms(outputs, batch, loss_cfg)
             if "text_morphology_loss" in evidence_terms:
                 loss = loss + text_weight * evidence_terms["text_morphology_loss"]
@@ -151,6 +153,7 @@ def run_epoch(
                 optimizer.step()
 
         losses.append(float(loss.detach().cpu()))
+        cls_losses.append(float(cls_loss.detach().cpu()))
         batch_probs = outputs["prob"].detach().cpu().numpy().tolist()
         batch_labels = batch["label"].detach().cpu().numpy().astype(int).tolist()
         labels.extend(batch_labels)
@@ -197,6 +200,16 @@ def run_epoch(
 
     metrics = compute_binary_metrics(labels, probs)
     metrics["loss"] = float(np.mean(losses)) if losses else 0.0
+    metrics["cls_loss"] = float(np.mean(cls_losses)) if cls_losses else 0.0
+    labels_np = np.asarray(labels, dtype=int)
+    probs_np = np.asarray(probs, dtype=float)
+    pos_probs = probs_np[labels_np == 1]
+    neg_probs = probs_np[labels_np == 0]
+    metrics["positive_prob_mean"] = float(pos_probs.mean()) if pos_probs.size else 0.0
+    metrics["negative_prob_mean"] = float(neg_probs.mean()) if neg_probs.size else 0.0
+    metrics["pos_neg_gap"] = metrics["positive_prob_mean"] - metrics["negative_prob_mean"]
+    metrics["pred_prob_mean"] = float(probs_np.mean()) if probs_np.size else 0.0
+    metrics["pred_prob_std"] = float(probs_np.std(ddof=1)) if probs_np.size > 1 else 0.0
     add_evidence_metrics(
         metrics,
         "text_morphology",
@@ -216,6 +229,44 @@ def run_epoch(
     return {"metrics": metrics, "predictions": predictions}
 
 
+def loss_config_for_epoch(loss_cfg: Dict[str, Any], epoch: int) -> Dict[str, Any]:
+    active_cfg = dict(loss_cfg)
+    start_epoch = int(float(loss_cfg.get("text_morphology_start_epoch", 0)))
+    if epoch < start_epoch:
+        active_cfg["text_morphology_weight"] = 0.0
+        active_cfg["text_morphology_active"] = False
+    else:
+        active_cfg["text_morphology_active"] = float(loss_cfg.get("text_morphology_weight", 0.0)) > 0
+    return active_cfg
+
+
+def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "seed": int(seed),
+        "epoch": int(epoch),
+        "split": "train_val",
+        "train_total_loss": train_metrics.get("loss", 0.0),
+        "train_cls_loss": train_metrics.get("cls_loss", 0.0),
+        "train_text_morphology_loss": train_metrics.get("text_morphology_loss", 0.0),
+        "val_total_loss": val_metrics.get("loss", 0.0),
+        "val_cls_loss": val_metrics.get("cls_loss", 0.0),
+        "val_text_morphology_loss": val_metrics.get("text_morphology_loss", 0.0),
+        "val_auc": val_metrics.get("AUC", 0.0),
+        "val_auprc": val_metrics.get("AUPRC", 0.0),
+        "val_acc": val_metrics.get("ACC", 0.0),
+        "val_f1": val_metrics.get("F1", 0.0),
+        "val_sensitivity": val_metrics.get("Sensitivity", 0.0),
+        "val_specificity": val_metrics.get("Specificity", 0.0),
+        "val_balanced_accuracy": val_metrics.get("Balanced_ACC", 0.0),
+        "val_positive_prob_mean": val_metrics.get("positive_prob_mean", 0.0),
+        "val_negative_prob_mean": val_metrics.get("negative_prob_mean", 0.0),
+        "val_pos_neg_gap": val_metrics.get("pos_neg_gap", 0.0),
+        "val_pred_prob_mean": val_metrics.get("pred_prob_mean", 0.0),
+        "val_pred_prob_std": val_metrics.get("pred_prob_std", 0.0),
+        "selected_by_val_auc": False,
+    }
+
+
 def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, out_dir: Path) -> Dict[str, Any]:
     set_seed(seed)
     loaders = make_loaders(config, [dict(row) for row in rows])
@@ -232,10 +283,14 @@ def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, ou
     best_state = None
     best_epoch = 0
     stale = 0
+    epoch_history: List[Dict[str, Any]] = []
+    base_loss_cfg = config.get("loss", {})
 
     for epoch in range(1, epochs + 1):
-        run_epoch(model, loaders["train"], optimizer, device, config.get("loss", {}))
-        val_result = run_epoch(model, loaders["val"], None, device, config.get("loss", {}))
+        epoch_loss_cfg = loss_config_for_epoch(base_loss_cfg, epoch)
+        train_result = run_epoch(model, loaders["train"], optimizer, device, epoch_loss_cfg)
+        val_result = run_epoch(model, loaders["val"], None, device, epoch_loss_cfg)
+        epoch_history.append(epoch_log_row(seed, epoch, train_result["metrics"], val_result["metrics"]))
         val_auc = float(val_result["metrics"]["AUC"])
         if val_auc > best_auc:
             best_auc = val_auc
@@ -247,6 +302,9 @@ def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, ou
         if stale >= patience:
             break
 
+    for row in epoch_history:
+        row["selected_by_val_auc"] = int(row["epoch"]) == int(best_epoch)
+
     if best_state is not None:
         model.load_state_dict(best_state)
 
@@ -255,7 +313,7 @@ def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, ou
     checkpoints = out_dir / "checkpoints"
     checkpoints.mkdir(parents=True, exist_ok=True)
     torch.save({"model": model.state_dict(), "config": config, "seed": seed, "best_epoch": best_epoch}, checkpoints / f"seed_{seed}_best.pt")
-    return {"seed": seed, "best_epoch": best_epoch, "val": val_result, "test": test_result}
+    return {"seed": seed, "best_epoch": best_epoch, "epoch_history": epoch_history, "val": val_result, "test": test_result}
 
 
 def main() -> None:
@@ -278,8 +336,10 @@ def main() -> None:
     (out_dir / "predictions").mkdir(parents=True, exist_ok=True)
 
     metrics_rows: List[Dict[str, Any]] = []
+    epoch_rows: List[Dict[str, Any]] = []
     for seed in config["training"].get("seeds", [0, 42, 3407]):
         result = train_seed(config, rows, int(seed), out_dir)
+        epoch_rows.extend(result.get("epoch_history", []))
         for split in ("val", "test"):
             pred_df = pd.DataFrame(result[split]["predictions"])
             pred_df.insert(3, "split", split)
@@ -291,6 +351,8 @@ def main() -> None:
 
     metrics_df = pd.DataFrame(metrics_rows)
     metrics_df.to_csv(out_dir / "reports" / "metrics_by_seed.csv", index=False)
+    if epoch_rows:
+        pd.DataFrame(epoch_rows).to_csv(out_dir / "reports" / "metrics_by_epoch.csv", index=False)
     summary_rows = []
     for split in ("val", "test"):
         split_rows = [row for row in metrics_rows if row["split"] == split]
