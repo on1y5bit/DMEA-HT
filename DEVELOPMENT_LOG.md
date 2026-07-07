@@ -1248,3 +1248,20 @@
 - Before any pilot, define and audit a report-construction or evidence-filtering hypothesis that targets temporal evidence conflict without changing labels, splits, or feeding shortcut variables into the classifier.
 - Strict MVP remains the current main path.
 - C1/C2/C6 remain ablation-only.
+
+## 2026-07-07 DMEA-v2 Phase C11 Report-Filter Hypothesis Audit
+
+### Plan
+
+- Keep Phase C11 analysis-only.
+- Do not train or modify model/data/training code.
+- Define candidate report-construction hypotheses from C9/C10 findings:
+  - latest negative thyroid evidence suppresses historical positive morphology;
+  - benign/nodule morphology without latest diffuse HT-like signal;
+  - require latest diffuse HT-like signal for morphology-positive evidence;
+  - non-thyroid-only morphology source;
+  - thyroid positive/negative overlap review.
+- Audit each hypothesis on the validation cohort, not just false positives.
+- For every hypothesis, report false-positive capture and label-positive patient flag rate as a positive-preservation risk proxy.
+- Only consider a later pilot if a hypothesis captures false positives without flagging many label-positive patients.
+- Test metrics remain unused.
