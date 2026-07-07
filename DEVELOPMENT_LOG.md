@@ -785,3 +785,33 @@
   - compare their predictions against strict MVP and original C1;
   - audit whether the instability comes from optimization variance, split-specific sensitivity/specificity imbalance, evidence-label dependence, or shortcut residual coupling.
 - Test metrics remain reporting-only and were not used for the Phase C4 decision.
+
+## 2026-07-07 DMEA-v2 Phase C5 C1 Seed Failure Mode Diagnosis
+
+### Plan
+
+- Keep Phase C5 analysis-only.
+- Do not introduce model modules or launch training.
+- Do not modify `dmea_ht/models.py`, `dmea_ht/data.py`, `train.py`, manifests, labels, splits, image paths, report text, or bio values.
+- Diagnose why C1 text morphology only fails extended-seed stability, especially seeds 1, 3, and 42.
+- Use validation split for all diagnostic decisions.
+- Treat test metrics as reporting-only if referenced at all.
+- Compare:
+  - strict MVP run;
+  - original C1 text morphology only run;
+  - C4 extended-seed C1 run.
+
+### Planned Changes
+
+- Add `scripts/analyze_c1_seed_failure_modes.py`.
+- Add `scripts/analyze_c1_loss_dynamics.py`.
+- Add `scripts/collect_phase_c5_report.py`.
+- Generate Phase C5 reports under:
+  - `analysis_reports/phase_c5/`.
+
+### Planned Validation
+
+- Local static compile:
+  - `python -m py_compile scripts/analyze_c1_seed_failure_modes.py scripts/analyze_c1_loss_dynamics.py scripts/collect_phase_c5_report.py`.
+- Server static compile in `/home/linruixin/chen/conda/envs/ma`.
+- Server-side analysis execution using completed run outputs only.
