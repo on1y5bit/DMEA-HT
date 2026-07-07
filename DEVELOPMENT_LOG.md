@@ -720,3 +720,68 @@
 - Phase C4 training/report generation is running in the background.
 - No final C4 metrics are available yet.
 - Do not use test metrics for any Phase C4 selection decision once results are available.
+
+### Completed Results (2026-07-07)
+
+- Server Phase C4 driver completed and generated all expected reports under:
+  - `/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c4`.
+- Generated report files:
+  - `c1_extended_seed_summary.csv`;
+  - `c1_extended_seed_report.md`;
+  - `c1_weight_pilot_summary.csv`;
+  - `c1_weight_pilot_report.md`;
+  - `decision_gate_phase_c4_summary.csv`;
+  - `decision_gate_phase_c4_report.md`;
+  - `phase_c4_final_report.md`.
+
+### Extended-Seed Stability Summary
+
+- Extended seeds:
+  - `[0, 1, 2, 3, 4, 42, 3407]`.
+- Validation AUC by seed:
+  - seed 0: 0.8040;
+  - seed 1: 0.7515;
+  - seed 2: 0.7868;
+  - seed 3: 0.7397;
+  - seed 4: 0.7895;
+  - seed 42: 0.7379;
+  - seed 3407: 0.7931.
+- Extended-seed validation AUC:
+  - mean: 0.7718;
+  - std: 0.0278;
+  - median: 0.7868;
+  - min/max: 0.7379 / 0.8040.
+- Extended-seed validation AUPRC:
+  - mean: 0.7726;
+  - std: 0.0371.
+- Maximum validation prediction/shortcut residual Spearman:
+  - 0.2744.
+- Phase C4 stability decision:
+  - `STABILITY_FAIL`.
+- Failure reason:
+  - multiple seeds fell below the strict MVP reference validation AUC.
+
+### Pilot Weight Sweep Summary
+
+- Pilot seed:
+  - seed 0.
+- Pilot validation results:
+  - weight 0.005: val AUC 0.8049, val AUPRC 0.8153, residual 0.2213, `PILOT_PASS_RECOMMEND_FORMAL`;
+  - weight 0.010: val AUC 0.8049, val AUPRC 0.8156, residual 0.2248, `PILOT_PASS_RECOMMEND_FORMAL`;
+  - weight 0.030: val AUC 0.8026, val AUPRC 0.8145, residual 0.2276, `PILOT_FAIL`;
+  - weight 0.050: val AUC 0.8008, val AUPRC 0.8128, residual 0.2361, `PILOT_FAIL`;
+  - weight 0.070: val AUC 0.7990, val AUPRC 0.8108, residual 0.2312, `PILOT_FAIL`;
+  - weight 0.100: val AUC 0.7981, val AUPRC 0.8101, residual 0.2406, `PILOT_FAIL`.
+
+### Final C4 Decision
+
+- Do not claim a new stable improvement from Phase C4.
+- C1 text morphology only should be marked unstable under the extended internal seed check.
+- The current C1 status should be treated as:
+  - not safely promotable as a stable main candidate without further analysis.
+- Although weights 0.005 and 0.010 passed the seed-0 pilot gate, they should not automatically move to formal three-seed evaluation while the base C1 stability gate is failing.
+- Next phase should be analysis-first:
+  - inspect seed-level failure modes for seeds 1, 3, and 42;
+  - compare their predictions against strict MVP and original C1;
+  - audit whether the instability comes from optimization variance, split-specific sensitivity/specificity imbalance, evidence-label dependence, or shortcut residual coupling.
+- Test metrics remain reporting-only and were not used for the Phase C4 decision.
