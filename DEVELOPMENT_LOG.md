@@ -1412,3 +1412,57 @@
   - false negatives now dominate, so the pilot cannot be promoted from one seed.
 - Added `configs/dmea_ht_v2_c12_report_filter_stress_seeds.yaml` for seeds `[1, 3, 42]`.
 - Stress-seed results must be collected before any formal selection or model claim.
+
+## 2026-07-07 DMEA-v2 Phase C13 FN Recall Audit
+
+### Plan
+
+- Keep Phase C13 analysis-only while C12 stress seeds are running.
+- Use C12 single-seed validation errors to diagnose the dominant false-negative mode.
+- Do not train, modify labels, modify split assignment, or use test for selection.
+- Audit whether the C12 false negatives are explained by:
+  - C12 report filtering damaging validation-positive evidence;
+  - high-confidence morphology text not being translated into positive predictions;
+  - negative evidence suppressing positives;
+  - long-report or multi-visit aggregation;
+  - bio missingness.
+- Use this audit only to decide the next pilot design after stress-seed results are collected.
+
+### Actual Changes
+
+- Added `scripts/analyze_phase_c13_fn_recall_audit.py`.
+- Generated Phase C13 reports under `analysis_reports/phase_c13_fn_recall_audit`.
+- No model/data/training changes.
+- C12 stress seeds remain running separately.
+
+### Generated Reports
+
+- `c13_error_type_summary.csv`
+- `c13_fn_feature_summary_val.csv`
+- `c13_lowest_probability_fn_cases_val.csv`
+- `phase_c13_fn_recall_audit_report.md`
+
+### Key Findings
+
+- C12 validation errors:
+  - 30.
+- C12 validation FN / FP:
+  - 20 / 10.
+- Main validation error type:
+  - `morphology_positive_false_negative`: 18 / 30 errors.
+- C12 filter positive-damage check:
+  - validation label-positive filtered patients: 0 / 47;
+  - validation label-positive `txt_morphology_label` changes: 0 / 47.
+- FN concentration:
+  - high morphology confidence: 13 FN;
+  - report length q4 high: 8 FN, false-negative rate 0.6667;
+  - selected visit high bin: 18 FN, false-negative rate 0.5806.
+- Negative evidence is not a sufficient global explanation:
+  - `txt_negative_label=0` contains 17 FN;
+  - `txt_negative_label=1` contains 3 FN.
+
+### C13 Decision
+
+- Recommendation: `DESIGN_C13_TEMPORAL_OR_LONG_REPORT_RECALL_PILOT_AFTER_STRESS_SEEDS`.
+- Do not start a C13 training pilot until C12 stress-seed metrics are collected.
+- If stress seeds confirm the same FN-heavy pattern, the next pilot should target temporal or long-report recall rather than undoing the C12 false-positive report filter.
