@@ -1829,3 +1829,29 @@
 - Added `scripts/analyze_phase_c14c_pairwise_ranking.py`.
 - Added `scripts/collect_phase_c14c_report.py`.
 - Local `py_compile` and `git diff --check` passed.
+
+### C14-C Server Result
+
+- Server synchronized to commit `238227a` and ran the C14-C pairwise audit in the `ma` environment with CUDA.
+- Reproduction and pairwise analysis completed for seeds `[0, 42, 3407]`.
+- The audit produced `2209` positive-negative pairs per seed and `885` inversion rows across the three seeds.
+- Cross-seed aggregation found `215` all-seed inversion pairs.
+- Route: `HARD_PATIENT_SUBGROUP_FAILURE`.
+- Final status: `C14C_HARD_SUBGROUP_STOP`.
+- Allowed next step: `MORE_ANALYSIS_ONLY`.
+- C15 was not authorized and no training process was started.
+- Server artifacts are under `analysis_reports/phase_c14c/`; local retrieval was deferred after the tool usage limit was reached.
+
+### C14-C Detailed Gate Review
+
+- The complete pairwise table contains `6627 = 2209 x 3` patient pairs.
+- Total inversion rows: `885`.
+- All-seed inversion pairs: `215`.
+- Majority-seed inversion pairs: `75`.
+- Single-seed inversion pairs: `90`.
+- Top-five patient inversion share: `59.32%`, with multiple all-seed hard patients; this satisfies the hard-subgroup concentration stop condition.
+- Image-opposed fraction among stable inversion rows: `28.55%`, below the `30%` image route threshold.
+- Image-masking repair-positive seed count: `0`; image masking did not repair the inversion margin in any formal seed.
+- Text-driven fraction among stable inversion rows: `62.89%`, but the concentration and route gate rules still select the hard-patient stop rather than a general text route.
+- Fusion-interaction fraction: `8.55%`, below the route threshold.
+- C15 conflict-gated training remains unauthorized. The next valid action is a narrower hard-patient/subgroup audit, not training.
