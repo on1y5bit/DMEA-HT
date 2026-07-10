@@ -1,0 +1,7 @@
+path,status,notes
+/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl,loaded,780 manifest rows
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/predictions/val_predictions_seed_0.csv,loaded,94 rows
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/predictions/val_predictions_seed_3407.csv,loaded,94 rows
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/predictions/val_predictions_seed_42.csv,loaded,94 rows
+runtime,loaded,"device=cuda; seeds=[0, 42, 3407]; eval/no_grad"
+C14B,available,C14-C reran full and counterfactual inference directly; C14B used only for shared C13 contract context
