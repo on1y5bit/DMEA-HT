@@ -1812,3 +1812,20 @@
 - `analysis_reports/phase_c14b/c14b_seedwise_fusion_stability_report.md`
 - `analysis_reports/phase_c14b/c14b_inputs_used_and_missing.csv`
 - `analysis_reports/phase_c14b/phase_c14b_final_report.md`
+
+## 2026-07-10 DMEA-v2 Phase C14-C To C15 Conditional Auto-Run
+
+### Plan
+
+- Run C14-C AUC pairwise ranking inversion decomposition before any training.
+- Reproduce all three C13 validation checkpoints with the stricter C14-C thresholds: max absolute probability difference `<=1e-8`, mean absolute difference `<=1e-9`.
+- Export all `47 x 47 = 2209` positive-negative validation pairs per seed, including full margins, diagnostic contribution margins, inference-only masking margins, and text occlusion margins.
+- Assign overlapping image-opposed, text-driven, fusion-interaction, and hard-patient flags; aggregate all-seed, majority-seed, and single-seed inversion groups.
+- Enter C15 only if the automatic route gate supports `IMAGE_DRIVEN_RANKING_FAILURE` or `FUSION_INTERACTION_RANKING_FAILURE` across seeds. Otherwise stop without training.
+- Preserve the patient-level task, labels, splits, C13 manifest/report construction, shortcut exclusion, and test-as-reporting-only policy.
+
+### Local Implementation
+
+- Added `scripts/analyze_phase_c14c_pairwise_ranking.py`.
+- Added `scripts/collect_phase_c14c_report.py`.
+- Local `py_compile` and `git diff --check` passed.
