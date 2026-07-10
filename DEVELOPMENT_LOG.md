@@ -1884,6 +1884,22 @@
 - Allowed next step: `KEEP_C13_AND_REPORT_LIMITATION`.
 - Training remains blocked; C13 remains the current strict best.
 
+## 2026-07-10 DMEA-HT Final C13 Reproducible Delivery
+
+### Plan
+
+- Freeze the C13 temporal-focus route as the final strict best under the available evidence.
+- Verify the three validation-selected checkpoints, checkpoint metadata, manifest invariants, prediction row counts, C14-B reproduction gate, validation/test metrics, shortcut residuals, and C14-E training stop.
+- Generate checkpoint/manifest/report SHA256 inventory, server environment capture, model card, exact reproducibility commands, and final delivery report.
+- Keep the formal claim at the three-seed single-model mean; do not test-select a seed or claim an ensemble.
+- Report that validation AUC 0.90 was not reached and that C14-E found a data-limit/no-general-fix route.
+
+### Local Implementation
+
+- Added `scripts/collect_final_c13_delivery.py`.
+- Local `py_compile` and `git diff --check` passed.
+- No training, model, data, label, split, task, manifest, report construction, image, bio, or threshold changes were made.
+
 ### C14-C Server Result
 
 - Server synchronized to commit `238227a` and ran the C14-C pairwise audit in the `ma` environment with CUDA.
