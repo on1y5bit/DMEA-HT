@@ -1697,3 +1697,30 @@
   - patient-anchor fusion contribution audit;
   - image/text contribution audit;
   - seed-wise fusion stability audit.
+
+## 2026-07-10 DMEA-v2 Phase C14-B Representation And Fusion Audit
+
+### Plan
+
+- Keep C14-B analysis-only and validation-only.
+- Correct the C14-A cross-seed naming: `all_seed_fn`, `majority_fn`, `seed_sensitive_positive`, and `all_seed_tp`.
+- Load the three selected C13 checkpoints in evaluation mode with `torch.no_grad()` and verify full-model predictions against the saved C13 validation predictions.
+- Export available representation, anchor, classifier-contribution, evidence-role, and discordance diagnostics without changing the default model forward path.
+- Run inference-only modality masking and C13 text occlusion diagnostics.
+- Do not train, tune thresholds, modify labels/splits/task definition/manifests/report construction/model architecture, use test for route selection, or feed shortcut fields into the classifier.
+
+### Intended Changes
+
+- Add `scripts/analyze_phase_c14b_representation_fusion.py`.
+- Add `scripts/collect_phase_c14b_report.py`.
+- Generate reports under `analysis_reports/phase_c14b`.
+- Record the exact validation-only route label and the allowed next-step class after server execution.
+
+### Acceptance Checks
+
+- Local `py_compile` passes for both C14-B scripts.
+- All three C13 checkpoints load on the server.
+- Full inference reproduces saved C13 validation probabilities within numerical tolerance.
+- No optimizer is constructed or stepped, and no gradients are enabled.
+- Missing internal diagnostics are reported rather than invented.
+- C13 remains the current strict best; C14-B makes no model-improvement claim.
