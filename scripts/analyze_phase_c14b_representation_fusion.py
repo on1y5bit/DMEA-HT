@@ -544,6 +544,23 @@ def grouped_summary(frame: pd.DataFrame, columns: Sequence[str]) -> pd.DataFrame
     return pd.DataFrame(rows).sort_values("cross_seed_group")
 
 
+def grouped_summary_with_seed(frame: pd.DataFrame, columns: Sequence[str], seeds: Sequence[int]) -> pd.DataFrame:
+    pooled = grouped_summary(frame, columns)
+    if not pooled.empty:
+        pooled.insert(0, "summary_level", "pooled")
+        pooled.insert(1, "seed", "pooled")
+    per_seed: List[pd.DataFrame] = []
+    for seed in seeds:
+        subset = frame[frame["seed"] == seed]
+        summary = grouped_summary(subset, columns)
+        if not summary.empty:
+            summary.insert(0, "summary_level", "per_seed")
+            summary.insert(1, "seed", int(seed))
+            per_seed.append(summary)
+    frames = [frame_part for frame_part in [pooled, *per_seed] if not frame_part.empty]
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
 def write_ranked_cases(features: pd.DataFrame, ablation: pd.DataFrame, occlusion: pd.DataFrame, out_dir: Path) -> None:
     all_fn = features[features["cross_seed_group"] == "all_seed_fn"].copy()
     if all_fn.empty:
@@ -982,14 +999,14 @@ def main() -> None:
         "text_anchor_cosine", "image_anchor_cosine", "bio_anchor_cosine", "text_image_cosine", "text_bio_cosine", "image_bio_cosine",
         "text_classifier_contribution", "image_classifier_contribution", "bio_classifier_contribution", "discordance_feature_norm",
     ]
-    feature_summary = grouped_summary(features[features["label"] == 1], feature_columns)
+    feature_summary = grouped_summary_with_seed(features[features["label"] == 1], feature_columns, seeds)
     ablation_columns = [
         "full_prob", "mask_text_prob", "mask_image_prob", "mask_bio_prob", "text_only_like_prob", "image_only_like_prob", "bio_only_like_prob",
         "delta_mask_text", "delta_mask_image", "delta_mask_bio", "delta_text_only_like", "delta_image_only_like", "delta_bio_only_like",
     ]
-    ablation_summary = grouped_summary(ablation, ablation_columns)
+    ablation_summary = grouped_summary_with_seed(ablation, ablation_columns, seeds)
     occlusion_columns = ["full_prob", "remove_diffuse_prob", "remove_negative_prob", "prefix_only_prob", "remove_prefix_prob", "delta_remove_diffuse", "delta_remove_negative", "delta_prefix_only", "delta_remove_prefix"]
-    occlusion_summary = grouped_summary(occlusion, occlusion_columns)
+    occlusion_summary = grouped_summary_with_seed(occlusion, occlusion_columns, seeds)
     feature_summary.to_csv(out_dir / "c14b_representation_group_summary.csv", index=False)
     ablation_summary.to_csv(out_dir / "c14b_modality_masking_group_summary.csv", index=False)
     occlusion_summary.to_csv(out_dir / "c14b_text_occlusion_group_summary.csv", index=False)
