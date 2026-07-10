@@ -63,6 +63,24 @@ def parse_seeds(value: str) -> tuple[int, ...]:
     return seeds
 
 
+def frame_to_markdown(frame: pd.DataFrame) -> str:
+    if frame.empty:
+        return "_No rows._"
+    columns = [str(column) for column in frame.columns]
+    lines = ["| " + " | ".join(columns) + " |", "| " + " | ".join("---" for _ in columns) + " |"]
+    for _, row in frame.iterrows():
+        values: List[str] = []
+        for column in frame.columns:
+            value = row[column]
+            if value is None or (isinstance(value, float) and math.isnan(value)):
+                text_value = "NA"
+            else:
+                text_value = str(value)
+            values.append(text_value.replace("|", "/").replace("\n", " "))
+        lines.append("| " + " | ".join(values) + " |")
+    return "\n".join(lines)
+
+
 def read_predictions(run_dir: Path, split: str, input_rows: List[Dict[str, Any]]) -> pd.DataFrame:
     frames: List[pd.DataFrame] = []
     paths = sorted((run_dir / "predictions").glob(f"{split}_predictions_seed_*.csv"))
@@ -609,17 +627,17 @@ def write_reports(
         "- `seed_sensitive_positive`: class differs across seeds, including 1-FN/2-TP and 2-FN/1-TP.",
         "- `all_seed_tp`: TP in all three seeds.",
         "",
-        group_summary.to_markdown(index=False) if not group_summary.empty else "_No group rows._",
+        frame_to_markdown(group_summary) if not group_summary.empty else "_No group rows._",
         "",
         "The expected all-seed FN count from C14-A was seven; the corrected grouping above is computed from predictions rather than hard-coded.",
         "",
         "## Representation And Fusion Findings",
         "",
-        feature_summary.to_markdown(index=False) if not feature_summary.empty else "_No feature rows._",
+        frame_to_markdown(feature_summary) if not feature_summary.empty else "_No feature rows._",
         "",
         "## Modality Masking Findings",
         "",
-        ablation_summary.to_markdown(index=False) if not ablation_summary.empty else "_No ablation rows._",
+        frame_to_markdown(ablation_summary) if not ablation_summary.empty else "_No ablation rows._",
         "",
         f"- all-seed FN text-only-like minus full probability: `{fn_text_only_gap:.4f}`.",
         f"- all-seed FN image-removal delta: `{fn_image_suppression:.4f}`; bio-removal delta: `{fn_bio_suppression:.4f}`.",
@@ -627,14 +645,14 @@ def write_reports(
         "",
         "## Text Occlusion Findings",
         "",
-        occlusion_summary.to_markdown(index=False) if not occlusion_summary.empty else "_No occlusion rows._",
+        frame_to_markdown(occlusion_summary) if not occlusion_summary.empty else "_No occlusion rows._",
         "",
         f"- all-seed FN diffuse-clause removal delta: `{diffuse_effect:.4f}`.",
         "- Text variants were constructed from the C13 report text and used only for inference-time diagnostics.",
         "",
         "## Seed-Wise Fusion Stability",
         "",
-        stability.to_markdown(index=False) if not stability.empty else "_No stability rows._",
+        frame_to_markdown(stability) if not stability.empty else "_No stability rows._",
         "",
         f"- Correlation of prediction variance with mean modality-contribution variance: `{corr_pred_contrib:.4f}`.",
         f"- Correlation of prediction variance with text-contribution variance: `{corr_pred_text:.4f}`.",
@@ -676,7 +694,7 @@ def write_reproduction_report(out_dir: Path, reproduction: pd.DataFrame) -> None
         "",
         "This is a mandatory pre-audit gate. Downstream representation, masking, and occlusion claims are valid only when every required seed passes.",
         "",
-        reproduction.to_markdown(index=False) if not reproduction.empty else "_No reproduction rows._",
+        frame_to_markdown(reproduction) if not reproduction.empty else "_No reproduction rows._",
         "",
         f"Overall reproduction gate: `{'PASS' if passed else 'FAIL'}`.",
         "Required thresholds: max absolute probability difference <= 1e-5 and mean absolute probability difference <= 1e-6, with matching patient IDs and labels.",
@@ -751,7 +769,7 @@ def write_final_report(
         f"- Reproduction gate: `{'PASS' if repro_pass else 'FAIL'}`.",
         "- All downstream route claims are validation-only; test outputs were not used for route selection.",
         "",
-        reproduction.to_markdown(index=False) if not reproduction.empty else "_No reproduction rows._",
+        frame_to_markdown(reproduction) if not reproduction.empty else "_No reproduction rows._",
         "",
         "## Corrected Positive-Patient Groups",
         "",
@@ -760,29 +778,29 @@ def write_final_report(
         "- `seed_sensitive_positive`: both TP and FN across seeds.",
         "- `all_seed_tp`: TP in all three seeds.",
         "",
-        group_summary.to_markdown(index=False) if not group_summary.empty else "_No group rows._",
+        frame_to_markdown(group_summary) if not group_summary.empty else "_No group rows._",
         "",
         "## Representation Diagnostics",
         "",
-        feature_summary.to_markdown(index=False) if not feature_summary.empty else "_No representation rows._",
+        frame_to_markdown(feature_summary) if not feature_summary.empty else "_No representation rows._",
         "",
         "## Modality Masking",
         "",
-        ablation_summary.to_markdown(index=False) if not ablation_summary.empty else "_No masking rows._",
+        frame_to_markdown(ablation_summary) if not ablation_summary.empty else "_No masking rows._",
         "",
-        modality_consistency.to_markdown(index=False) if not modality_consistency.empty else "_No modality consistency rows._",
+        frame_to_markdown(modality_consistency) if not modality_consistency.empty else "_No modality consistency rows._",
         "",
         "Masking is a diagnostic distribution shift, not a formal ablation model or candidate model.",
         "",
         "## Text Occlusion",
         "",
-        occlusion_summary.to_markdown(index=False) if not occlusion_summary.empty else "_No occlusion rows._",
+        frame_to_markdown(occlusion_summary) if not occlusion_summary.empty else "_No occlusion rows._",
         "",
-        occlusion_consistency.to_markdown(index=False) if not occlusion_consistency.empty else "_No occlusion consistency rows._",
+        frame_to_markdown(occlusion_consistency) if not occlusion_consistency.empty else "_No occlusion consistency rows._",
         "",
         "## Seed-Wise Fusion Stability",
         "",
-        stability.to_markdown(index=False) if not stability.empty else "_No stability rows._",
+        frame_to_markdown(stability) if not stability.empty else "_No stability rows._",
         "",
         "## Unavailable Diagnostics And Limitations",
         "",
@@ -1015,7 +1033,7 @@ def main() -> None:
         "",
         "The table ranks validation-positive patients by cross-seed prediction and contribution instability.",
         "",
-        top_stability.to_markdown(index=False) if not top_stability.empty else "_No stability rows._",
+        frame_to_markdown(top_stability) if not top_stability.empty else "_No stability rows._",
         "",
         "Patients are grouped using the corrected all-seed FN, majority FN, seed-sensitive positive, and all-seed TP definitions.",
         "Seed 42 is not selected or discarded; it is reported alongside seeds 0 and 3407.",
