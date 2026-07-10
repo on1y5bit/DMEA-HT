@@ -321,6 +321,9 @@ def build_positive_rows(preds: pd.DataFrame, manifest: pd.DataFrame, split: str,
     merged = merged.merge(seed_summary, on="patient_id", how="left")
     profiles = [evidence_profile(str(text), text_max_length=text_max_length) for text in merged["report_text"].fillna("")]
     prof = pd.DataFrame(profiles)
+    for duplicate_col in ("matched_morphology_terms", "matched_negative_terms"):
+        if duplicate_col in merged.columns and duplicate_col in prof.columns:
+            merged = merged.drop(columns=[duplicate_col])
     out = pd.concat([merged.reset_index(drop=True), prof.reset_index(drop=True)], axis=1)
     for col in PATIENT_OUTPUT_COLUMNS:
         if col not in out.columns:
