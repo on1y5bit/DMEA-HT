@@ -1569,3 +1569,58 @@
 - Recommendation: `ALLOW_C13_SINGLE_SEED_TEMPORAL_FOCUS_PILOT`.
 - The pilot is allowed because it preserves split/label invariants, does not change weak labels, and directly targets long-report truncation by increasing thyroid evidence exposure inside the model's first 256 text tokens.
 - C13 remains a pilot until validation metrics and shortcut residuals are collected.
+
+## 2026-07-10 DMEA-v2 Phase C13 Temporal-Focus Stress-Seed Result
+
+### Actual Changes
+
+- Ran C13 temporal-focus stress seeds with user-requested seeds `[0, 42, 3407]`.
+- Collected outputs from `runs/dmea_ht_v2_c13_temporal_focus_stress_seeds`.
+- Generated stress-seed reports under `analysis_reports/phase_c13_stress`.
+- No label, split, task-definition, model-architecture, image, or bio changes were made in this collection step.
+- Test metrics remain reporting-only and were not used for model selection.
+
+### Generated Reports
+
+- `c13_stress_metrics_by_seed.csv`
+- `c13_stress_metrics_summary.csv`
+- `c13_stress_confusion_matrix_by_seed.csv`
+- `strict_mvp_error_taxonomy_summary.csv`
+- `strict_mvp_evidence_strata_val.csv`
+- `strict_mvp_shortcut_strata_val.csv`
+- `shortcut_residual/shortcut_residual_audit.csv`
+- `phase_c13_stress_decision_report.md`
+
+### Key Findings
+
+- Validation AUC by seed:
+  - seed 0: 0.8656;
+  - seed 42: 0.8746;
+  - seed 3407: 0.8592.
+- Validation AUC mean / std:
+  - 0.8665 / 0.0077.
+- Validation AUPRC mean / std:
+  - 0.8570 / 0.0049.
+- Validation sensitivity mean / std:
+  - 0.6525 / 0.1568.
+- Validation specificity mean / std:
+  - 0.8511 / 0.0426.
+- Test reporting-only AUC mean / std:
+  - 0.8460 / 0.0077.
+- Validation error taxonomy remains false-negative dominated:
+  - `morphology_positive_false_negative`: 44 errors;
+  - `long_report_or_multivisit_uncertainty`: 7 errors;
+  - `other_error`: 7 errors;
+  - `borderline_error`: 6 errors;
+  - `high_confidence_false_positive`: 4 errors.
+- Shortcut residual audit remains acceptable:
+  - pooled validation max abs Spearman: 0.1549;
+  - pooled validation linear R2 from shortcut fields: 0.0601;
+  - pooled validation shortcut-only label AUC audit-only: 0.4762.
+
+### C13 Stress Decision
+
+- Recommendation: `PROMOTE_C13_AS_CURRENT_STRICT_BEST_NOT_FINAL`.
+- C13 is now the strongest strict structural-matched single-model route observed so far.
+- C13 should not be treated as final because validation AUC remains below the 0.90 target and sensitivity is still seed-sensitive.
+- Next action: design a C14 low-cost pilot focused on morphology-positive false-negative recall and high-report-length recall, while preserving labels, patient-level split, task definition, and shortcut exclusion from the classifier.
