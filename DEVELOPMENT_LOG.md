@@ -1855,3 +1855,18 @@
 - Text-driven fraction among stable inversion rows: `62.89%`, but the concentration and route gate rules still select the hard-patient stop rather than a general text route.
 - Fusion-interaction fraction: `8.55%`, below the route threshold.
 - C15 conflict-gated training remains unauthorized. The next valid action is a narrower hard-patient/subgroup audit, not training.
+
+## 2026-07-10 DMEA-v2 Phase C14-D Hard-Patient Subgroup Audit
+
+### Plan
+
+- Follow the C14-C `HARD_PATIENT_SUBGROUP_FAILURE` stop with a narrow analysis-only subgroup audit.
+- Profile all patients that produce inversion rows in all three seeds, with a top-k impact table.
+- Compare hard positive/negative cohorts with non-hard validation patients using C14-B representations, classifier diagnostics, C14-A evidence exposure fields, report metadata, and inversion flags as audit-only fields.
+- Do not enter C15, train a new model, tune thresholds, change labels/splits/task/manifest/report construction, or feed audit fields into a predictor.
+
+### Local Implementation
+
+- Added `scripts/analyze_phase_c14d_hard_patient_audit.py`.
+- Added `scripts/collect_phase_c14d_report.py`.
+- Local `py_compile` and `git diff --check` passed.
