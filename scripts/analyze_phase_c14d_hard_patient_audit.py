@@ -144,6 +144,8 @@ def main() -> None:
     cohorts.to_csv(out_dir / "c14d_hard_vs_nonhard_summary.csv", index=False)
 
     top_profile = profiles.head(args.top_k)
+    patient_inversion_incidence_total = max(2 * len(inversion_rows), 1)
+    top_k_inversion_share = float(top_profile["inversion_count"].sum() / patient_inversion_incidence_total)
     mechanism_means = profiles.groupby("role", as_index=False).agg(
         n_patients=("patient_id", "nunique"),
         total_inversion_count=("inversion_count", "sum"),
@@ -166,7 +168,7 @@ def main() -> None:
                 "c15_authorized": 0,
                 "training_started": 0,
                 "top_k": args.top_k,
-                "top_k_inversion_share": float(top_profile["inversion_count"].sum() / max(len(inversion_rows), 1)),
+                "top_k_inversion_share": top_k_inversion_share,
                 "all_seed_hard_patients": len(hard_keys),
                 "notes": "Audit-only subgroup/profile comparison; no shortcut field entered a predictor or gate.",
             }
@@ -182,7 +184,7 @@ def main() -> None:
         "## Cohort Definition",
         "",
         f"- All-seed hard patients: `{len(hard_keys)}` patients with inversion rows in all three seeds.",
-        f"- Top-{args.top_k} hard patient inversion share: `{float(top_profile['inversion_count'].sum() / max(len(inversion_rows), 1)):.4f}`.",
+        f"- Top-{args.top_k} hard patient inversion incidence share: `{top_k_inversion_share:.4f}` (patient-side incidence denominator is `2 x inversion rows`).",
         "- C14-A exposure and C14-B representation fields are audit metadata only; they were not used as model inputs or learned gate inputs.",
         "",
         "## Top Hard Patients",
@@ -209,7 +211,7 @@ def main() -> None:
     ]
     (out_dir / "c14d_hard_patient_audit_report.md").write_text("\n".join(report_lines) + "\n", encoding="utf-8")
     (out_dir / "phase_c14d_final_report.md").write_text("\n".join(report_lines) + "\n", encoding="utf-8")
-    print(json.dumps({"output_dir": str(out_dir), "c14d_route": "HARD_PATIENT_SUBGROUP_AUDIT_CONFIRMED", "c15_authorized": False, "all_seed_hard_patients": len(hard_keys), "top_k_inversion_share": float(top_profile["inversion_count"].sum() / max(len(inversion_rows), 1))}, ensure_ascii=False))
+    print(json.dumps({"output_dir": str(out_dir), "c14d_route": "HARD_PATIENT_SUBGROUP_AUDIT_CONFIRMED", "c15_authorized": False, "all_seed_hard_patients": len(hard_keys), "top_k_inversion_share": top_k_inversion_share}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
