@@ -1842,6 +1842,25 @@
 - C14-D gate: `HARD_PATIENT_SUBGROUP_AUDIT_CONFIRMED`.
 - Next step remains `MORE_ANALYSIS_ONLY`; C15 remains unauthorized.
 
+## 2026-07-10 DMEA-v2 Phase C14-E Hard Clinical Evidence Audit
+
+### Plan
+
+- Reconstruct hard-positive, hard-negative, and same-label non-hard validation controls from C14-C/C14-D.
+- Standardize top-5/top-10/top-20 responsibility using separate pair-coverage, patient-side incidence, and unique-pair denominators.
+- Match controls without replacement using only report length, selected visits, used images, image padding, bio availability, and bio missingness.
+- Audit hard-positive HT-specific/generic/contradictory text evidence, visit-level temporal states, and C14-B multimodal diagnostics.
+- Audit hard-negative image-mimic categories, follow-up/label-boundary uncertainty, and multimodal support without inferring diagnoses or changing labels.
+- Report patient-level effect sizes and bootstrap intervals, then apply the 30% generalizability gate.
+- Keep C15 blocked; no C14-E route automatically authorizes training.
+
+### Local Implementation
+
+- Added `scripts/analyze_phase_c14e_hard_clinical_evidence.py`.
+- Added `scripts/collect_phase_c14e_report.py`.
+- Local `py_compile` and `git diff --check` passed.
+- No core model, training code, manifest, label, split, task, report, image, or bio changes were made.
+
 ### C14-C Server Result
 
 - Server synchronized to commit `238227a` and ran the C14-C pairwise audit in the `ma` environment with CUDA.
