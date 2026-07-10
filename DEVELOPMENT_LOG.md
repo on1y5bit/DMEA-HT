@@ -1750,3 +1750,65 @@
 - `git diff --check` passed.
 - No training, optimizer, backward pass, label/split/task/manifest/tokenizer/report-construction/model changes were introduced.
 - Server execution is still pending; no reproduction result or C14-B route claim is made in this section until the intended code is verified on the server.
+
+### Server Synchronization And Execution
+
+- Local revision commits: `7474777`, `939d4f4`, and `2f0bf7c`.
+- GitHub synchronization succeeded; the server fast-forwarded to commit `2f0bf7c`.
+- Server verification used `/home/linruixin/chen/conda/envs/ma/bin/python` and the exact C13 manifest/run directory specified for this phase.
+- Required seeds `[0, 42, 3407]` were all loaded; no training, optimizer construction, backward pass, or test-based selection occurred.
+
+### Reproduction Gate
+
+- Each seed reproduced 94 / 94 saved validation predictions with matching patient IDs and labels.
+- Per-seed maximum absolute probability difference: `1.1102230246251565e-16` for all three seeds.
+- Per-seed mean absolute probability differences:
+  - seed 0: `2.3400312420623313e-17`;
+  - seed 42: `2.2588314197825658e-17`;
+  - seed 3407: `2.048450062057719e-17`.
+- The reproduction gate passed before contribution analysis.
+
+### Corrected Cross-Seed Groups
+
+- `all_seed_fn`: 7 patients.
+- `majority_fn`: 12 patients.
+- `seed_sensitive_positive`: 4 patients.
+- `all_seed_tp`: 24 patients.
+
+### Key Multi-Seed Findings
+
+- Representation norms were close between all-seed FN and all-seed TP: text embedding norm `1.609` vs `1.649`.
+- Text classifier contribution was lower for all-seed FN than all-seed TP: `-0.0028` vs `0.1082`; image contribution was more negative for FN: `-0.5146` vs `-0.2996`.
+- Image masking raised all-seed FN probability in every seed: `+0.2582`, `+0.0285`, and `+0.0280`; the corresponding all-seed TP values were `+0.1887`, `+0.0031`, and `+0.0099`.
+- Text-only-like rescue was not directionally stable for all-seed FN: `+0.3011`, `-0.0483`, and `-0.0156` across seeds 0, 42, and 3407.
+- Bio masking was also not directionally stable for all-seed FN: `+0.0445`, `-0.0701`, and `-0.0263`.
+- Removing diffuse clauses lowered all-seed FN probability in all seeds (`-0.0605`, `-0.0408`, `-0.1012`), confirming that visible text evidence affects prediction, but the effect was much weaker than for all-seed TP (`-0.3545`, `-0.3797`, `-0.5082`).
+- Prefix-only deltas for all-seed FN were small and sign-inconsistent (`-0.0261`, `-0.0005`, `+0.0308`), while removing the C13 prefix lowered FN probability in all three seeds.
+- The seed consistency audit therefore shows a mixed pattern: text evidence is represented and used, image masking suggests a reproducible suppression component, but text-only and bio effects are seed-sensitive and do not support one dominant mechanism.
+
+### C14-B Final Decision
+
+- Exact route label: `MIXED_OR_INCONCLUSIVE`.
+- Allowed next-step class: `MORE_ANALYSIS_ONLY`.
+- No new training pilot is authorized from C14-B.
+- C13 remains the current strict best at validation AUC `0.8665 +/- 0.0077`; C14-B claims no model improvement.
+- Test outputs were not used for route selection.
+
+### Generated Server Artifacts
+
+- `analysis_reports/phase_c14b/c14b_reproduction_check_by_seed.csv`
+- `analysis_reports/phase_c14b/c14b_reproduction_check_report.md`
+- `analysis_reports/phase_c14b/c14b_cross_seed_positive_groups.csv`
+- `analysis_reports/phase_c14b/c14b_cross_seed_group_summary.csv`
+- `analysis_reports/phase_c14b/c14b_representation_diagnostics_val.csv`
+- `analysis_reports/phase_c14b/c14b_representation_group_summary.csv`
+- `analysis_reports/phase_c14b/c14b_modality_masking_val.csv`
+- `analysis_reports/phase_c14b/c14b_modality_masking_group_summary.csv`
+- `analysis_reports/phase_c14b/c14b_modality_masking_seed_consistency.csv`
+- `analysis_reports/phase_c14b/c14b_text_occlusion_val.csv`
+- `analysis_reports/phase_c14b/c14b_text_occlusion_group_summary.csv`
+- `analysis_reports/phase_c14b/c14b_text_occlusion_seed_consistency.csv`
+- `analysis_reports/phase_c14b/c14b_seedwise_fusion_stability_val.csv`
+- `analysis_reports/phase_c14b/c14b_seedwise_fusion_stability_report.md`
+- `analysis_reports/phase_c14b/c14b_inputs_used_and_missing.csv`
+- `analysis_reports/phase_c14b/phase_c14b_final_report.md`

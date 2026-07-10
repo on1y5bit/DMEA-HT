@@ -1,0 +1,14 @@
+path,status,notes
+/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl,loaded,780 manifest rows
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/predictions/val_predictions_seed_0.csv,loaded,94 rows
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/predictions/val_predictions_seed_3407.csv,loaded,94 rows
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/predictions/val_predictions_seed_42.csv,loaded,94 rows
+analysis_reports/phase_c14a/c14a_positive_patient_token_exposure_val.csv,loaded,141 rows; reused for audit stratification
+phase_c14a,available,reused for audit stratification; no label/prediction recomputation
+runtime,loaded,"device=cuda; eval/no_grad only; seeds=[0, 42, 3407]"
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_0_best.pt,loaded,seed=0; best_epoch=16
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_42_best.pt,loaded,seed=42; best_epoch=17
+runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_3407_best.pt,loaded,seed=3407; best_epoch=15
+inference,loaded,seed 0; eval/no_grad; max full reproduction error 1.110223e-16
+inference,loaded,seed 42; eval/no_grad; max full reproduction error 1.110223e-16
+inference,loaded,seed 3407; eval/no_grad; max full reproduction error 1.110223e-16
