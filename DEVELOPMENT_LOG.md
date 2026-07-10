@@ -1940,3 +1940,11 @@
 - Added `scripts/analyze_phase_c14d_hard_patient_audit.py`.
 - Added `scripts/collect_phase_c14d_report.py`.
 - Local `py_compile` and `git diff --check` passed.
+
+## 2026-07-10 Final C13 Delivery Status
+
+- Froze `C13_TEMPORAL_FOCUS_DMEA_HT` as the strict-best route under the completed C13-C14E gates.
+- Added the frozen route summary to `README.md` and created `FINAL_MODEL_SELECTION.md` with the exact contract, three-seed validation metrics, shortcut audit, hard-subgroup limitation, checkpoint paths, and verifier command.
+- The formal claim remains the mean of seeds `[0, 42, 3407]` selected by validation AUC; test metrics remain reporting-only.
+- C15 remains blocked because C14-E returned `DATA_LIMIT_NO_GENERAL_MODEL_FIX`; no additional training was launched.
+- The final server verifier is not yet declared complete. Two bundle upload attempts timed out while connecting to `10.21.71.74:22`; server execution and artifact retrieval remain required before closing the delivery goal.
