@@ -51,8 +51,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--text-max-length", type=int, default=256)
+    parser.add_argument("--seeds", default="0,42,3407")
     parser.add_argument("--include-test-reporting-only", action="store_true")
     return parser.parse_args()
+
+
+def parse_seeds(value: str) -> tuple[int, ...]:
+    seeds = tuple(int(part.strip()) for part in value.split(",") if part.strip())
+    if not seeds:
+        raise ValueError("--seeds must contain at least one integer seed")
+    return seeds
 
 
 def read_predictions(run_dir: Path, split: str, input_rows: List[Dict[str, Any]]) -> pd.DataFrame:
@@ -181,6 +189,77 @@ def load_checkpoint(path: Path, device: torch.device) -> tuple[DMEAHTModel, Dict
     model.to(device)
     model.eval()
     return model, config, checkpoint
+
+
+def make_loader(config: Mapping[str, Any], val_rows: Sequence[Mapping[str, Any]], batch_size: int) -> DataLoader:
+    project_cfg = config.get("project", {})
+    model_cfg = config.get("model", {})
+    dataset = PatientHTDataset(
+        rows=list(val_rows),
+        data_root=str(project_cfg.get("data_root", "")),
+        split="val",
+        max_images=int(model_cfg.get("max_images_per_patient", 28)),
+        image_size=int(model_cfg.get("image_size", 224)),
+        text_max_length=int(model_cfg.get("text_max_length", 256)),
+        text_vocab_size=int(model_cfg.get("text_vocab_size", 50000)),
+        bio_dim=int(model_cfg.get("bio_dim", 32)),
+    )
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0, collate_fn=collate_patient_batch)
+
+
+def reproduce_seed(
+    seed: int,
+    model: DMEAHTModel,
+    loader: DataLoader,
+    manifest_by_patient: Mapping[str, Mapping[str, Any]],
+    saved_predictions: Mapping[tuple[str, int], float],
+    checkpoint_path: Path,
+    config: Mapping[str, Any],
+    device: torch.device,
+) -> Dict[str, Any]:
+    model.eval()
+    reproduced: List[Dict[str, Any]] = []
+    with torch.no_grad():
+        for batch in loader:
+            batch = {key: (value.to(device) if torch.is_tensor(value) else value) for key, value in batch.items()}
+            outputs = model(batch)
+            probs = outputs["prob"].detach().cpu().tolist()
+            labels = batch["label"].detach().cpu().tolist()
+            for index, patient_id_raw in enumerate(batch["patient_id"]):
+                patient_id = str(patient_id_raw)
+                reproduced.append({"patient_id": patient_id, "label": int(labels[index]), "pred_prob": float(probs[index])})
+    expected_ids = set(manifest_by_patient)
+    saved_ids = {patient_id for (patient_id, saved_seed) in saved_predictions if saved_seed == seed}
+    reproduced_ids = [row["patient_id"] for row in reproduced]
+    reproduced_id_set = set(reproduced_ids)
+    duplicate_reproduced = len(reproduced_ids) != len(reproduced_id_set)
+    patient_id_match = expected_ids == saved_ids == reproduced_id_set and not duplicate_reproduced
+    label_match = all(row["label"] == int(manifest_by_patient[row["patient_id"]].get("label", 0)) for row in reproduced)
+    differences = [
+        abs(row["pred_prob"] - saved_predictions[(row["patient_id"], seed)])
+        for row in reproduced
+        if (row["patient_id"], seed) in saved_predictions
+    ]
+    max_diff = max(differences) if differences else float("nan")
+    mean_diff = float(np.mean(differences)) if differences else float("nan")
+    model_cfg = config.get("model", {})
+    notes = (
+        f"tokenizer=character-level/text_max_length={model_cfg.get('text_max_length', 256)}; "
+        f"image_size={model_cfg.get('image_size', 224)}; max_images={model_cfg.get('max_images_per_patient', 28)}; "
+        f"duplicate_reproduced={duplicate_reproduced}"
+    )
+    return {
+        "seed": int(seed),
+        "checkpoint_path": str(checkpoint_path),
+        "saved_prediction_rows": int(len(saved_ids)),
+        "reproduced_prediction_rows": int(len(reproduced)),
+        "patient_id_match": int(patient_id_match),
+        "label_match": int(label_match),
+        "max_abs_prob_diff": float(max_diff),
+        "mean_abs_prob_diff": float(mean_diff),
+        "reproduction_pass": int(patient_id_match and label_match and math.isfinite(max_diff) and max_diff <= 1e-5 and mean_diff <= 1e-6),
+        "notes": notes,
+    }
 
 
 def zero_like_pair(reference: torch.Tensor, batch_size: int) -> tuple[torch.Tensor, torch.Tensor]:
@@ -368,6 +447,12 @@ def run_seed(
                 for key, value in full.items():
                     if torch.is_tensor(value) and value.ndim == 1 and len(value) == len(batch["patient_id"]):
                         base[key] = float(value[index].detach().cpu())
+                base["text_classifier_contribution"] = base.get("e_text", float("nan"))
+                base["image_classifier_contribution"] = base.get("e_img", float("nan"))
+                base["bio_classifier_contribution"] = base.get("e_bio", float("nan"))
+                discordance_values = [base.get(key, float("nan")) for key in ("d_img_txt", "d_img_bio", "d_txt_bio")]
+                base["discordance_feature_norm"] = float(np.nanmean(discordance_values)) if any(math.isfinite(value) for value in discordance_values) else float("nan")
+                base["fusion_gate_or_attention_values"] = "unavailable"
                 feature_rows.append(base)
 
             condition_outputs: Dict[str, torch.Tensor] = {"full_model": full["prob"]}
@@ -378,12 +463,22 @@ def run_seed(
                 row = metadata_row(patient_id, manifest_by_patient, group_by_patient, seed)
                 for condition in ABLATION_CONDITIONS:
                     row[f"pred_{condition}"] = float(condition_outputs[condition][index].detach().cpu())
+                row["full_prob"] = row["pred_full_model"]
+                row["mask_text_prob"] = row["pred_mask_text"]
+                row["mask_image_prob"] = row["pred_mask_image"]
+                row["mask_bio_prob"] = row["pred_mask_bio"]
+                row["text_only_like_prob"] = row["pred_text_only_like"]
+                row["image_only_like_prob"] = row["pred_image_only_like"]
+                row["bio_only_like_prob"] = row["pred_bio_only_like"]
                 row["delta_mask_text"] = row["pred_mask_text"] - row["pred_full_model"]
                 row["delta_mask_image"] = row["pred_mask_image"] - row["pred_full_model"]
                 row["delta_mask_bio"] = row["pred_mask_bio"] - row["pred_full_model"]
                 row["text_contribution"] = row["pred_full_model"] - row["pred_mask_text"]
                 row["image_contribution"] = row["pred_full_model"] - row["pred_mask_image"]
                 row["bio_contribution"] = row["pred_full_model"] - row["pred_mask_bio"]
+                row["delta_text_only_like"] = row["pred_text_only_like"] - row["pred_full_model"]
+                row["delta_image_only_like"] = row["pred_image_only_like"] - row["pred_full_model"]
+                row["delta_bio_only_like"] = row["pred_bio_only_like"] - row["pred_full_model"]
                 ablation_rows.append(row)
 
             positive_indices = [index for index, patient_id in enumerate(batch["patient_id"]) if int(manifest_by_patient[str(patient_id)].get("label", 0)) == 1]
@@ -402,6 +497,11 @@ def run_seed(
                     row["delta_remove_negative"] = row["pred_remove_negative_or_normal_thyroid_clauses"] - row["pred_full_c13_text"]
                     row["delta_prefix_only"] = row["pred_thyroid_focus_prefix_only"] - row["pred_full_c13_text"]
                     row["delta_remove_prefix"] = row["pred_remove_thyroid_focus_prefix"] - row["pred_full_c13_text"]
+                    row["full_prob"] = row["pred_full_c13_text"]
+                    row["remove_diffuse_prob"] = row["pred_remove_diffuse_ht_like_clauses"]
+                    row["remove_negative_prob"] = row["pred_remove_negative_or_normal_thyroid_clauses"]
+                    row["prefix_only_prob"] = row["pred_thyroid_focus_prefix_only"]
+                    row["remove_prefix_prob"] = row["pred_remove_thyroid_focus_prefix"]
                     occlusion_rows.append(row)
     input_rows.append({"path": "inference", "status": "loaded", "notes": f"seed {seed}; eval/no_grad; max full reproduction error {max_reproduction_error:.8g}"})
     return feature_rows, ablation_rows, occlusion_rows, max_reproduction_error
@@ -568,8 +668,221 @@ def write_reports(
     return route
 
 
+def write_reproduction_report(out_dir: Path, reproduction: pd.DataFrame) -> None:
+    reproduction.to_csv(out_dir / "c14b_reproduction_check_by_seed.csv", index=False)
+    passed = bool(not reproduction.empty and (reproduction["reproduction_pass"].astype(int) == 1).all())
+    lines = [
+        "# Phase C14-B Reproduction Check",
+        "",
+        "This is a mandatory pre-audit gate. Downstream representation, masking, and occlusion claims are valid only when every required seed passes.",
+        "",
+        reproduction.to_markdown(index=False) if not reproduction.empty else "_No reproduction rows._",
+        "",
+        f"Overall reproduction gate: `{'PASS' if passed else 'FAIL'}`.",
+        "Required thresholds: max absolute probability difference <= 1e-5 and mean absolute probability difference <= 1e-6, with matching patient IDs and labels.",
+    ]
+    (out_dir / "c14b_reproduction_check_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def direction_summary(values: Sequence[float], threshold: float = 1e-6) -> tuple[int, int, int]:
+    finite = [float(value) for value in values if math.isfinite(float(value))]
+    positive = sum(value > threshold for value in finite)
+    negative = sum(value < -threshold for value in finite)
+    zero = len(finite) - positive - negative
+    return positive, negative, zero
+
+
+def write_seed_consistency(frame: pd.DataFrame, metrics: Sequence[str], out_path: Path, seeds: Sequence[int]) -> pd.DataFrame:
+    rows: List[Dict[str, Any]] = []
+    if frame.empty:
+        result = pd.DataFrame(columns=["cross_seed_group", "metric"])
+        result.to_csv(out_path, index=False)
+        return result
+    for group, group_frame in frame.groupby("cross_seed_group", dropna=False):
+        for metric in metrics:
+            means = group_frame.groupby("seed")[metric].mean()
+            values = [float(means.get(seed, float("nan"))) for seed in seeds]
+            positive, negative, zero = direction_summary(values, threshold=1e-6)
+            rows.append(
+                {
+                    "cross_seed_group": group,
+                    "metric": metric,
+                    **{f"seed_{seed}_mean": values[index] for index, seed in enumerate(seeds)},
+                    "mean_across_seeds": float(np.nanmean(values)) if any(math.isfinite(value) for value in values) else float("nan"),
+                    "std_across_seeds": float(np.nanstd(values)) if any(math.isfinite(value) for value in values) else float("nan"),
+                    "positive_seed_count": positive,
+                    "negative_seed_count": negative,
+                    "zero_or_missing_seed_count": zero,
+                    "direction_consistent_2_of_3": int(max(positive, negative) >= 2 and min(positive, negative) == 0),
+                    "sign_change_across_seeds": int(positive > 0 and negative > 0),
+                }
+            )
+    result = pd.DataFrame(rows)
+    result.to_csv(out_path, index=False)
+    return result
+
+
+def write_final_report(
+    out_dir: Path,
+    reproduction: pd.DataFrame,
+    group_summary: pd.DataFrame,
+    feature_summary: pd.DataFrame,
+    ablation_summary: pd.DataFrame,
+    occlusion_summary: pd.DataFrame,
+    modality_consistency: pd.DataFrame,
+    occlusion_consistency: pd.DataFrame,
+    stability: pd.DataFrame,
+    missing: pd.DataFrame,
+    route: str,
+    allowed_next_step: str,
+    route_basis: str,
+) -> None:
+    repro_pass = bool(not reproduction.empty and (reproduction["reproduction_pass"].astype(int) == 1).all())
+    lines = [
+        "# Phase C14-B Multi-Seed Representation And Fusion Audit",
+        "",
+        "C14-B is analysis-only. No training, optimizer construction, backward pass, threshold tuning, label/split/task changes, manifest changes, tokenizer changes, report-construction changes, or architecture changes were performed.",
+        "",
+        "## Inputs And Reproduction Gate",
+        "",
+        "- Run: `runs/dmea_ht_v2_c13_temporal_focus_stress_seeds`.",
+        "- Manifest: `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl`.",
+        "- Required seeds: `[0, 42, 3407]`.",
+        f"- Reproduction gate: `{'PASS' if repro_pass else 'FAIL'}`.",
+        "- All downstream route claims are validation-only; test outputs were not used for route selection.",
+        "",
+        reproduction.to_markdown(index=False) if not reproduction.empty else "_No reproduction rows._",
+        "",
+        "## Corrected Positive-Patient Groups",
+        "",
+        "- `all_seed_fn`: FN in all three seeds.",
+        "- `majority_fn`: FN in exactly two seeds.",
+        "- `seed_sensitive_positive`: both TP and FN across seeds.",
+        "- `all_seed_tp`: TP in all three seeds.",
+        "",
+        group_summary.to_markdown(index=False) if not group_summary.empty else "_No group rows._",
+        "",
+        "## Representation Diagnostics",
+        "",
+        feature_summary.to_markdown(index=False) if not feature_summary.empty else "_No representation rows._",
+        "",
+        "## Modality Masking",
+        "",
+        ablation_summary.to_markdown(index=False) if not ablation_summary.empty else "_No masking rows._",
+        "",
+        modality_consistency.to_markdown(index=False) if not modality_consistency.empty else "_No modality consistency rows._",
+        "",
+        "Masking is a diagnostic distribution shift, not a formal ablation model or candidate model.",
+        "",
+        "## Text Occlusion",
+        "",
+        occlusion_summary.to_markdown(index=False) if not occlusion_summary.empty else "_No occlusion rows._",
+        "",
+        occlusion_consistency.to_markdown(index=False) if not occlusion_consistency.empty else "_No occlusion consistency rows._",
+        "",
+        "## Seed-Wise Fusion Stability",
+        "",
+        stability.to_markdown(index=False) if not stability.empty else "_No stability rows._",
+        "",
+        "## Unavailable Diagnostics And Limitations",
+        "",
+        "- The current model exposes classifier contributions, evidence-role scores, discordance norms, embedding norms, anchor cosines, and patient-anchor output norms.",
+        "- Learned fusion gate or attention values are unavailable as stable public outputs and are marked `unavailable`; they were not invented or approximated.",
+        "- Shortcut fields are retained only as audit metadata and were not fed into the classifier or route logic.",
+        f"- Input and missing-field audit: `inputs_used_and_missing.csv` ({len(missing)} records).",
+        "",
+        "## Final Decision",
+        "",
+        f"`{route}`.",
+        "",
+        f"Decision basis: {route_basis}",
+        "",
+        f"Allowed next-step class: `{allowed_next_step}`.",
+        "",
+        "C13 remains the current strict best at validation AUC 0.8665 +/- 0.0077. C14-B claims no model improvement. No training was launched and no test result was used for route selection.",
+    ]
+    (out_dir / "phase_c14b_final_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (out_dir / "c14b_representation_fusion_audit_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def seed_group_means(frame: pd.DataFrame, group: str, metric: str, seeds: Sequence[int]) -> List[float]:
+    if frame.empty or metric not in frame.columns:
+        return [float("nan") for _ in seeds]
+    subset = frame[frame["cross_seed_group"] == group]
+    means = subset.groupby("seed")[metric].mean()
+    return [float(means.get(seed, float("nan"))) for seed in seeds]
+
+
+def at_least_two(values: Sequence[float], predicate: Any) -> bool:
+    return sum(bool(math.isfinite(float(value)) and predicate(float(value))) for value in values) >= 2
+
+
+def decide_route(
+    reproduction: pd.DataFrame,
+    features: pd.DataFrame,
+    ablation: pd.DataFrame,
+    occlusion: pd.DataFrame,
+    seeds: Sequence[int],
+) -> tuple[str, str, str]:
+    gate_pass = bool(not reproduction.empty and (reproduction["reproduction_pass"].astype(int) == 1).all())
+    if not gate_pass:
+        return "MIXED_OR_INCONCLUSIVE", "MORE_ANALYSIS_ONLY", "The mandatory checkpoint reproduction gate failed for at least one required seed. No contribution route can be promoted."
+    if features.empty or ablation.empty or occlusion.empty:
+        return "MIXED_OR_INCONCLUSIVE", "MORE_ANALYSIS_ONLY", "One or more required diagnostic families produced no rows."
+    fn = "all_seed_fn"
+    tp = "all_seed_tp"
+    fn_text_rescue = [a - b for a, b in zip(seed_group_means(ablation, fn, "text_only_like_prob", seeds), seed_group_means(ablation, fn, "full_prob", seeds))]
+    tp_text_rescue = [a - b for a, b in zip(seed_group_means(ablation, tp, "text_only_like_prob", seeds), seed_group_means(ablation, tp, "full_prob", seeds))]
+    fn_image_suppression = seed_group_means(ablation, fn, "delta_mask_image", seeds)
+    tp_image_suppression = seed_group_means(ablation, tp, "delta_mask_image", seeds)
+    fn_bio_suppression = seed_group_means(ablation, fn, "delta_mask_bio", seeds)
+    tp_bio_suppression = seed_group_means(ablation, tp, "delta_mask_bio", seeds)
+    fn_diffuse_effect = seed_group_means(occlusion, fn, "delta_remove_diffuse", seeds)
+    fn_prefix_effect = seed_group_means(occlusion, fn, "delta_prefix_only", seeds)
+    fn_text_norm = seed_group_means(features, fn, "text_embedding_norm", seeds)
+    tp_text_norm = seed_group_means(features, tp, "text_embedding_norm", seeds)
+
+    fusion_flags = {
+        "text_only_rescue": at_least_two(fn_text_rescue, lambda value: value > 0.05),
+        "image_suppression": at_least_two(fn_image_suppression, lambda value: value > 0.02) and sum(
+            (math.isfinite(fn_value) and math.isfinite(tp_value) and fn_value > tp_value + 0.01)
+            for fn_value, tp_value in zip(fn_image_suppression, tp_image_suppression)
+        ) >= 1,
+        "bio_suppression": at_least_two(fn_bio_suppression, lambda value: value > 0.02) and sum(
+            (math.isfinite(fn_value) and math.isfinite(tp_value) and fn_value > tp_value + 0.01)
+            for fn_value, tp_value in zip(fn_bio_suppression, tp_bio_suppression)
+        ) >= 1,
+        "text_norm_comparable": sum(
+            math.isfinite(fn_value) and math.isfinite(tp_value) and abs(fn_value - tp_value) < 0.1
+            for fn_value, tp_value in zip(fn_text_norm, tp_text_norm)
+        ) >= 2,
+    }
+    fusion_support = int(fusion_flags["text_only_rescue"]) + int(fusion_flags["image_suppression"]) + int(fusion_flags["bio_suppression"])
+    text_flags = {
+        "diffuse_has_little_effect": at_least_two(fn_diffuse_effect, lambda value: abs(value) < 0.02),
+        "prefix_does_not_rescue": at_least_two(fn_prefix_effect, lambda value: value <= 0.05),
+        "text_only_remains_low": at_least_two(fn_text_rescue, lambda value: value <= 0.05),
+        "text_norm_not_distinctive": fusion_flags["text_norm_comparable"],
+    }
+    text_support = sum(int(value) for value in text_flags.values())
+    semantic_flags = {
+        "diffuse_changes_prediction": at_least_two(fn_diffuse_effect, lambda value: abs(value) >= 0.02),
+        "no_text_only_rescue": at_least_two(fn_text_rescue, lambda value: value <= 0.05),
+        "no_consistent_modality_suppression": fusion_support == 0,
+    }
+    semantic_support = sum(int(value) for value in semantic_flags.values())
+    if fusion_support >= 2 and fusion_flags["text_norm_comparable"]:
+        return "FUSION_SUPPRESSION", "SMALL_RESIDUAL_OR_GATED_FUSION_PILOT", f"Fusion support flags={fusion_flags}; all-seed FN text-only rescue, image/bio masking, and TP comparison were checked across {len(seeds)} seeds."
+    if text_support >= 3 and fusion_support == 0:
+        return "TEXT_REPRESENTATION_FAILURE", "SMALL_TEXT_REPRESENTATION_PILOT", f"Text failure flags={text_flags}; effects were required in at least two seeds and no consistent fusion suppression was found."
+    if semantic_support >= 2 and fusion_support == 0:
+        return "EVIDENCE_SEMANTIC_AMBIGUITY", "HT_SPECIFIC_EVIDENCE_REDEFINITION_AUDIT", f"Semantic ambiguity flags={semantic_flags}; text occlusion affected prediction without a consistent modality suppression pattern."
+    return "MIXED_OR_INCONCLUSIVE", "MORE_ANALYSIS_ONLY", f"Fusion flags={fusion_flags}; text flags={text_flags}; semantic flags={semantic_flags}. No single mechanism met the multi-seed strength gate."
+
+
 def main() -> None:
     args = parse_args()
+    seeds = parse_seeds(args.seeds)
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     input_rows: List[Dict[str, Any]] = []
@@ -578,8 +891,12 @@ def main() -> None:
     if manifest.empty or predictions.empty:
         raise RuntimeError("C14-B requires a non-empty manifest and validation predictions.")
     positive_groups, group_counts, group_summary = build_cross_seed_groups(predictions, manifest)
-    positive_groups.to_csv(out_dir / "c14b_cross_seed_positive_groups_val.csv", index=False)
-    group_summary.to_csv(out_dir / "c14b_cross_seed_group_summary_val.csv", index=False)
+    probability_wide = positive_groups.pivot_table(index="patient_id", columns="seed", values="pred_prob", aggfunc="first").reset_index()
+    probability_wide = probability_wide.rename(columns={seed: f"seed_{seed}_pred_prob" for seed in seeds})
+    groups_out = group_counts.merge(probability_wide, on="patient_id", how="left")
+    groups_out = groups_out.rename(columns={"cross_seed_group": "group", "pred_prob_mean": "cross_seed_pred_mean", "pred_prob_std": "cross_seed_pred_std"})
+    groups_out.to_csv(out_dir / "c14b_cross_seed_positive_groups.csv", index=False)
+    group_summary.to_csv(out_dir / "c14b_cross_seed_group_summary.csv", index=False)
     c14a = read_c14a(out_dir, input_rows)
 
     val_rows = manifest[manifest["split"] == "val"].to_dict("records")
@@ -587,100 +904,131 @@ def main() -> None:
     group_by_patient = dict(zip(group_counts["patient_id"].astype(str), group_counts["cross_seed_group"].astype(str)))
     text_by_patient = {patient_id: report_text(row) for patient_id, row in manifest_by_patient.items()}
     saved_predictions = {(str(row.patient_id), int(row.seed)): float(row.pred_prob) for row in predictions.itertuples()}
-    if c14a.empty:
-        input_rows.append({"path": "phase_c14a", "status": "not_merged", "notes": "no C14-A fields available"})
-    else:
-        input_rows.append({"path": "phase_c14a", "status": "available", "notes": "fields retained in prior audit; no inconsistent recomputation"})
+    input_rows.append({"path": "phase_c14a", "status": "available" if not c14a.empty else "missing", "notes": "reused for audit stratification; no label/prediction recomputation"})
 
     device = torch.device("cuda" if args.device == "auto" and torch.cuda.is_available() else ("cpu" if args.device == "auto" else args.device))
-    input_rows.append({"path": "runtime", "status": "loaded", "notes": f"device={device}; analysis-only eval/no_grad"})
-    feature_rows: List[Dict[str, Any]] = []
-    ablation_rows: List[Dict[str, Any]] = []
-    occlusion_rows: List[Dict[str, Any]] = []
-    reproduction_errors: List[float] = []
-    for seed in SEEDS:
+    input_rows.append({"path": "runtime", "status": "loaded", "notes": f"device={device}; eval/no_grad only; seeds={list(seeds)}"})
+    loaded: List[tuple[int, DMEAHTModel, Dict[str, Any], DataLoader, Path, Dict[str, Any]]] = []
+    reproduction_rows: List[Dict[str, Any]] = []
+    for seed in seeds:
         checkpoint_path = Path(args.run_dir) / "checkpoints" / f"seed_{seed}_best.pt"
         if not checkpoint_path.is_file():
             input_rows.append({"path": str(checkpoint_path), "status": "missing", "notes": "required C13 checkpoint"})
             raise FileNotFoundError(checkpoint_path)
         model, config, checkpoint = load_checkpoint(checkpoint_path, device)
+        loader = make_loader(config, val_rows, args.batch_size)
         input_rows.append({"path": str(checkpoint_path), "status": "loaded", "notes": f"seed={seed}; best_epoch={checkpoint.get('best_epoch', '')}"})
-        project_cfg = config.get("project", {})
-        model_cfg = config.get("model", {})
-        data_root = str(project_cfg.get("data_root", ""))
-        dataset = PatientHTDataset(
-            rows=val_rows,
-            data_root=data_root,
-            split="val",
-            max_images=int(model_cfg.get("max_images_per_patient", 28)),
-            image_size=int(model_cfg.get("image_size", 224)),
-            text_max_length=int(model_cfg.get("text_max_length", args.text_max_length)),
-            text_vocab_size=int(model_cfg.get("text_vocab_size", 50000)),
-            bio_dim=int(model_cfg.get("bio_dim", 32)),
-        )
-        loader = DataLoader(dataset, batch_size=args.batch_size, shuffle=False, num_workers=0, collate_fn=collate_patient_batch)
-        seed_features, seed_ablation, seed_occlusion, max_error = run_seed(
-            seed,
-            model,
-            loader,
-            manifest_by_patient,
-            group_by_patient,
-            saved_predictions,
-            text_by_patient,
-            config,
-            device,
-            input_rows,
+        reproduction_rows.append(reproduce_seed(seed, model, loader, manifest_by_patient, saved_predictions, checkpoint_path, config, device))
+        loaded.append((seed, model, config, loader, checkpoint_path, checkpoint))
+    reproduction = pd.DataFrame(reproduction_rows)
+    write_reproduction_report(out_dir, reproduction)
+    gate_pass = bool(not reproduction.empty and (reproduction["reproduction_pass"].astype(int) == 1).all())
+    if not gate_pass:
+        empty = pd.DataFrame()
+        for filename in (
+            "c14b_representation_diagnostics_val.csv", "c14b_representation_group_summary.csv",
+            "c14b_modality_masking_val.csv", "c14b_modality_masking_group_summary.csv", "c14b_modality_masking_seed_consistency.csv",
+            "c14b_text_occlusion_val.csv", "c14b_text_occlusion_group_summary.csv", "c14b_text_occlusion_seed_consistency.csv",
+            "c14b_seedwise_fusion_stability_val.csv",
+        ):
+            empty.to_csv(out_dir / filename, index=False)
+        missing = pd.DataFrame(input_rows, columns=["path", "status", "notes"])
+        missing.to_csv(out_dir / "c14b_inputs_used_and_missing.csv", index=False)
+        missing.to_csv(out_dir / "inputs_used_and_missing.csv", index=False)
+        write_final_report(out_dir, reproduction, group_summary, empty, empty, empty, empty, empty, empty, missing, "MIXED_OR_INCONCLUSIVE", "MORE_ANALYSIS_ONLY", "The mandatory reproduction gate failed; downstream contribution analysis was stopped.")
+        print(json.dumps({"output_dir": str(out_dir), "route": "MIXED_OR_INCONCLUSIVE", "reproduction_gate": "FAIL", "device": str(device)}, ensure_ascii=False))
+        return
+
+    feature_rows: List[Dict[str, Any]] = []
+    ablation_rows: List[Dict[str, Any]] = []
+    occlusion_rows: List[Dict[str, Any]] = []
+    for seed, model, config, loader, _checkpoint_path, _checkpoint in loaded:
+        seed_features, seed_ablation, seed_occlusion, _max_error = run_seed(
+            seed, model, loader, manifest_by_patient, group_by_patient, saved_predictions, text_by_patient, config, device, input_rows
         )
         feature_rows.extend(seed_features)
         ablation_rows.extend(seed_ablation)
         occlusion_rows.extend(seed_occlusion)
-        reproduction_errors.append(max_error)
 
     features = pd.DataFrame(feature_rows)
     ablation = pd.DataFrame(ablation_rows)
     occlusion = pd.DataFrame(occlusion_rows)
-    features = features.merge(c14a.drop_duplicates("patient_id"), on="patient_id", how="left", suffixes=("", "_c14a")) if not c14a.empty else features
-    features.to_csv(out_dir / "c14b_representation_features_val.csv", index=False)
-    ablation.to_csv(out_dir / "c14b_modality_ablation_val.csv", index=False)
+    if not c14a.empty:
+        features = features.merge(c14a.drop_duplicates("patient_id"), on="patient_id", how="left", suffixes=("", "_c14a"))
+    features.to_csv(out_dir / "c14b_representation_diagnostics_val.csv", index=False)
+    ablation.to_csv(out_dir / "c14b_modality_masking_val.csv", index=False)
     occlusion.to_csv(out_dir / "c14b_text_occlusion_val.csv", index=False)
 
     feature_columns = [
         "text_embedding_norm", "image_embedding_norm", "bio_embedding_norm", "patient_anchor_norm", "fusion_feature_norm",
         "text_anchor_cosine", "image_anchor_cosine", "bio_anchor_cosine", "text_image_cosine", "text_bio_cosine", "image_bio_cosine",
-        "e_img", "e_text", "e_bio", "e_synergy", "e_negative", "d_img_txt", "d_img_bio", "d_txt_bio",
+        "text_classifier_contribution", "image_classifier_contribution", "bio_classifier_contribution", "discordance_feature_norm",
     ]
     feature_summary = grouped_summary(features[features["label"] == 1], feature_columns)
-    ablation_columns = ["pred_full_model", "pred_text_only_like", "pred_image_only_like", "pred_bio_only_like", "delta_mask_text", "delta_mask_image", "delta_mask_bio", "text_contribution", "image_contribution", "bio_contribution"]
+    ablation_columns = [
+        "full_prob", "mask_text_prob", "mask_image_prob", "mask_bio_prob", "text_only_like_prob", "image_only_like_prob", "bio_only_like_prob",
+        "delta_mask_text", "delta_mask_image", "delta_mask_bio", "delta_text_only_like", "delta_image_only_like", "delta_bio_only_like",
+    ]
     ablation_summary = grouped_summary(ablation, ablation_columns)
-    occlusion_columns = ["pred_full_c13_text", "delta_remove_diffuse", "delta_remove_negative", "delta_prefix_only", "delta_remove_prefix"]
+    occlusion_columns = ["full_prob", "remove_diffuse_prob", "remove_negative_prob", "prefix_only_prob", "remove_prefix_prob", "delta_remove_diffuse", "delta_remove_negative", "delta_prefix_only", "delta_remove_prefix"]
     occlusion_summary = grouped_summary(occlusion, occlusion_columns)
-    feature_summary.to_csv(out_dir / "c14b_representation_group_summary_val.csv", index=False)
-    ablation_summary.to_csv(out_dir / "c14b_modality_ablation_group_summary_val.csv", index=False)
-    occlusion_summary.to_csv(out_dir / "c14b_text_occlusion_group_summary_val.csv", index=False)
+    feature_summary.to_csv(out_dir / "c14b_representation_group_summary.csv", index=False)
+    ablation_summary.to_csv(out_dir / "c14b_modality_masking_group_summary.csv", index=False)
+    occlusion_summary.to_csv(out_dir / "c14b_text_occlusion_group_summary.csv", index=False)
+    modality_consistency = write_seed_consistency(
+        ablation[ablation["label"] == 1],
+        ["delta_mask_text", "delta_mask_image", "delta_mask_bio", "delta_text_only_like", "delta_image_only_like", "delta_bio_only_like"],
+        out_dir / "c14b_modality_masking_seed_consistency.csv",
+        seeds,
+    )
+    occlusion_consistency = write_seed_consistency(
+        occlusion,
+        ["delta_remove_diffuse", "delta_remove_negative", "delta_prefix_only", "delta_remove_prefix"],
+        out_dir / "c14b_text_occlusion_seed_consistency.csv",
+        seeds,
+    )
 
     stability_base = ablation[ablation["label"] == 1].copy()
     stability = stability_base.groupby("patient_id", as_index=False).agg(
         cross_seed_group=("cross_seed_group", "first"),
-        n_rows=("seed", "nunique"),
-        pred_prob_std=("pred_full_model", lambda x: float(np.std(x, ddof=1)) if len(x) > 1 else 0.0),
-        text_contribution_std=("text_contribution", lambda x: float(np.std(x, ddof=1)) if len(x) > 1 else 0.0),
-        image_contribution_std=("image_contribution", lambda x: float(np.std(x, ddof=1)) if len(x) > 1 else 0.0),
-        bio_contribution_std=("bio_contribution", lambda x: float(np.std(x, ddof=1)) if len(x) > 1 else 0.0),
+        n_seeds=("seed", "nunique"),
+        full_prob_std=("full_prob", "std"),
+        delta_mask_text_std=("delta_mask_text", "std"),
+        delta_mask_image_std=("delta_mask_image", "std"),
+        delta_mask_bio_std=("delta_mask_bio", "std"),
     )
-    feature_stability = features[features["label"] == 1].groupby("patient_id").agg(
+    occlusion_stability = occlusion.groupby("patient_id", as_index=False).agg(
+        delta_remove_diffuse_std=("delta_remove_diffuse", "std"),
+        delta_remove_negative_std=("delta_remove_negative", "std"),
+    )
+    feature_stability = features[features["label"] == 1].groupby("patient_id", as_index=False).agg(
         text_anchor_cosine_std=("text_anchor_cosine", "std"),
         image_anchor_cosine_std=("image_anchor_cosine", "std"),
         bio_anchor_cosine_std=("bio_anchor_cosine", "std"),
-    ).reset_index()
-    stability = stability.merge(feature_stability, on="patient_id", how="left")
-    stability["contribution_std_mean"] = stability[["text_contribution_std", "image_contribution_std", "bio_contribution_std"]].mean(axis=1)
+    )
+    stability = stability.merge(occlusion_stability, on="patient_id", how="left").merge(feature_stability, on="patient_id", how="left")
+    stability["contribution_std_mean"] = stability[["delta_mask_text_std", "delta_mask_image_std", "delta_mask_bio_std"]].mean(axis=1)
     stability.to_csv(out_dir / "c14b_seedwise_fusion_stability_val.csv", index=False)
+    top_stability = stability.sort_values("full_prob_std", ascending=False).head(20)
+    stability_report = [
+        "# Phase C14-B Seed-Wise Fusion Stability",
+        "",
+        "The table ranks validation-positive patients by cross-seed prediction and contribution instability.",
+        "",
+        top_stability.to_markdown(index=False) if not top_stability.empty else "_No stability rows._",
+        "",
+        "Patients are grouped using the corrected all-seed FN, majority FN, seed-sensitive positive, and all-seed TP definitions.",
+        "Seed 42 is not selected or discarded; it is reported alongside seeds 0 and 3407.",
+    ]
+    (out_dir / "c14b_seedwise_fusion_stability_report.md").write_text("\n".join(stability_report) + "\n", encoding="utf-8")
     write_ranked_cases(features, ablation, occlusion, out_dir)
 
     missing = pd.DataFrame(input_rows, columns=["path", "status", "notes"])
+    missing.to_csv(out_dir / "c14b_inputs_used_and_missing.csv", index=False)
     missing.to_csv(out_dir / "inputs_used_and_missing.csv", index=False)
-    route = write_reports(out_dir, group_summary, feature_summary, ablation_summary, occlusion_summary, stability, features[features["cross_seed_group"] == "all_seed_fn"], max(reproduction_errors) if reproduction_errors else float("nan"), missing)
-    print(json.dumps({"output_dir": str(out_dir), "route": route, "all_seed_fn_patients": int((group_counts["cross_seed_group"] == "all_seed_fn").sum()), "max_reproduction_error": max(reproduction_errors) if reproduction_errors else None, "device": str(device)}, ensure_ascii=False))
+    route, allowed_next_step, route_basis = decide_route(reproduction, features, ablation, occlusion, seeds)
+    write_final_report(out_dir, reproduction, group_summary, feature_summary, ablation_summary, occlusion_summary, modality_consistency, occlusion_consistency, stability, missing, route, allowed_next_step, route_basis)
+    print(json.dumps({"output_dir": str(out_dir), "route": route, "allowed_next_step": allowed_next_step, "reproduction_gate": "PASS", "all_seed_fn_patients": int((group_counts["cross_seed_group"] == "all_seed_fn").sum()), "device": str(device)}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

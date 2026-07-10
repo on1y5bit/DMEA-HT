@@ -1724,3 +1724,29 @@
 - No optimizer is constructed or stepped, and no gradients are enabled.
 - Missing internal diagnostics are reported rather than invented.
 - C13 remains the current strict best; C14-B makes no model-improvement claim.
+
+### Local Implementation Status
+
+- Local `py_compile` passed for both C14-B scripts.
+- Local commit: `a19f91b` (`Add C14b representation fusion audit`).
+- GitHub push was attempted but timed out after 120 seconds.
+- Bundle fallback was attempted, but the minimal read-only SSH probe to `linruixin@10.21.71.74:22` returned `Permission denied`; no server-side C14-B command was started.
+- Therefore no C14-B route label, representation result, modality-ablation result, or text-occlusion result is claimed yet.
+
+## 2026-07-10 DMEA-v2 Phase C14-B Multi-Seed Representation And Fusion Audit Revision
+
+### Specification Corrections
+
+- Adopted the revised multi-seed C14-B contract from `codex_dmea_ht_phase_c14b_multiseed_representation_fusion_audit.md`.
+- Added a mandatory per-seed reproduction gate before masking, occlusion, or contribution claims.
+- Added configurable `--seeds`, defaulting to `[0, 42, 3407]`.
+- Corrected required output names for reproduction, representation, modality masking, text occlusion, and seed consistency artifacts.
+- Added conservative route selection requiring valid reproduction and multi-seed directional support; otherwise the route is `MIXED_OR_INCONCLUSIVE`.
+- Added explicit `unavailable` marking for learned fusion gate or attention values not exposed by the current model.
+
+### Local Verification
+
+- `python -m py_compile scripts/analyze_phase_c14b_representation_fusion.py scripts/collect_phase_c14b_report.py` passed.
+- `git diff --check` passed.
+- No training, optimizer, backward pass, label/split/task/manifest/tokenizer/report-construction/model changes were introduced.
+- Server execution is still pending; no reproduction result or C14-B route claim is made in this section until the intended code is verified on the server.

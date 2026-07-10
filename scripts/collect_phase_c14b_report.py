@@ -19,6 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", default="auto")
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--text-max-length", type=int, default=256)
+    parser.add_argument("--seeds", default="0,42,3407")
     parser.add_argument("--include-test-reporting-only", action="store_true")
     return parser.parse_args()
 
@@ -40,6 +41,8 @@ def main() -> None:
         str(args.batch_size),
         "--text-max-length",
         str(args.text_max_length),
+        "--seeds",
+        args.seeds,
     ]
     if args.include_test_reporting_only:
         command.append("--include-test-reporting-only")
