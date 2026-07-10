@@ -27,3 +27,16 @@ C15 was not authorized and no training was launched. The allowed next step is `M
 C13 remains the current strict best at validation AUC `0.8665 +/- 0.0077`. No test result was used for route selection, and no AUC 0.90 claim is made.
 
 Detailed C14-C artifacts are in `analysis_reports/phase_c14c/`.
+
+## C14-D Follow-Up
+
+C14-D confirmed the hard-patient concentration without authorizing training:
+
+- 79 all-seed hard patients: 43 negative and 36 positive;
+- top-20 patient-side inversion incidence share: 66.27%;
+- negative hard patients were more image-opposed, while positive hard patients were more text-driven;
+- no single correction mechanism met a new training gate.
+
+C14-D route: `HARD_PATIENT_SUBGROUP_AUDIT_CONFIRMED`.
+
+C15 remains unauthorized. The next valid action is a manual/clinical audit of the highest-impact positive and negative patients.

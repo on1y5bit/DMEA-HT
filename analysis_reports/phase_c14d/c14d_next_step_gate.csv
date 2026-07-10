@@ -1,0 +1,2 @@
+input_route,c14d_route,next_step,c15_authorized,training_started,top_k,top_k_inversion_share,all_seed_hard_patients,notes
+HARD_PATIENT_SUBGROUP_FAILURE,HARD_PATIENT_SUBGROUP_AUDIT_CONFIRMED,MORE_ANALYSIS_ONLY,0,0,20,0.6627118644067796,79,Audit-only subgroup/profile comparison; no shortcut field entered a predictor or gate.

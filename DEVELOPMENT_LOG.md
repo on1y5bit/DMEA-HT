@@ -1830,6 +1830,18 @@
 - Added `scripts/collect_phase_c14c_report.py`.
 - Local `py_compile` and `git diff --check` passed.
 
+### C14-D Server Result
+
+- Server synchronized to `17da324` through the bundle fallback after a transient GitHub HTTP/2 pull error.
+- C14-D completed as an audit-only run; no training started.
+- All-seed hard patients: `79` total, comprising `43` negative and `36` positive patients.
+- Top-20 hard-patient incidence share: `66.27%`, using the patient-side incidence denominator `2 x inversion rows`.
+- Negative hard patients had mean image-opposed rate `0.5868` and mean image-repair rate `0.2406`.
+- Positive hard patients had mean text-driven rate `0.6841` and mean image-opposed rate `0.1873`.
+- Mean fusion-interaction rates remained low: `0.0704` for negative hard patients and `0.1255` for positive hard patients.
+- C14-D gate: `HARD_PATIENT_SUBGROUP_AUDIT_CONFIRMED`.
+- Next step remains `MORE_ANALYSIS_ONLY`; C15 remains unauthorized.
+
 ### C14-C Server Result
 
 - Server synchronized to commit `238227a` and ran the C14-C pairwise audit in the `ma` environment with CUDA.
