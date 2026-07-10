@@ -1861,6 +1861,29 @@
 - Local `py_compile` and `git diff --check` passed.
 - No core model, training code, manifest, label, split, task, report, image, or bio changes were made.
 
+### C14-E Server Result
+
+- Server synchronized to `e9a0486` through the bundle workflow and completed the C14-E audit.
+- Hard positives / non-hard positives: `36 / 11`.
+- Hard negatives / non-hard negatives: `43 / 4`.
+- No-replacement matching retained `11` hard positives and `4` hard negatives, for coverage `30.56%` and `9.30%`; `25` hard positives and `39` hard negatives remained unmatched.
+- No matching variable reached the preferred `|SMD| <= 0.10` balance after matching. Post-match absolute SMDs ranged from `0.5141` to `1.1146` for positives and `0.4629` to `1.1078` for negatives, excluding unavailable/constant bio-availability values.
+- Corrected all-patient top-k metrics:
+  - top-5 all-seed pair coverage / patient-side incidence share: `70.23% / 36.51%`;
+  - top-10 all-seed pair coverage / patient-side incidence share: `92.09% / 50.93%`;
+  - top-20 all-seed pair coverage / patient-side incidence share: `100.00% / 71.40%`.
+- Hard-positive evidence categories included `27/36` HT-specific cases, but `21/36` also had contradictory evidence; temporal states included `26/36` intermittent-conflict cases.
+- Hard-negative image-mimic audit found only `2/43` strict model-supported mimic cases, while `17/43` had thyroiditis-like report wording without sufficient image-support evidence and `24/43` remained unclear.
+- Hard-negative follow-up/label audit found `25/43` HT-like-but-not-diagnosed, `5/43` short-follow-up/uncertain, and `13/43` well-supported negatives.
+- Candidate coverage before matched-control gating:
+  - hard-positive weak/ambiguous or temporal-conflict evidence: `30/36`;
+  - hard-negative strict image mimic: `2/43`;
+  - label/follow-up ambiguity: `30/43`.
+- All candidate mechanisms failed the generalizability gate because matching coverage and balance were inadequate and matched-control contrasts did not support specificity.
+- Final route: `DATA_LIMIT_NO_GENERAL_MODEL_FIX`.
+- Allowed next step: `KEEP_C13_AND_REPORT_LIMITATION`.
+- Training remains blocked; C13 remains the current strict best.
+
 ### C14-C Server Result
 
 - Server synchronized to commit `238227a` and ran the C14-C pairwise audit in the `ma` environment with CUDA.

@@ -40,3 +40,17 @@ C14-D confirmed the hard-patient concentration without authorizing training:
 C14-D route: `HARD_PATIENT_SUBGROUP_AUDIT_CONFIRMED`.
 
 C15 remains unauthorized. The next valid action is a manual/clinical audit of the highest-impact positive and negative patients.
+
+## C14-E Clinical Evidence Audit
+
+C14-E completed the requested clinical-evidence and matched-control review:
+
+- hard positives / available non-hard positive controls: 36 / 11;
+- hard negatives / available non-hard negative controls: 43 / 4;
+- matching coverage: 30.56% for positives and 9.30% for negatives;
+- no matching variable achieved the preferred absolute SMD <= 0.10;
+- no candidate mechanism passed the 30% generalizability gate with a valid matched-control contrast.
+
+C14-E route: `DATA_LIMIT_NO_GENERAL_MODEL_FIX`.
+
+Allowed next step: `KEEP_C13_AND_REPORT_LIMITATION`. C15 remains blocked, C13 remains the strict best, and the validation AUC 0.90 target was not reached.

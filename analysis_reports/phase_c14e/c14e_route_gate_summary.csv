@@ -1,0 +1,2 @@
+route,allowed_next_step,training_authorized,hard_positive_count,hard_negative_count,matched_hard_positive_count,matched_hard_negative_count,positive_matching_coverage,negative_matching_coverage,candidate_mechanisms_passing_gate,decision_basis
+DATA_LIMIT_NO_GENERAL_MODEL_FIX,KEEP_C13_AND_REPORT_LIMITATION,0,36,43,11,4,0.3055555555555556,0.09302325581395349,,"Matched-control coverage is below 50% for at least one label subgroup, preventing a broad model mechanism claim."
