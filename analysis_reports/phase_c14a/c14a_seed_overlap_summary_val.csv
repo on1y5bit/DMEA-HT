@@ -1,0 +1,8 @@
+comparison,fn_count,unique_fn_count,overlap_count
+seed_0,22,4,18
+seed_42,8,0,8
+seed_3407,19,0,19
+seed_0_vs_seed_42,22,16,7
+seed_0_vs_seed_3407,22,5,18
+seed_42_vs_seed_3407,8,11,8
+all_seed_intersection,7,0,7

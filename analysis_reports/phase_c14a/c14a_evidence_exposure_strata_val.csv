@@ -1,0 +1,5 @@
+stratum,n_rows,n_patients,fn_count,fn_rate,mean_pred_prob,mean_cross_seed_pred_std
+diffuse_exposed_first_window,126,42,44,0.3492063492063492,0.6002538856562405,0.10655163464839053
+only_generic_morphology_exposed,12,4,3,0.25,0.6497478286425272,0.07895282208173264
+no_positive_thyroid_evidence_exposed,3,1,2,0.6666666666666666,0.4686773518721263,0.17959597706056715
+positive_negative_overlap_full_report,117,39,38,0.3247863247863248,0.616665351865256,0.1001842279584482

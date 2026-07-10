@@ -1624,3 +1624,76 @@
 - C13 is now the strongest strict structural-matched single-model route observed so far.
 - C13 should not be treated as final because validation AUC remains below the 0.90 target and sensitivity is still seed-sensitive.
 - Next action: design a C14 low-cost pilot focused on morphology-positive false-negative recall and high-report-length recall, while preserving labels, patient-level split, task definition, and shortcut exclusion from the classifier.
+
+## 2026-07-10 DMEA-v2 Phase C14-A FN Token Exposure Audit
+
+### Plan
+
+- Do not train, tune thresholds, change labels, change splits, change task definition, or edit model/data/training core code.
+- Audit C13 temporal-focus stress-seed validation positives only for route selection.
+- Use C13 stress run `runs/dmea_ht_v2_c13_temporal_focus_stress_seeds`.
+- Use C13 manifest `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl`.
+- Classify positive cases as TP, FN, stable TP, stable FN, and seed-sensitive across seeds `[0, 42, 3407]`.
+- Determine whether remaining morphology-positive false negatives are primarily due to missing first-window evidence or evidence being visible but underused.
+- Keep test split reporting-only.
+
+### Actual Changes
+
+- Added `scripts/analyze_phase_c14a_fn_token_exposure.py`.
+- Added `scripts/collect_phase_c14a_report.py`.
+- Generated C14-A audit reports under `analysis_reports/phase_c14a`.
+- Used the project tokenizer contract:
+  - character-level tokenizer;
+  - `text_max_length=256`;
+  - effective report text window is 254 characters plus special tokens.
+- No training was launched.
+- No model, data loader, label, split, image, bio, or threshold changes were made.
+
+### Generated Reports
+
+- `c14a_positive_patient_token_exposure_val.csv`
+- `c14a_fn_vs_tp_summary_val.csv`
+- `c14a_cross_seed_stable_fn_cases_val.csv`
+- `c14a_seed_sensitive_positive_cases_val.csv`
+- `c14a_evidence_exposure_strata_val.csv`
+- `c14a_seed_overlap_summary_val.csv`
+- `c14a_token_exposure_audit_report.md`
+- `phase_c14a_final_report.md`
+- `inputs_used_and_missing.csv`
+- `c14a_positive_patient_token_exposure_test_reporting_only.csv`
+
+### Key Findings
+
+- Validation positive rows:
+  - FN rows: 49 across 23 patients;
+  - TP rows: 92 across 40 patients.
+- Cross-seed patient categories:
+  - stable FN patients: 19;
+  - stable TP patients: 28.
+- Stable FN evidence exposure:
+  - mean first-window diffuse HT-like terms: 1.4737;
+  - mean full-report diffuse HT-like terms: 1.4737;
+  - no-diffuse first-window rate: 0.1053;
+  - positive evidence exposed in first window: 0.9474.
+- Stable TP comparison:
+  - mean first-window diffuse HT-like terms: 1.6071.
+- Evidence exposure strata:
+  - diffuse evidence exposed in first window: 126 rows / 42 patients, FN rate 0.3492;
+  - only generic morphology exposed: 12 rows / 4 patients, FN rate 0.2500;
+  - no positive thyroid evidence exposed: 3 rows / 1 patient, FN rate 0.6667.
+- Seed overlap:
+  - seed 0 FN count: 22;
+  - seed 42 FN count: 8;
+  - seed 3407 FN count: 19;
+  - all-seed FN intersection: 7 patients.
+
+### C14-A Decision
+
+- Final decision: `EVIDENCE_EXPOSED_BUT_NOT_USED`.
+- C13 residual false negatives are not primarily explained by diffuse/HT-like evidence being beyond the model-visible text window.
+- Do not proceed to a C14-B report-prefix pilot from this evidence.
+- Next action should be analysis-first:
+  - text representation audit;
+  - patient-anchor fusion contribution audit;
+  - image/text contribution audit;
+  - seed-wise fusion stability audit.
