@@ -2324,3 +2324,34 @@
 - C21 decision: `C21_NOT_AUTHORIZED`.
 - Final action: `KEEP_DEMA_C17_STRICT_BEST` / `DEMA_C17_POSITIVE_PRESERVATION`, with mean validation AUC `0.8696242644 +/- 0.0074797246`. Do not start C21 training, residual polarity expansion, or scalar-compression rescue from this C20 result without a new evidence-gated plan.
 - Reports: `analysis_reports/phase_c20_dema/c20_route_decision.md` and `analysis_reports/phase_c20_dema/phase_c20_dema_final_report.md`.
+
+## 2026-07-14 Phase C21-A Mechanism Propagation Responsibility Audit
+
+### Contract And Scope
+
+- Official project and model name remain DEMA-HT. The canonical server worktree is `/home/linruixin/chen/project/DMEA-HT` on `main`, with data root `/data/csb/DMEA-HT/HT_2025.12_25` and runtime `/home/linruixin/chen/conda/envs/ma`.
+- C21-A is analysis-only. It does not train, optimize, backpropagate, alter labels, alter patient-level splits, alter manifests, alter the task definition, read test data, calculate AUPRC, create a branch/worktree, or authorize a new model.
+- The audit uses the frozen C17 checkpoints for seeds `[0, 42, 3407]`, validation AUC as the primary metric, and train/validation data only. Test remains reporting-only and was not read.
+- The graph is taken from the actual `HTMechanismRelationLayer`: image/text morphology to M1, bio immune/function to M2/M3, text opposition/temporal to M4/M5, five mechanism states into final `MultiheadAttention`, and text-global/bio-other additive context edges. Independent relation edge weights and explicit residual node updates are recorded as unavailable rather than invented.
+
+### Implementation And Server Verification
+
+- C21-A implementation commits were `82ab4b0`, `dd50265`, `48fbdce`, and `5132ba1`; all were pushed to GitHub `main` and the server canonical worktree was fast-forwarded to `5132ba1`.
+- Added the read-only trace exporter, node/edge stability analyses, edge ablations, node/modulation bypasses, responsibility scorer, and final collector under `scripts/*phase_c21a*`.
+- The first mirror reproduction attempt exposed two numerical-path issues, both corrected without loosening thresholds: exact context addition order and preserving the real attention key/value identity when no attention edge is intervened on.
+- The final server static gate and C17 reproduction gate passed. For every seed, validation patient IDs and labels matched exactly; maximum absolute probability difference was `1.1102230246251565e-16` and mean difference was approximately `2.04e-17` to `2.22e-17`.
+- Server C17 validation counts were `602/94` for train/validation per seed. Large trace NPZ archives remain server-only. The tensor inventory records complete split shapes and marks unavailable graph fields explicitly.
+
+### C21-A Results
+
+- The frozen C17 baseline validation AUCs remained `0.8700769579`, `0.8768673608`, and `0.8619284744`; mean/std remains `0.8696242644 +/- 0.0074797246`.
+- The highest supported responsibility candidate was `M3_function_to_final_mechanism`, with responsibility score `0.8001348`, mean absolute probability effect `0.0002216`, and strong within-seed propagation deformation. Its cross-seed ablation Spearman was only `0.0078386`, despite sign consistency `1.0`; this is unstable magnitude responsibility, not reproducible localization.
+- The next supported candidate was `text_morphology_to_M1_morphology` with score `0.2377121`, cross-seed ablation Spearman `0.3143376`, and direction consistency `0.5673759`, also below the localization gate. Role scoring and aggregation had large cross-seed instability but no direct supported ablation intervention.
+- Validation-only shortcut audit found orientation-invariant AUC `0.9769126` for `raw_n_visits` and `0.9418289` for `raw_n_images`; selected visit count and used image count were `0.5`. These fields were excluded from the model and all probes.
+
+### Decision
+
+- C21-A route: `C21A_DIFFUSE_MECHANISM_PROPAGATION_INSTABILITY`.
+- `localized_reproducible = False`; `C22_DESIGN_AUTHORIZED = False`; `training_authorized = False`.
+- Retain `DEMA_C17_POSITIVE_PRESERVATION` as the strict-best route. Do not start C22 design or any new training from this audit result.
+- Final server report and artifacts are under `analysis_reports/phase_c21a_dema/`, including `phase_c21a_dema_final_report.md`, reproduction checks, tensor inventory, node/edge stability tables, ablation summaries, responsibility scores, shortcut exclusion audit, and command log.
