@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -122,11 +121,22 @@ def route_summary(summary: Dict[str, Any], metrics: pd.DataFrame) -> Dict[str, A
     }
 
 
-def copy_selected_audits(source: Path, destination: Path) -> None:
+def merge_route_audits(route_outputs: Dict[str, Path], destination: Path) -> None:
+    """Expose both route audits at the report root without losing route identity."""
     for filename in AUDIT_FILES:
-        path = source / filename
-        if path.exists():
-            shutil.copy2(path, destination / filename)
+        frames: List[pd.DataFrame] = []
+        for route, source in route_outputs.items():
+            path = source / filename
+            if not path.exists():
+                continue
+            frame = pd.read_csv(path)
+            if "route" not in frame.columns:
+                frame.insert(0, "route", route)
+            else:
+                frame["route"] = route
+            frames.append(frame)
+        if frames:
+            pd.concat(frames, ignore_index=True).to_csv(destination / filename, index=False)
 
 
 def choose_decision(routes: Dict[str, Dict[str, Any]]) -> tuple[str, str, List[str]]:
@@ -225,9 +235,7 @@ def main() -> None:
         for route in route_specs
     }
     decision, selected_route, failures = choose_decision(route_gate_results)
-    selected_output = route_outputs.get(selected_route)
-    if selected_output is not None:
-        copy_selected_audits(selected_output, output_dir)
+    merge_route_audits(route_outputs, output_dir)
 
     transition_script = Path(__file__).with_name("analyze_phase_c18_c17_inversion_transitions.py")
     transition_output = subprocess.run(
