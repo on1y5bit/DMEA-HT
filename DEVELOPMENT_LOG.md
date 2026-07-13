@@ -2081,3 +2081,35 @@
 - Design gate: `C16_MEA_DESIGN_AUDIT_PASS_WITH_CONSTRAINTS`; all `8/8` hard checks passed and all nine required design files were generated under `analysis_reports/phase_c16_mea_design/`.
 - The first permitted mechanism-alignment loss is image-text morphology alignment only. Bio immune/function nodes may enter the mechanism graph from verified observed fields, but no bio-text alignment is permitted without separately verified matching text semantics.
 - Backward-compatible C16-MEA implementation may begin. Training remains blocked until static/synthetic checks and both predefined seed-0 Core and Core+Ranking smoke gates pass.
+
+## 2026-07-13 Phase C16-MEA Implementation
+
+### Pre-Edit Contract
+
+- Implement C16-MEA on a new branch `codex/c16-mea-implementation` from the passing design-audit commit `b04e0d2`; do not merge or reuse the abandoned DSSA implementation.
+- Keep the frozen C13 manifest, labels, patient-level splits, report construction, image paths, bio values, prediction horizon, encoder families, optimizer family, and validation-AUC checkpoint selection unchanged. Test remains reporting-only.
+- Reuse the C13 per-image, per-character text, and seven-field bio encoder tokens. Add only an optional `model.use_mea=true` path; absent and explicit-false configurations must retain identical legacy state dictionaries and logits.
+- Build text role masks from audited morphology, support, opposition, uncertainty, nonspecific, latest, history, and full-report character spans. Empty masks use learned token pooling; missing sections are never negative evidence.
+- Group bio tokens only as verified observed continuous semantics: demographics (`sex`, `age`), immune (`TgAb`, `TPOAb`), and thyroid function (`FT3`, `FT4`, `TSH`). Do not read `bio_abnormal_flags`, test-order missingness counts, shortcut variables, or C14 audit fields.
+- Form six explicit mechanism nodes for morphology, immune evidence, function evidence, opposition, temporal evidence, and disease state. Use only audited graph edges and conflict-aware evidence aggregation; do not introduce shared/private decomposition, modality-invariant alignment, orthogonality, or DecAlign terminology.
+- Permit image-text morphology alignment as the only cross-modal mechanism-alignment loss. Add a disease-state classification margin, evidence-role separation, and optional training-batch positive-negative ranking; BCE remains dominant and labels never enter model inference.
+- Use classification-only epochs `1-3`, linearly ramp auxiliary weights through epoch `8`, and then hold fixed targets. Core uses `lambda_rank=0`; Core+Ranking uses `lambda_rank=0.02`. All architecture, data, and remaining loss settings stay identical between the two routes.
+- Log raw and effective losses plus mechanism, role, reliability, conflict, state-margin, attention, validity, and prediction diagnostics. Export only patient-level scalar diagnostics, not raw token tensors.
+
+### Execution Gates
+
+- Before any real training, require local static checks and a server synthetic gate covering legacy equivalence, tensor shapes, masks and empty-mask fallback, missing bio groups, finite losses, ranking one-class behavior, probability normalization, gradient reachability, and shortcut/DSSA exclusion.
+- After the static/synthetic gate passes, run predefined two-epoch seed-0 Core and Core+Ranking smokes. Stop on non-finite values, constant predictions, invalid probability sums, empty gradients, global attention/reliability saturation, conflict collapse, or legacy incompatibility.
+- Full seed-0 pilots are authorized only after both smoke routes and health collectors pass. Select the route using the frozen validation-only gate; do not inspect reporting-only test metrics for route or checkpoint selection.
+- Seeds `42` and `3407` are authorized only after a passing seed-0 route. No architecture or hyperparameter tuning is allowed after seed-0 results are observed.
+
+### Local Implementation And Synthetic Gate
+
+- Added the optional `MechanismEvidenceAlignment` path over unchanged C13 image, text, and bio encoder tokens, with image morphology queries, mask-guided text role pooling, observed-only bio grouping, six HT mechanism states, latent evidence-role scoring, conflict-aware aggregation, and a binary disease-state head.
+- Separated text evidence availability from dictionary-guidance availability. Empty support/opposition/uncertainty/temporal masks use learned token pooling, while image-text morphology alignment is enabled only for a real audited morphology span and a valid image pair. Diagnostic hints may guide support pooling but cannot authorize morphology alignment.
+- Added patient-label state margin, image-text morphology alignment, clinical support/opposition separation, and training-batch-only pairwise ranking losses. Effective auxiliary weights are zero for epochs `1-3`, ramp linearly through epoch `8`, and remain fixed thereafter.
+- Added Core and Core+Ranking smoke/pilot configs plus a formal multi-seed config. Seed-0 smoke/pilot configs set `evaluate_test=false`; only the post-selection formal config reports test.
+- Added scalar MEA diagnostics to epoch and selected-checkpoint prediction exports, plus separate health, seed-0 route-selection, formal comparison, inversion, evidence-role, mechanism, temporal, positive-preservation, shortcut, seed-stability, and final-decision collectors.
+- Local coding checks parsed all `31` YAML configs, compiled the target Python files, and found no whitespace errors. These are coding-only checks and are not accepted as runtime evidence.
+- A local CPU synthetic preflight was mistakenly invoked despite the server-only execution contract. No training was started, its generated report was deleted, and its result is invalid for authorization, comparison, or reporting.
+- All synthetic and runtime checks must be rerun in `/home/linruixin/chen/conda/envs/ma` on the server. Neither predefined seed-0 smoke is authorized until that server gate passes.

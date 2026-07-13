@@ -12,6 +12,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+from dmea_ht.mechanism_evidence_alignment import TEXT_MASK_KEYS, build_text_evidence_masks
+
 
 SHORTCUT_FIELDS = [
     "n_images",
@@ -220,6 +222,7 @@ class PatientHTDataset(Dataset):
 
         text = str(row.get("report_text") or row.get("text") or "")
         token_ids, attention_mask = tokenize_text(text, self.text_max_length, self.text_vocab_size)
+        text_evidence_masks = build_text_evidence_masks(text, self.text_max_length)
         bio_values = self._bio_values(row)
         bio_missing_mask = self._bio_missing_mask(row, bio_values)
         bio_abnormal_flags = torch.tensor(
@@ -237,7 +240,7 @@ class PatientHTDataset(Dataset):
         shortcuts["report_length"] = row.get("report_length", len(text))
         shortcuts["padding_count"] = row.get("padding_count", max(self.max_images - len(selected_paths), 0))
 
-        return {
+        sample = {
             "patient_id": str(row["patient_id"]),
             "label": torch.tensor(float(row["label"]), dtype=torch.float32),
             "images": torch.stack(images, dim=0),
@@ -261,6 +264,8 @@ class PatientHTDataset(Dataset):
             "shortcuts": shortcuts,
             "matched_morphology_terms": parse_maybe_list(row.get("matched_morphology_terms")),
         }
+        sample.update(text_evidence_masks)
+        return sample
 
 
 def collate_patient_batch(batch: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
@@ -270,6 +275,7 @@ def collate_patient_batch(batch: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
         "image_mask",
         "report_input_ids",
         "report_attention_mask",
+        *TEXT_MASK_KEYS,
         "bio_values",
         "bio_missing_mask",
         "bio_abnormal_flags",

@@ -5,6 +5,8 @@ from typing import Dict
 import torch
 from torch import nn
 
+from dmea_ht.mechanism_evidence_alignment import MechanismEvidenceAlignment, TEXT_MASK_KEYS
+
 
 class ImageEncoder(nn.Module):
     def __init__(self, hidden_dim: int, dropout: float) -> None:
@@ -234,6 +236,16 @@ class DMEAHTModel(nn.Module):
             nn.Dropout(dropout),
             nn.Linear(hidden_dim, 1),
         )
+        self.use_mea = bool(model_cfg.get("use_mea", False))
+        self.mechanism_evidence_alignment = (
+            MechanismEvidenceAlignment(
+                hidden_dim,
+                dropout,
+                num_heads=int(model_cfg.get("mea_num_heads", 4)),
+            )
+            if self.use_mea
+            else None
+        )
 
     def _auxiliary_outputs(
         self,
@@ -260,6 +272,20 @@ class DMEAHTModel(nn.Module):
             batch["bio_values"], batch["bio_missing_mask"], batch["bio_abnormal_flags"]
         )
         aux_outputs = self._auxiliary_outputs(image_global, text_global, text_tokens, batch["report_attention_mask"])
+
+        if self.mechanism_evidence_alignment is not None:
+            text_masks = {key: batch[key] for key in TEXT_MASK_KEYS}
+            outputs = self.mechanism_evidence_alignment(
+                image_tokens=image_tokens,
+                image_mask=batch["image_mask"],
+                text_tokens=text_tokens,
+                text_attention_mask=batch["report_attention_mask"],
+                bio_tokens=bio_tokens,
+                bio_missing_mask=batch["bio_missing_mask"],
+                text_masks=text_masks,
+            )
+            outputs.update(aux_outputs)
+            return outputs
 
         if self.variant in {"image_only", "text_only", "bio_only", "concat"}:
             parts = {

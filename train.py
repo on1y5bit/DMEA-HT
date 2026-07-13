@@ -16,7 +16,53 @@ from dmea_ht.config import load_config
 from dmea_ht.data import PatientHTDataset, collate_patient_batch, patient_split, read_manifest
 from dmea_ht.evidence_losses import confidence_weighted_bce_with_logits
 from dmea_ht.metrics import compute_binary_metrics, summarize_metrics
+from dmea_ht.mea_losses import mea_loss_weights_for_epoch, pairwise_ranking_loss, state_margin_loss
 from dmea_ht.models import DMEAHTModel
+
+
+MEA_PATIENT_DIAGNOSTIC_KEYS = (
+    "patient_support_strength",
+    "patient_opposition_strength",
+    "patient_uncertainty_strength",
+    "patient_conflict_score",
+    "image_support_score",
+    "image_opposition_score",
+    "image_uncertainty_score",
+    "text_support_score",
+    "text_opposition_score",
+    "text_uncertainty_score",
+    "text_temporal_conflict_score",
+    "text_temporal_available",
+    "text_latest_support_score",
+    "text_latest_opposition_score",
+    "text_latest_available",
+    "text_history_support_score",
+    "text_history_opposition_score",
+    "text_history_available",
+    "bio_support_score",
+    "bio_opposition_score",
+    "bio_uncertainty_score",
+    "bio_evidence_reliability",
+    "bio_valid_fraction",
+    "image_evidence_weight",
+    "text_evidence_weight",
+    "bio_evidence_weight",
+    "morphology_alignment_cosine",
+    "morphology_alignment_available",
+    "support_opposition_cosine",
+    "mechanism_state_norm",
+    "mechanism_attention_max",
+    "evidence_role_entropy",
+    "evidence_role_prob_sum_error",
+    "evidence_reliability_mean",
+    "image_evidence_attention_entropy",
+    "image_evidence_slot_norm_mean",
+    "text_support_attention_mass",
+    "text_opposition_attention_mass",
+    "text_uncertainty_attention_mass",
+    "text_role_norm_mean",
+    "bio_evidence_norm_mean",
+)
 
 
 def set_seed(seed: int) -> None:
@@ -117,6 +163,13 @@ def run_epoch(
     probs: List[float] = []
     losses: List[float] = []
     cls_losses: List[float] = []
+    mea_loss_values: Dict[str, List[float]] = {
+        "state_margin_loss": [],
+        "mechanism_alignment_loss": [],
+        "role_separation_loss": [],
+        "pairwise_ranking_loss": [],
+    }
+    mea_diagnostic_values: Dict[str, List[float]] = {key: [] for key in MEA_PATIENT_DIAGNOSTIC_KEYS}
     text_morphology_labels: List[int] = []
     text_morphology_probs: List[float] = []
     text_morphology_confidences: List[float] = []
@@ -130,6 +183,10 @@ def run_epoch(
     cls_weight = float(loss_cfg.get("cls_weight", 1.0))
     text_weight = float(loss_cfg.get("text_morphology_weight", 0.0))
     image_weight = float(loss_cfg.get("image_morphology_weight", 0.0))
+    lambda_state = float(loss_cfg.get("effective_lambda_state", 0.0))
+    lambda_mech = float(loss_cfg.get("effective_lambda_mech", 0.0))
+    lambda_role = float(loss_cfg.get("effective_lambda_role", 0.0))
+    lambda_rank = float(loss_cfg.get("effective_lambda_rank", 0.0))
 
     for batch in tqdm(loader, leave=False):
         batch = move_batch(batch, device)
@@ -147,6 +204,25 @@ def run_epoch(
                 image_morphology_losses.append(float(evidence_terms["image_morphology_loss"].detach().cpu()))
             if "role_alignment_loss" in outputs:
                 loss = loss + outputs["role_alignment_loss"] * 0.0
+            if "state_margin" in outputs:
+                state_loss = state_margin_loss(outputs["state_margin"], batch["label"])
+                mechanism_loss = outputs["mea_mechanism_alignment_loss"]
+                role_loss = outputs["mea_role_separation_loss"]
+                rank_loss = pairwise_ranking_loss(outputs["logit"], batch["label"]) if is_train else outputs["logit"].sum() * 0.0
+                loss = (
+                    loss
+                    + lambda_state * state_loss
+                    + lambda_mech * mechanism_loss
+                    + lambda_role * role_loss
+                    + lambda_rank * rank_loss
+                )
+                for key, value in (
+                    ("state_margin_loss", state_loss),
+                    ("mechanism_alignment_loss", mechanism_loss),
+                    ("role_separation_loss", role_loss),
+                    ("pairwise_ranking_loss", rank_loss),
+                ):
+                    mea_loss_values[key].append(float(value.detach().cpu()))
             if is_train:
                 optimizer.zero_grad(set_to_none=True)
                 loss.backward()
@@ -158,6 +234,11 @@ def run_epoch(
         batch_labels = batch["label"].detach().cpu().numpy().astype(int).tolist()
         labels.extend(batch_labels)
         probs.extend(batch_probs)
+
+        for key in MEA_PATIENT_DIAGNOSTIC_KEYS:
+            if key in outputs:
+                values = outputs[key].detach().float().cpu().reshape(-1).numpy().tolist()
+                mea_diagnostic_values[key].extend(float(value) for value in values)
 
         if "text_morphology_logit" in outputs:
             valid = (batch["txt_morphology_label"] != -1) & (batch["txt_morphology_confidence"] > 0)
@@ -195,12 +276,25 @@ def run_epoch(
                 anchor = outputs["text_morphology_anchor"].detach().cpu()[i]
                 row["text_morphology_anchor_norm"] = float(anchor.norm())
                 row["text_morphology_anchor_mean"] = float(anchor.mean())
+            for key in MEA_PATIENT_DIAGNOSTIC_KEYS:
+                if key in outputs:
+                    value = outputs[key].detach().cpu()[i]
+                    if value.numel() == 1:
+                        row[key] = float(value)
             row.update(batch["shortcuts"][i])
             predictions.append(row)
 
     metrics = compute_binary_metrics(labels, probs)
     metrics["loss"] = float(np.mean(losses)) if losses else 0.0
     metrics["cls_loss"] = float(np.mean(cls_losses)) if cls_losses else 0.0
+    for key, values in mea_loss_values.items():
+        metrics[key] = float(np.mean(values)) if values else 0.0
+    for key, values in mea_diagnostic_values.items():
+        metrics[f"mean_{key}"] = float(np.mean(values)) if values else 0.0
+    metrics["effective_lambda_state"] = lambda_state
+    metrics["effective_lambda_mech"] = lambda_mech
+    metrics["effective_lambda_role"] = lambda_role
+    metrics["effective_lambda_rank"] = lambda_rank
     labels_np = np.asarray(labels, dtype=int)
     probs_np = np.asarray(probs, dtype=float)
     pos_probs = probs_np[labels_np == 1]
@@ -237,6 +331,7 @@ def loss_config_for_epoch(loss_cfg: Dict[str, Any], epoch: int) -> Dict[str, Any
         active_cfg["text_morphology_active"] = False
     else:
         active_cfg["text_morphology_active"] = float(loss_cfg.get("text_morphology_weight", 0.0)) > 0
+    active_cfg.update(mea_loss_weights_for_epoch(loss_cfg, epoch))
     return active_cfg
 
 
@@ -247,6 +342,15 @@ def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metr
         "split": "train_val",
         "train_total_loss": train_metrics.get("loss", 0.0),
         "train_cls_loss": train_metrics.get("cls_loss", 0.0),
+        "train_classification_loss": train_metrics.get("cls_loss", 0.0),
+        "train_state_margin_loss": train_metrics.get("state_margin_loss", 0.0),
+        "train_mechanism_alignment_loss": train_metrics.get("mechanism_alignment_loss", 0.0),
+        "train_role_separation_loss": train_metrics.get("role_separation_loss", 0.0),
+        "train_pairwise_ranking_loss": train_metrics.get("pairwise_ranking_loss", 0.0),
+        "effective_lambda_state": train_metrics.get("effective_lambda_state", 0.0),
+        "effective_lambda_mech": train_metrics.get("effective_lambda_mech", 0.0),
+        "effective_lambda_role": train_metrics.get("effective_lambda_role", 0.0),
+        "effective_lambda_rank": train_metrics.get("effective_lambda_rank", 0.0),
         "train_text_morphology_loss": train_metrics.get("text_morphology_loss", 0.0),
         "val_total_loss": val_metrics.get("loss", 0.0),
         "val_cls_loss": val_metrics.get("cls_loss", 0.0),
@@ -263,6 +367,16 @@ def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metr
         "val_pos_neg_gap": val_metrics.get("pos_neg_gap", 0.0),
         "val_pred_prob_mean": val_metrics.get("pred_prob_mean", 0.0),
         "val_pred_prob_std": val_metrics.get("pred_prob_std", 0.0),
+        "mean_patient_support_strength": val_metrics.get("mean_patient_support_strength", 0.0),
+        "mean_patient_opposition_strength": val_metrics.get("mean_patient_opposition_strength", 0.0),
+        "mean_patient_uncertainty_strength": val_metrics.get("mean_patient_uncertainty_strength", 0.0),
+        "mean_patient_conflict_score": val_metrics.get("mean_patient_conflict_score", 0.0),
+        "mean_image_evidence_weight": val_metrics.get("mean_image_evidence_weight", 0.0),
+        "mean_text_evidence_weight": val_metrics.get("mean_text_evidence_weight", 0.0),
+        "mean_bio_evidence_weight": val_metrics.get("mean_bio_evidence_weight", 0.0),
+        "mean_morphology_alignment_cosine": val_metrics.get("mean_morphology_alignment_cosine", 0.0),
+        "mean_support_opposition_cosine": val_metrics.get("mean_support_opposition_cosine", 0.0),
+        "mechanism_state_norm": val_metrics.get("mean_mechanism_state_norm", 0.0),
         "selected_by_val_auc": False,
     }
 
@@ -308,12 +422,20 @@ def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, ou
     if best_state is not None:
         model.load_state_dict(best_state)
 
-    val_result = run_epoch(model, loaders["val"], None, device, config.get("loss", {}))
-    test_result = run_epoch(model, loaders["test"], None, device, config.get("loss", {}))
+    selected_loss_cfg = loss_config_for_epoch(base_loss_cfg, best_epoch)
+    val_result = run_epoch(model, loaders["val"], None, device, selected_loss_cfg)
+    test_result = (
+        run_epoch(model, loaders["test"], None, device, selected_loss_cfg)
+        if bool(config["training"].get("evaluate_test", True))
+        else None
+    )
     checkpoints = out_dir / "checkpoints"
     checkpoints.mkdir(parents=True, exist_ok=True)
     torch.save({"model": model.state_dict(), "config": config, "seed": seed, "best_epoch": best_epoch}, checkpoints / f"seed_{seed}_best.pt")
-    return {"seed": seed, "best_epoch": best_epoch, "epoch_history": epoch_history, "val": val_result, "test": test_result}
+    result = {"seed": seed, "best_epoch": best_epoch, "epoch_history": epoch_history, "val": val_result}
+    if test_result is not None:
+        result["test"] = test_result
+    return result
 
 
 def main() -> None:
@@ -341,6 +463,8 @@ def main() -> None:
         result = train_seed(config, rows, int(seed), out_dir)
         epoch_rows.extend(result.get("epoch_history", []))
         for split in ("val", "test"):
+            if split not in result:
+                continue
             pred_df = pd.DataFrame(result[split]["predictions"])
             pred_df.insert(3, "split", split)
             pred_df.insert(4, "seed", int(seed))
@@ -356,6 +480,8 @@ def main() -> None:
     summary_rows = []
     for split in ("val", "test"):
         split_rows = [row for row in metrics_rows if row["split"] == split]
+        if not split_rows:
+            continue
         summary = {"split": split}
         summary.update(
             summarize_metrics(

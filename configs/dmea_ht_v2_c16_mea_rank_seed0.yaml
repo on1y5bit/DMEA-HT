@@ -1,0 +1,41 @@
+project:
+  name: dmea_ht_v2_c16_mea_rank_seed0
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl
+  output_dir: runs/dmea_ht_v2_c16_mea_rank_seed0
+
+model:
+  name: dmea_ht
+  variant: dmea
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_patient: 28
+  image_size: 224
+  dropout: 0.15
+  use_patient_anchor: true
+  use_evidence_role: true
+  use_discordance: true
+  use_mea: true
+  mea_num_heads: 4
+
+training:
+  seeds: [0]
+  batch_size: 4
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 30
+  patience: 8
+  primary_metric: val_AUC
+  num_workers: 2
+  evaluate_test: false
+
+loss:
+  cls_weight: 1.0
+  state_margin_weight: 0.03
+  mechanism_alignment_weight: 0.02
+  role_separation_weight: 0.005
+  pairwise_ranking_weight: 0.02
+  mea_warmup_epochs: 3
+  mea_ramp_epochs: 5
