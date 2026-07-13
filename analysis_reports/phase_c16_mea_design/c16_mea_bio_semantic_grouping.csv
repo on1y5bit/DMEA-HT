@@ -1,0 +1,4 @@
+semantic_group,field_names,bio_indices,all_source_fields_present,mean_manifest_observed_fraction,any_reference_range_available,trusted_abnormal_metadata_rows,implementation_path,blocked_claim
+other_observed,sex|age,0|1,1,1.0,0,0,group observed continuous values; learn evidence roles from patient supervision,no abnormal/normal/support/opposition claim without verified ranges
+immune_observed,TgAb|TPOAb,2|5,1,0.05512820512820513,0,0,group observed continuous values; learn evidence roles from patient supervision,no abnormal/normal/support/opposition claim without verified ranges
+thyroid_function_observed,FT3|FT4|TSH,3|4|6,1,1.0,0,0,group observed continuous values; learn evidence roles from patient supervision,no abnormal/normal/support/opposition claim without verified ranges

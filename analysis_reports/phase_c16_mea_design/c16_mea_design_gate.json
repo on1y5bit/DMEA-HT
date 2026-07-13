@@ -1,0 +1,7 @@
+{
+  "design_status": "C16_MEA_DESIGN_AUDIT_PASS_WITH_CONSTRAINTS",
+  "audit_pass": true,
+  "delivery_pass": true,
+  "required_files": 9,
+  "output_dir": "analysis_reports\\phase_c16_mea_design"
+}

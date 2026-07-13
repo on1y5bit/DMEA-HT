@@ -1,0 +1,62 @@
+field,rows_present,rows_nonempty,nonempty_fraction,observed_types,example_shape_or_value,policy_category,allowed_as_c16_mea_input,policy_rule
+patient_id,780,780,1.0,str,10137142,identifier,0,grouping/export only
+bio_function_abnormal_label,780,780,1.0,int,<list_len=1>,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+bio_immune_abnormal_label,780,780,1.0,int,<list_len=1>,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+bio_missing_label,780,780,1.0,int,<list_len=1>,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+discordance_state_label,780,780,1.0,int,5,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+evidence_label_source,780,780,1.0,dict,"<dict_keys=bio_abnormal_source,matched_strong_negative_terms,matched_weak_negative_terms,negated_morphology_terms,negation_window,rules_version>",legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+image_morphology_weak_confidence,780,780,1.0,float,1.0,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+image_morphology_weak_label,780,780,1.0,int,1,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+matched_diag_hint_terms,780,0,0.0,,,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+matched_morphology_terms,780,661,0.8474358974358974,list,"['实质回声不均', '回声不均', '回声欠均', '回声欠均匀', '低回声']",legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+matched_negative_terms,780,448,0.5743589743589743,list,"['实质回声均匀', '回声均匀', '未见异常血流']",legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+matched_uncertain_terms,780,0,0.0,,,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+txt_diag_hint_confidence,780,780,1.0,float,0.0,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+txt_diag_hint_label,780,780,1.0,int,0,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+txt_morphology_confidence,780,780,1.0,float,1.0,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+txt_morphology_label,780,780,1.0,int,1,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+txt_negative_confidence,780,780,1.0,float,1.0,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+txt_negative_label,780,780,1.0,int,1,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+txt_uncertain_confidence,780,780,1.0,float,0.0,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+txt_uncertain_label,780,780,1.0,int,0,legacy_weak_label_audit_only,0,dictionary audit metadata only; no BCE or target use
+distmatch,780,780,1.0,int,1,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+max_images_per_visit,780,780,1.0,int,4,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_drop_reasons,780,44,0.05641025641025641,dict,<dict_keys=combined_low_risk_without_latest_diffuse>,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_filter_source,780,780,1.0,dict,"<dict_keys=mode,phase,uses_labels,uses_predictions,uses_test_selection>",manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_filtered_report_length,780,780,1.0,int,755,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_latest_diffuse_ht_like,780,780,1.0,int,1,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_n_dropped_clauses,780,780,1.0,int,0,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_n_thyroid_morphology_clauses,780,780,1.0,int,5,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_original_report_length,780,780,1.0,int,758,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_report_filter,780,780,1.0,int,1,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_report_filter_mode,780,780,1.0,str,combined_low_risk,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+phase_c12_report_length_delta,780,780,1.0,int,-3,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+report_length_bin,780,780,1.0,str,q8,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+structural_match,780,780,1.0,int,1,manifest_metadata_review,0,not authorized as a C16-MEA input without a separate audit
+bio_values,780,780,1.0,list,<list_len=7>,model_input,1,unchanged C13 modality input
+image_paths,780,780,1.0,list,<list_len=12>,model_input,1,unchanged C13 modality input
+report_text,780,775,0.9935897435897436,str,<text_chars=994>,model_input,1,unchanged C13 modality input
+split,780,780,1.0,str,test,partition,0,loader partition only
+bio_missing_count,780,780,1.0,int,<list_len=1>,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+has_bio,780,780,1.0,int,1,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+image_padding_count,780,780,1.0,int,2,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+n_images,780,780,1.0,int,12,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+n_visits,780,780,1.0,int,3,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+padding_count,780,780,1.0,int,2,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+phase_c13_focus_prefix_chars,780,780,1.0,int,220,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+phase_c13_n_history_focus_clauses,780,780,1.0,int,2,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+phase_c13_n_latest_focus_clauses,780,780,1.0,int,1,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+phase_c13_n_visits_parsed,780,780,1.0,int,3,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+raw_n_images,780,780,1.0,int,12,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+raw_n_visits,780,780,1.0,int,3,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+report_length,780,780,1.0,int,994,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+selected_n_visits,780,780,1.0,int,3,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+selected_visit_dates,780,780,1.0,list,<list_len=3>,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+source_folder,780,0,0.0,,,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+used_images,780,780,1.0,int,12,shortcut_audit_only,0,"audit/export only; prohibited from model, gates, losses, or reliability scalars"
+phase_c13_focus_latest_date,780,775,0.9935897435897436,str,2024-03-13,temporal_audit_metadata,0,offline verification only; derive model masks from report markers
+phase_c13_focus_source,780,780,1.0,dict,"<dict_keys=max_prefix_chars,phase,uses_labels,uses_predictions,uses_test_selection>",temporal_audit_metadata,0,offline verification only; derive model masks from report markers
+phase_c13_temporal_focus,780,780,1.0,int,1,temporal_audit_metadata,0,offline verification only; derive model masks from report markers
+label,780,780,1.0,int,1,training_target,1,patient-level binary target only
+bio_abnormal_flags,780,780,1.0,list,<list_len=7>,untrusted_legacy_tensor,0,zero-filled placeholder unless an explicit trusted source exists
+bio_missing_mask,780,780,1.0,list,<list_len=7>,validity_mask,1,mask invalid bio computations; never reduce to a predictive count

@@ -1,0 +1,204 @@
+{
+  "manifest": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl",
+  "source_table": "/data/csb/DMEA-HT/HT_2025.12_25/all_patients.xlsx",
+  "manifest_rows": 780,
+  "unique_patients": 780,
+  "split_label_counts": {
+    "test": {
+      "0": 42,
+      "1": 42
+    },
+    "train": {
+      "0": 301,
+      "1": 301
+    },
+    "val": {
+      "0": 47,
+      "1": 47
+    }
+  },
+  "text_max_length": 256,
+  "model_visible_report_chars": 254,
+  "required_manifest_fields": {
+    "bio_abnormal_flags": true,
+    "split": true,
+    "report_text": true,
+    "bio_values": true,
+    "bio_missing_mask": true,
+    "patient_id": true,
+    "image_paths": true,
+    "label": true
+  },
+  "bio": {
+    "bio_columns": [
+      "sex",
+      "age",
+      "TgAb",
+      "FT3",
+      "FT4",
+      "TPOAb",
+      "TSH"
+    ],
+    "bio_vector_length_counts": {
+      "7": 780
+    },
+    "bio_mask_length_counts": {
+      "7": 780
+    },
+    "bio_flag_length_counts": {
+      "7": 780
+    },
+    "source_table_available": true,
+    "source_columns": [
+      "patient_Id",
+      "time",
+      "sex",
+      "age",
+      "TgAb",
+      "FT3",
+      "FT4",
+      "TPOAb",
+      "TSH",
+      "report"
+    ],
+    "all_bio_source_fields_present": true,
+    "any_reference_range_available": false,
+    "trusted_abnormal_metadata_rows": 0,
+    "all_abnormal_flags_zero": true
+  },
+  "temporal": {
+    "manifest_rows": 780,
+    "model_visible_chars": 254,
+    "latest_focus_marker_count": 766,
+    "latest_focus_marker_fraction": 0.982051282051282,
+    "latest_focus_marker_visible_count": 766,
+    "history_focus_marker_count": 422,
+    "history_focus_marker_fraction": 0.541025641025641,
+    "history_focus_marker_visible_count": 422,
+    "full_report_marker_count": 771,
+    "full_report_marker_fraction": 0.9884615384615385,
+    "full_report_marker_visible_count": 771,
+    "latest_history_joint_count": 417
+  },
+  "c14": {
+    "available_count": 8,
+    "required_count": 8
+  },
+  "code_path": {
+    "image_tokens_available": true,
+    "text_tokens_available": true,
+    "bio_tokens_available": true,
+    "patient_anchor_available": true,
+    "classifier_contributions_available": true,
+    "current_generic_evidence_roles": [
+      "morphology",
+      "immune",
+      "function",
+      "negative",
+      "uncertain",
+      "temporal"
+    ],
+    "current_role_alignment_loss_is_zero": true,
+    "text_tokenization_is_character_position_preserving": true,
+    "forbidden_dssa_symbols_present": [],
+    "paths": [
+      "image files -> ImageEncoder -> per-image tokens + image global",
+      "C13 report text -> stable character IDs -> text tokens + text global",
+      "seven bio values -> BioEncoder -> per-field tokens + bio global",
+      "all tokens -> existing generic EvidenceRoleAlignment + PatientAnchorFusion",
+      "image/text/bio globals + patient anchor + negative token -> EvidenceConservationClassifier"
+    ],
+    "c16_mea_boundary": "operate on evidence tokens between unchanged encoders and final patient classification; do not align raw modality globals"
+  },
+  "checks": [
+    {
+      "check": "required_manifest_fields",
+      "pass": true,
+      "detail": {
+        "bio_abnormal_flags": true,
+        "split": true,
+        "report_text": true,
+        "bio_values": true,
+        "bio_missing_mask": true,
+        "patient_id": true,
+        "image_paths": true,
+        "label": true
+      }
+    },
+    {
+      "check": "bio_vector_order_and_length",
+      "pass": true,
+      "detail": {
+        "7": 780
+      }
+    },
+    {
+      "check": "real_bio_source_fields_present",
+      "pass": true,
+      "detail": [
+        "sex",
+        "age",
+        "TgAb",
+        "FT3",
+        "FT4",
+        "TPOAb",
+        "TSH"
+      ]
+    },
+    {
+      "check": "temporal_markers_available",
+      "pass": true,
+      "detail": {
+        "manifest_rows": 780,
+        "model_visible_chars": 254,
+        "latest_focus_marker_count": 766,
+        "latest_focus_marker_fraction": 0.982051282051282,
+        "latest_focus_marker_visible_count": 766,
+        "history_focus_marker_count": 422,
+        "history_focus_marker_fraction": 0.541025641025641,
+        "history_focus_marker_visible_count": 422,
+        "full_report_marker_count": 771,
+        "full_report_marker_fraction": 0.9884615384615385,
+        "full_report_marker_visible_count": 771,
+        "latest_history_joint_count": 417
+      }
+    },
+    {
+      "check": "text_dictionaries_available",
+      "pass": true,
+      "detail": 81
+    },
+    {
+      "check": "c14_diagnostics_available",
+      "pass": true,
+      "detail": {
+        "available_count": 8,
+        "required_count": 8
+      }
+    },
+    {
+      "check": "shortcut_map_complete",
+      "pass": true,
+      "detail": [
+        "bio_missing_count",
+        "has_bio",
+        "image_padding_count",
+        "n_images",
+        "n_visits",
+        "padding_count",
+        "raw_n_images",
+        "raw_n_visits",
+        "report_length",
+        "selected_n_visits",
+        "source_folder",
+        "used_images"
+      ]
+    },
+    {
+      "check": "no_mistaken_dssa_symbols",
+      "pass": true,
+      "detail": []
+    }
+  ],
+  "audit_pass": true
+}

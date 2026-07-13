@@ -2065,3 +2065,19 @@
 - Add `scripts/collect_phase_c16_mea_design_report.py` to generate and validate the nine required design-audit deliverables under `analysis_reports/phase_c16_mea_design/`.
 - Run static checks locally, then execute the audit on the server with `/home/linruixin/chen/conda/envs/ma/bin/python` against `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl` and `all_patients.xlsx`.
 - Do not begin C16-MEA model coding or training unless the collected report records a feasible, shortcut-safe implementation path with explicit limitations.
+
+### Real-Data Design Audit Result
+
+- Added `scripts/audit_phase_c16_mea_design_inputs.py` and `scripts/collect_phase_c16_mea_design_report.py`. The audit reads constants by AST and does not import the torch training stack; local `py_compile`, CLI checks, and a two-row synthetic nine-file delivery test passed.
+- Created the isolated server worktree `/home/linruixin/chen/project/DMEA-HT-c16-mea` and ran the audit with `/home/linruixin/chen/conda/envs/ma/bin/python` against the frozen C13 manifest and `all_patients.xlsx`; no GPU or training process was used.
+- Real manifest verification passed for `780` unique patients with unchanged counts: train `301/301`, validation `47/47`, and reporting-only test `42/42` for labels `0/1`.
+- All `780` rows contain seven bio values, seven missing-mask entries, and seven abnormal-flag entries in the verified order `sex, age, TgAb, FT3, FT4, TPOAb, TSH`. All seven source-table columns exist.
+- `sex`, `age`, `FT3`, `FT4`, and `TSH` are observed in all manifest rows. `TgAb` is observed in `5.64%` and `TPOAb` in `5.38%`; subgroup availability is exported by split and label.
+- No reference-range columns or trusted abnormal metadata exist, and every stored abnormal flag is zero. Bio fields may be grouped as observed continuous semantics, but no abnormal/normal/support/opposition target or rule is valid. Sparse antibody availability must not become evidence about whether a test was ordered.
+- The C13 latest marker is present and model-visible in `766/780` rows (`98.21%`), the history marker in `422/780` (`54.10%`), and the full-report marker in `771/780` (`98.85%`); `417` rows contain both latest and history markers. Missing sections require learned fallback pooling and cannot be treated as negative evidence.
+- Audited `81` existing dictionary entries across morphology, diffuse HT-like, opposition/normal, uncertainty, diagnostic hint, and benign/nodular groups. They are authorized only as context-aware character-position pooling masks, never as patient targets or weak-label BCE supervision.
+- All `8/8` required C14 diagnostic artifacts were available. Their representation, masking, occlusion, inversion, hard-patient, and matched-control fields remain audit-only and cannot enter the predictor.
+- The shortcut exclusion map covers all required structural variables plus C13 focus counts and selected visit dates. Only image, text, and per-field bio validity masks may enter computation, without predictive missingness/count scalars.
+- Design gate: `C16_MEA_DESIGN_AUDIT_PASS_WITH_CONSTRAINTS`; all `8/8` hard checks passed and all nine required design files were generated under `analysis_reports/phase_c16_mea_design/`.
+- The first permitted mechanism-alignment loss is image-text morphology alignment only. Bio immune/function nodes may enter the mechanism graph from verified observed fields, but no bio-text alignment is permitted without separately verified matching text semantics.
+- Backward-compatible C16-MEA implementation may begin. Training remains blocked until static/synthetic checks and both predefined seed-0 Core and Core+Ranking smoke gates pass.
