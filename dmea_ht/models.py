@@ -5,6 +5,8 @@ from typing import Dict
 import torch
 from torch import nn
 
+from dmea_ht.alignment import DSSAAlignment
+
 
 class ImageEncoder(nn.Module):
     def __init__(self, hidden_dim: int, dropout: float) -> None:
@@ -228,6 +230,21 @@ class DMEAHTModel(nn.Module):
             nn.Linear(hidden_dim, 1) if self.use_text_morphology_head and self.text_evidence_anchor is None else None
         )
         self.image_morphology_head = nn.Linear(hidden_dim, 1) if self.use_image_morphology_head else None
+        self.use_dssa = bool(model_cfg.get("use_dssa", False))
+        self.dssa = (
+            DSSAAlignment(
+                hidden_dim=hidden_dim,
+                dropout=dropout,
+                shared_dim=int(model_cfg.get("dssa_shared_dim", hidden_dim)),
+                temperature=float(model_cfg.get("dssa_temperature", 0.10)),
+                anchor_temperature=float(model_cfg.get("dssa_anchor_temperature", 0.10)),
+                margin_proto=float(model_cfg.get("dssa_margin_proto", 0.0)),
+                specific_variance_gamma=float(model_cfg.get("dssa_specific_variance_gamma", 0.50)),
+                residual_scale=float(model_cfg.get("dssa_residual_scale", 0.10)),
+            )
+            if self.use_dssa
+            else None
+        )
         self.baseline_head = nn.Sequential(
             nn.Linear(hidden_dim * 3, hidden_dim),
             nn.GELU(),
@@ -260,6 +277,11 @@ class DMEAHTModel(nn.Module):
             batch["bio_values"], batch["bio_missing_mask"], batch["bio_abnormal_flags"]
         )
         aux_outputs = self._auxiliary_outputs(image_global, text_global, text_tokens, batch["report_attention_mask"])
+
+        if self.dssa is not None:
+            outputs = self.dssa(image_global, text_global, bio_global, batch)
+            outputs.update(aux_outputs)
+            return outputs
 
         if self.variant in {"image_only", "text_only", "bio_only", "concat"}:
             parts = {

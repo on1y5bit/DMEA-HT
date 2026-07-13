@@ -1969,3 +1969,32 @@
 - This transport prevents PowerShell from expanding remote Bash expressions such as `$(pwd)` and awk `$3`, and avoids PowerShell native-pipeline transcoding.
 - Verified the transport against server `5090-01`: Chinese text round-tripped correctly, remote `$(pwd)` evaluated on Linux, and awk `$3` returned the expected value.
 - Codex-side PowerShell commands should use a non-login shell so the blocked Conda profile is not loaded; server commands should use the Python transport rather than embedded SSH one-liners.
+
+## 2026-07-13 Phase C16 Disease-State Anchored Shared-Specific Alignment
+
+### Baseline And Authorization
+
+- Started from clean commit `b91bd1d` on branch `feature/c16-disease-state-shared-specific-alignment`.
+- C13 temporal-focus DMEA-HT remains the frozen strict-best fallback: validation AUC `0.8664554097 +/- 0.0077356304`, formal seeds `[0, 42, 3407]`.
+- C16 is an explicitly authorized, independent disease-state alignment hypothesis. It does not reopen C15 or the C14-E local patch routes.
+- Keep the C13 manifest, patient IDs, labels, patient-level split, image paths, bio values, prediction horizon, report construction, encoders, optimizer family, and validation-AUC checkpoint rule unchanged.
+- Test remains reporting-only and cannot select the architecture, loss, checkpoint, threshold, fallback, or promotion decision.
+
+### Implementation Plan
+
+- Add an optional DSSA module that is instantiated only when `model.use_dssa=true`; the disabled path must preserve legacy module construction and forward behavior.
+- Reuse the C13 image, text, and bio encoder global outputs. For each modality, learn lightweight shared and specific projections; normalize only the shared representation.
+- Learn two normalized disease-state prototypes initialized deterministically after the training seed is set. Compute per-modality prototype logits for training-label CE, but never pass labels into model inference.
+- Align only same-patient shared components. Keep specific components complementary with shared-specific orthogonality, batch variance protection, bounded residual scale `rho=0.10`, near-zero residual initialization, and validity-mask-aware attention/gates.
+- Form the C16 representation from patient shared state, soft predicted disease anchor, controlled specific residual, and prototype disease margin. Shortcut/audit fields are never read by the module or losses.
+- Add training-only positive-negative batch ranking with safe zero return for one-class batches. BCE remains dominant.
+- Use three classification-only warmup epochs, ramp DSSA/ranking weights to their fixed targets through epoch 8, then keep them fixed. Log all raw losses, effective weights, prototype/attention/gate/norm health, validation metrics, and selection state.
+- Export selected-checkpoint patient diagnostics and pairwise validation ranking, then generate prototype, shared, specific, positive-preservation, inversion, shortcut, seed-stability, comparison, and final gate reports.
+
+### Execution Gate
+
+- Run static/synthetic checks and a 1-2 epoch seed-0 smoke first. Stop on non-finite values, constant predictions, prototype or sample collapse, global attention/gate saturation, residual domination, legacy incompatibility, or shortcut leakage.
+- Run the full seed-0 pilot only after smoke passes. Compare against C13 seed-0 validation AUC `0.8655500226` and all documented performance/alignment/safety gates.
+- If seed 0 fails, permit exactly one fallback with `lambda_rank=0`; all other architecture and training settings remain fixed.
+- Run seeds `42` and `3407` only after a passing seed-0 route. Do not tune after seeing seed 0.
+- Promote C16 only if every formal performance, alignment, stability, positive-preservation, inversion, and shortcut gate passes. Otherwise keep C13 and use exactly one documented C16 decision label.
