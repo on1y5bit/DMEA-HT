@@ -2040,3 +2040,28 @@
 - C13 temporal-focus remains intact and is the current strict-best baseline with mean validation AUC `0.8664554097` over seeds `[0, 42, 3407]`.
 - The corrected next phase is C16-MEA. It may begin with a design audit only; no new implementation or training is authorized until that audit is complete and reviewed.
 - Correction status: `MISGUIDED_C16_STOPPED_AND_REVERTED`.
+
+## 2026-07-13 Phase C16-MEA Mandatory Design Audit
+
+### Authorization And Boundary
+
+- Started a new audit-only branch `codex/c16-mea-design-audit` from corrected commit `3363e98`; the abandoned DSSA branch remains preserved for audit and is not the C16-MEA work branch.
+- C16-MEA is the corrected disease-mechanism and evidence-aware phase. It must not reintroduce shared/private decomposition, DecAlign terminology, generic modality-invariant alignment, or shared-specific orthogonality losses.
+- The current task is the mandatory design audit only. No model implementation or training is authorized until the audit establishes a valid path from real fields and existing diagnostics.
+- C13 temporal-focus remains the frozen strict-best baseline. Patient IDs, labels, patient-level splits, prediction horizon, manifest, report construction, image paths, and bio values remain unchanged; test remains reporting-only.
+
+### Pre-Implementation Findings
+
+- C13 exposes per-image tokens and an image global embedding, per-character text tokens and a pooled text embedding, seven bio tokens and a bio global embedding, the patient anchor, evidence scores, modality classifier contributions, and discordance norms.
+- The fixed bio order in the manifest builders is `sex, age, TgAb, FT3, FT4, TPOAb, TSH`. TgAb/TPOAb and FT3/FT4/TSH may be grouped semantically only after the server audit confirms the real source-table and manifest fields.
+- Existing `bio_abnormal_flags` are zero-filled placeholders unless an explicit trusted source is present. No reference range or abnormal direction may be invented; if trust cannot be established, bio remains observed continuous evidence with validity masking only.
+- Existing text dictionaries cover morphology, diffuse HT-like wording, strong/weak normal or opposing wording, uncertainty, benign/nodular morphology, and diagnostic hints. They may guide token pooling but may not become patient targets or revive weak-label BCE.
+- C13 text includes explicit `[C13_LATEST_THYROID ...]`, `[C13_HISTORY_THYROID]`, and `[C13_FULL_REPORT]` markers when a focus prefix is available. The real-manifest audit must quantify marker coverage and whether latest/history segments can be reconstructed inside the model-visible character window.
+- C14-A exposure, C14-B representation/masking/occlusion, C14-C pairwise inversion, C14-D hard-patient, and C14-E matched-control outputs are reusable only as diagnostics. Shortcut and structural fields remain audit-only.
+
+### Audit Plan
+
+- Add `scripts/audit_phase_c16_mea_design_inputs.py` to inspect the real C13 manifest, source-table schema, current model/data paths, existing text dictionaries, temporal markers, C14 artifacts, masks, and shortcut exclusions without changing data.
+- Add `scripts/collect_phase_c16_mea_design_report.py` to generate and validate the nine required design-audit deliverables under `analysis_reports/phase_c16_mea_design/`.
+- Run static checks locally, then execute the audit on the server with `/home/linruixin/chen/conda/envs/ma/bin/python` against `/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl` and `all_patients.xlsx`.
+- Do not begin C16-MEA model coding or training unless the collected report records a feasible, shortcut-safe implementation path with explicit limitations.
