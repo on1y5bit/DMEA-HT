@@ -56,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--c16-config", default="configs/dmea_ht_v2_c16_dssa_smoke.yaml")
     parser.add_argument("--run-dirs", nargs="*", default=[])
     parser.add_argument("--output-dir", default="analysis_reports/phase_c16")
+    parser.add_argument("--require-health-pass", action="store_true")
     return parser.parse_args()
 
 
@@ -366,12 +367,59 @@ def pairwise_rows(predictions: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame
     return pairwise, summary
 
 
+def alignment_health_gate(
+    metrics: pd.DataFrame,
+    predictions: pd.DataFrame,
+    prototype: pd.DataFrame,
+    shared: pd.DataFrame,
+    specific: pd.DataFrame,
+) -> pd.DataFrame:
+    rows: List[Dict[str, Any]] = []
+    validation = predictions[predictions["split"] == "val"]
+    for (model_id, seed), group in validation.groupby(["model_id", "seed"]):
+        metric_row = metrics[
+            (metrics["model_id"] == model_id) & (metrics["seed"] == seed) & (metrics["split"] == "val")
+        ]
+        proto_row = prototype[
+            (prototype["model_id"] == model_id) & (prototype["seed"] == seed) & (prototype["split"] == "val")
+        ]
+        shared_rows = shared[
+            (shared["model_id"] == model_id) & (shared["seed"] == seed) & (shared["split"] == "val")
+        ]
+        specific_row = specific[
+            (specific["model_id"] == model_id) & (specific["seed"] == seed) & (specific["split"] == "val")
+        ]
+        probabilities = pd.to_numeric(group["pred_prob"], errors="coerce")
+        residual_ratio = pd.to_numeric(group["specific_residual_shared_ratio"], errors="coerce")
+        checks = {
+            "finite_predictions": bool(np.isfinite(probabilities).all()),
+            "nonconstant_predictions": bool(probabilities.std(ddof=1) > 1e-6),
+            "prototype_not_collapsed": bool(not proto_row.empty and int(proto_row["prototype_collapse_flag"].max()) == 0),
+            "shared_not_collapsed": bool(not shared_rows.empty and int(shared_rows["shared_sample_collapse_flag"].max()) == 0),
+            "specific_not_collapsed": bool(not specific_row.empty and int(specific_row["specific_collapse_flag"].max()) == 0),
+            "specific_not_duplicate": bool(not specific_row.empty and int(specific_row["specific_duplicates_shared_flag"].max()) == 0),
+            "specific_not_dominant": bool(not residual_ratio.empty and float(residual_ratio.max()) < 1.0),
+            "attention_not_collapsed": bool(not metric_row.empty and int(metric_row.iloc[0].get("global_attention_collapse_flag", 1)) == 0),
+            "gates_not_saturated": bool(not specific_row.empty and int(specific_row["global_gate_saturation_flag"].max()) == 0),
+        }
+        row: Dict[str, Any] = {
+            "model_id": model_id,
+            "seed": int(seed),
+            **{name: int(passed) for name, passed in checks.items()},
+            "prediction_std": float(probabilities.std(ddof=1)),
+            "max_specific_residual_shared_ratio": float(residual_ratio.max()),
+            "health_pass": int(all(checks.values())),
+        }
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
 def write_health_report(title: str, frame: pd.DataFrame, path: Path, notes: Sequence[str]) -> None:
     lines = [f"# {title}", "", *notes, "", frame_to_markdown(frame)]
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def run_saved_audit(run_specs: Sequence[str], output_dir: Path) -> None:
+def run_saved_audit(run_specs: Sequence[str], output_dir: Path) -> bool:
     metrics, predictions = read_run_frames(run_specs)
     if predictions.empty:
         raise FileNotFoundError("No C16 train/validation prediction files were found")
@@ -380,12 +428,14 @@ def run_saved_audit(run_specs: Sequence[str], output_dir: Path) -> None:
     shared = shared_health(metrics, predictions)
     specific = specific_health(metrics, predictions)
     pairwise, inversion = pairwise_rows(predictions)
+    health_gate = alignment_health_gate(metrics, predictions, prototype, shared, specific)
 
     prototype.to_csv(output_dir / "c16_prototype_health_by_seed.csv", index=False)
     shared.to_csv(output_dir / "c16_shared_alignment_by_seed.csv", index=False)
     specific.to_csv(output_dir / "c16_specific_health_by_seed.csv", index=False)
     pairwise.to_csv(output_dir / "c16_pairwise_ranking_val.csv", index=False)
     inversion.to_csv(output_dir / "c16_pairwise_inversion_summary.csv", index=False)
+    health_gate.to_csv(output_dir / "c16_alignment_health_gate.csv", index=False)
     validation = predictions[predictions["split"] == "val"].copy()
     keep = [column for column in PATIENT_DIAGNOSTIC_COLUMNS if column in validation.columns]
     validation[keep].to_csv(output_dir / "c16_patient_diagnostics_val.csv", index=False)
@@ -408,7 +458,13 @@ def run_saved_audit(run_specs: Sequence[str], output_dir: Path) -> None:
         output_dir / "c16_specific_health_report.md",
         ["Specific features must remain non-collapsed, non-duplicative, and norm-controlled."],
     )
-    print(json.dumps({"prediction_rows": len(predictions), "pairwise_rows": len(pairwise), "output_dir": str(output_dir)}))
+    health_pass = bool(not health_gate.empty and (health_gate["health_pass"] == 1).all())
+    (output_dir / "c16_alignment_health_gate.json").write_text(
+        json.dumps({"health_pass": health_pass, "rows": health_gate.to_dict("records")}, indent=2),
+        encoding="utf-8",
+    )
+    print(json.dumps({"prediction_rows": len(predictions), "pairwise_rows": len(pairwise), "health_pass": health_pass, "output_dir": str(output_dir)}))
+    return health_pass
 
 
 def main() -> None:
@@ -417,11 +473,12 @@ def main() -> None:
     passed = True
     if args.synthetic_smoke:
         passed = run_synthetic_smoke(Path(args.c13_config), Path(args.c16_config), output_dir)
+    health_pass = True
     if args.run_dirs:
-        run_saved_audit(args.run_dirs, output_dir)
+        health_pass = run_saved_audit(args.run_dirs, output_dir)
     if not args.synthetic_smoke and not args.run_dirs:
         raise SystemExit("Specify --synthetic-smoke and/or --run-dirs")
-    if not passed:
+    if not passed or (args.require_health_pass and not health_pass):
         raise SystemExit(1)
 
 
