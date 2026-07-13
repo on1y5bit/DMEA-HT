@@ -1,7 +1,7 @@
 phase: c17
 
 project:
-  name: dema_ht_c17_formal_multiseed
+  name: dema_ht_c17_formal_multiseed_positive_preservation
   data_root: /data/csb/DMEA-HT/HT_2025.12_25
   manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl
   output_dir: runs/dema_ht_c17_formal_multiseed
@@ -19,6 +19,7 @@ model:
   mea_num_heads: 4
 
 c17:
+  variant: positive_preserve
   base_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_{seed}_best.pt
   init_mea_checkpoint: /home/linruixin/chen/project/DMEA-HT-c16-mea-impl/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt
   delta_max: 0.50
@@ -38,7 +39,7 @@ loss:
   c17: true
   cls_weight: 1.0
   lambda_residual: 0.001
-  lambda_positive_preserve: 0.0
+  lambda_positive_preserve: 0.02
   allowed_negative_delta: 0.05
   delta_max: 0.50
   state_margin_weight: 0.0

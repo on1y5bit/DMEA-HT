@@ -2186,3 +2186,11 @@
 
 - From the user's instruction on `2026-07-13` onward, do not repeat two-epoch smoke runs for subsequent phases. After the required server static/synthetic gate passes, launch the formal multi-seed training directly with seeds `[0, 42, 3407]`.
 - This rollout preference does not interrupt the already-running C17 seed-0 pilot and does not retroactively change its evidence contract. The current C17 formal run remains conditional on the completed seed-0 validation-only decision artifact; once authorized, it uses the fixed multi-seed configuration without another smoke stage.
+
+### C17 Seed-0 Pilot Completion And Formal Authorization
+
+- The server-only C17 seed-0 pilot driver completed normally at `2026-07-13T18:48:00+08:00`. Both fixed routes produced validation predictions and passed the run health gate `13/13`; no test predictions were generated.
+- DEMA-R selected epoch `12` with validation AUC `0.8682661838`, sensitivity `0.7446808511`, specificity `0.7659574468`, balanced accuracy `0.7553191489`, positive-negative gap `0.3269412524`, and residual standard deviation `0.2076434934`.
+- DEMA-RP selected epoch `9` with validation AUC `0.8700769579`, sensitivity `0.7446808511`, specificity `0.7659574468`, balanced accuracy `0.7553191489`, positive-negative gap `0.3349866019`, and residual standard deviation `0.2098335194`.
+- DEMA-RP preserved positive evidence: mean positive logit residual `+0.4735545389`, `FN -> TP = 10`, `TP -> FN = 0`, and pairwise inversions changed from `297` to `287` with `15` repaired and `5` introduced.
+- Route decision: `PROMOTE_DEMA_C17_POSITIVE_PRESERVATION`. The preferred AUC gain target was not treated as a hard requirement; the route met the baseline and all safety checks. Formal multi-seed training is authorized with the fixed DEMA-RP loss and seeds `[0, 42, 3407]`; no additional smoke stage is permitted.
