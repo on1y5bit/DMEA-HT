@@ -2252,3 +2252,20 @@
 - The formal collector decision is `DEMA_C18_NEGATIVE_INFLATION`, with the additional failure label `DEMA_C18_POSITIVE_SUPPRESSION`. Selected route remains `C17`; current strict best remains `DEMA-HT C17 Positive Preservation`. C18 did not reach validation AUC `0.90` and neither route is promoted.
 - C18 formal reports are under `analysis_reports/phase_c18_dema/`, including root-level merged route audits with a `route` column, route-specific audit subdirectories, metrics, transition analysis, gate JSON, and final report. The report-only collector layout fix was committed as `e3e85e1` and pulled by the canonical server before regeneration.
 - Final C18 status: retain C17, do not alter the frozen C17 route based on C18 test or raw AUC, and do not start another C18 tuning run without a new evidence-gated plan.
+
+## 2026-07-13 Phase C19 Polarity-Locked Residual
+
+### Implementation Contract
+
+- Official model name remains DEMA-HT; the canonical project is /home/linruixin/chen/project/DMEA-HT.
+- The verified canonical history is on the existing main branch at merge-verification commit f97ee4d.
+- No new GitHub branch, worktree, or DMEA-HT-c19 directory is created.
+- C19 freezes the promoted C17 Positive Preservation checkpoint for each seed and does not read saved prediction CSVs as training inputs.
+- C19-A is validation-only and audits support/opposition polarity, branch compensation, inversion transitions, and conflict behavior before model construction.
+- MonotonicSupportCalibrator and MonotonicOppositionCalibrator have fixed positive slopes and do not cross-read the opposing evidence field.
+- The residual sign is locked by tanh(q_support - q_opposition); uncertainty and conflict control magnitude only.
+- EvidenceMagnitudeHead reads only absolute polarity, confidence, absolute frozen C17 logit, and valid mechanism norm. The correction magnitude is bounded by 0.20.
+- The fixed loss is L_cls + 0.01*L_polarity + 0.02*L_positive + 0.02*L_negative + 0.001*L_magnitude.
+- Validation AUC is the only checkpoint and decision metric. AUPRC is excluded from C19 reports, and test remains reporting-only.
+- No smoke run and no seed-0-only pilot are permitted. After C19-A plus static/synthetic checks, formal seeds are [0, 42, 3407].
+- Local Python verification was limited to syntax compilation and git diff --check; data/model runtime remains server-only.

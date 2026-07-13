@@ -19,7 +19,7 @@ from dmea_ht.evidence_losses import confidence_weighted_bce_with_logits
 from dmea_ht.metrics import compute_binary_metrics, summarize_metrics
 from dmea_ht.mea_losses import mea_loss_weights_for_epoch, pairwise_ranking_loss, state_margin_loss
 from dmea_ht.c17_residual import C17ResidualModel
-from dmea_ht.models import C18DirectionalResidualModel, DMEAHTModel
+from dmea_ht.models import C18DirectionalResidualModel, C19PolarityLockedResidualModel, DMEAHTModel
 
 
 MEA_PATIENT_DIAGNOSTIC_KEYS = (
@@ -140,6 +140,10 @@ def is_c18_config(config: Dict[str, Any]) -> bool:
     return bool(config.get("c18")) or str(config.get("phase", "")).lower() == "c18"
 
 
+def is_c19_config(config: Dict[str, Any]) -> bool:
+    return bool(config.get("c19")) or str(config.get("phase", "")).lower() == "c19"
+
+
 def hard_pairwise_ranking_loss(
     base_logit: torch.Tensor,
     final_logit: torch.Tensor,
@@ -193,7 +197,8 @@ def run_epoch(
     is_train = optimizer is not None
     is_c17 = bool(loss_cfg.get("c17", False))
     is_c18 = bool(loss_cfg.get("c18", False))
-    is_directional = is_c17 or is_c18
+    is_c19 = bool(loss_cfg.get("c19", False))
+    is_directional = is_c17 or is_c18 or is_c19
     model.train(is_train)
     labels: List[int] = []
     probs: List[float] = []
@@ -216,6 +221,10 @@ def run_epoch(
     image_morphology_losses: List[float] = []
     residual_regularization_losses: List[float] = []
     positive_preservation_losses: List[float] = []
+    negative_preservation_losses: List[float] = []
+    polarity_losses: List[float] = []
+    magnitude_losses: List[float] = []
+    reliable_polarity_counts: List[int] = []
     hard_ranking_losses: List[float] = []
     hard_pair_counts: List[int] = []
     delta_values: List[float] = []
@@ -226,6 +235,15 @@ def run_epoch(
     support_gate_values: List[float] = []
     opposition_gate_values: List[float] = []
     conflict_suppression_values: List[float] = []
+    q_support_values: List[float] = []
+    q_opposition_values: List[float] = []
+    evidence_gap_values: List[float] = []
+    evidence_polarity_values: List[float] = []
+    evidence_confidence_values: List[float] = []
+    correction_magnitude_values: List[float] = []
+    effective_correction_magnitude_values: List[float] = []
+    positive_support_dominant_values: List[float] = []
+    negative_opposition_dominant_values: List[float] = []
     predictions: List[Dict[str, Any]] = []
     criterion = torch.nn.BCEWithLogitsLoss(reduction="none")
     cls_weight = float(loss_cfg.get("cls_weight", 1.0))
@@ -241,8 +259,14 @@ def run_epoch(
             0.001 if is_c18 else 0.0,
         )
     )
+    lambda_polarity = float(loss_cfg.get("lambda_polarity", 0.01))
+    lambda_negative_preserve = float(loss_cfg.get("lambda_negative_preserve", 0.02))
+    lambda_magnitude = float(loss_cfg.get("lambda_magnitude", 0.001))
     lambda_positive_preserve = float(loss_cfg.get("lambda_positive_preserve", 0.0))
     allowed_negative_delta = float(loss_cfg.get("allowed_negative_delta", 0.05))
+    allowed_positive_delta = float(loss_cfg.get("allowed_positive_delta", 0.02))
+    reliable_conflict_threshold = float(loss_cfg.get("reliable_conflict_threshold", 0.35))
+    reliable_uncertainty_threshold = float(loss_cfg.get("reliable_uncertainty_threshold", 0.35))
     lambda_hard_rank = float(loss_cfg.get("lambda_hard_rank", 0.0))
     hard_margin_threshold = float(loss_cfg.get("hard_margin_threshold", 0.50))
 
@@ -253,7 +277,41 @@ def run_epoch(
             raw_loss = criterion(outputs["logit"], batch["label"])
             cls_loss = cls_weight * (raw_loss * batch["sample_weight"]).mean()
             loss = cls_loss
-            if is_c18:
+            if is_c19:
+                delta_c19 = outputs["delta_c19"]
+                reliable_mask = (
+                    (outputs["normalized_conflict_score"] < reliable_conflict_threshold)
+                    & (outputs["normalized_uncertainty_strength"] < reliable_uncertainty_threshold)
+                ).detach()
+                signed_labels = 2.0 * batch["label"] - 1.0
+                if bool(reliable_mask.any().item()):
+                    polarity_loss = F.softplus(-signed_labels[reliable_mask] * outputs["evidence_gap"][reliable_mask]).mean()
+                else:
+                    polarity_loss = outputs["logit"].sum() * 0.0
+                positive_mask = batch["label"] > 0.5
+                negative_mask = ~positive_mask
+                if bool(positive_mask.any().item()):
+                    positive_loss = F.relu(-delta_c19[positive_mask] - allowed_positive_delta).mean()
+                else:
+                    positive_loss = delta_c19.sum() * 0.0
+                if bool(negative_mask.any().item()):
+                    negative_loss = F.relu(delta_c19[negative_mask] - allowed_positive_delta).mean()
+                else:
+                    negative_loss = delta_c19.sum() * 0.0
+                magnitude_loss = delta_c19.square().mean()
+                loss = (
+                    loss
+                    + lambda_polarity * polarity_loss
+                    + lambda_positive_preserve * positive_loss
+                    + lambda_negative_preserve * negative_loss
+                    + lambda_magnitude * magnitude_loss
+                )
+                polarity_losses.append(float(polarity_loss.detach().cpu()))
+                positive_preservation_losses.append(float(positive_loss.detach().cpu()))
+                negative_preservation_losses.append(float(negative_loss.detach().cpu()))
+                magnitude_losses.append(float(magnitude_loss.detach().cpu()))
+                reliable_polarity_counts.append(int(reliable_mask.sum().detach().cpu()))
+            elif is_c18:
                 directional_delta = outputs["directional_delta"]
                 residual_loss = (
                     outputs["effective_support_delta"].square()
@@ -337,7 +395,7 @@ def run_epoch(
         probs.extend(batch_probs)
 
         if is_directional:
-            delta_key = "directional_delta" if is_c18 else "delta_logit"
+            delta_key = "delta_c19" if is_c19 else ("directional_delta" if is_c18 else "delta_logit")
             batch_delta = outputs[delta_key].detach().float().cpu().numpy()
             delta_values.extend(float(value) for value in batch_delta)
             batch_labels_np = np.asarray(batch_labels, dtype=int)
@@ -349,6 +407,20 @@ def run_epoch(
                 support_gate_values.extend(float(value) for value in outputs["support_gate"].detach().float().cpu().numpy())
                 opposition_gate_values.extend(float(value) for value in outputs["opposition_gate"].detach().float().cpu().numpy())
                 conflict_suppression_values.extend(float(value) for value in outputs["conflict_suppression"].detach().float().cpu().numpy())
+            if is_c19:
+                q_support = outputs["q_support"].detach().float().cpu().numpy()
+                q_opposition = outputs["q_opposition"].detach().float().cpu().numpy()
+                q_support_values.extend(float(value) for value in q_support)
+                q_opposition_values.extend(float(value) for value in q_opposition)
+                evidence_gap_values.extend(float(value) for value in outputs["evidence_gap"].detach().float().cpu().numpy())
+                evidence_polarity_values.extend(float(value) for value in outputs["evidence_polarity"].detach().float().cpu().numpy())
+                evidence_confidence_values.extend(float(value) for value in outputs["evidence_confidence"].detach().float().cpu().numpy())
+                correction_magnitude_values.extend(float(value) for value in outputs["correction_magnitude"].detach().float().cpu().numpy())
+                effective_correction_magnitude_values.extend(float(value) for value in outputs["effective_correction_magnitude"].detach().float().cpu().numpy())
+                positive_mask_np = batch_labels_np == 1
+                negative_mask_np = batch_labels_np == 0
+                positive_support_dominant_values.extend(float(value) for value in (q_support[positive_mask_np] > q_opposition[positive_mask_np]))
+                negative_opposition_dominant_values.extend(float(value) for value in (q_opposition[negative_mask_np] > q_support[negative_mask_np]))
 
         for key in MEA_PATIENT_DIAGNOSTIC_KEYS:
             if key in outputs:
@@ -402,6 +474,29 @@ def run_epoch(
                         "effective_support_delta": float(outputs["effective_support_delta"].detach().cpu()[i]),
                         "effective_opposition_delta": float(outputs["effective_opposition_delta"].detach().cpu()[i]),
                         "directional_delta": float(outputs["directional_delta"].detach().cpu()[i]),
+                        "final_logit": float(outputs["logit"].detach().cpu()[i]),
+                        "final_prob": float(outputs["prob"].detach().cpu()[i]),
+                    }
+                )
+            elif is_c19:
+                row.update(
+                    {
+                        "frozen_c17_logit": float(outputs["frozen_c17_logit"].detach().cpu()[i]),
+                        "frozen_c17_prob": float(outputs["frozen_c17_prob"].detach().cpu()[i]),
+                        "support_strength": float(outputs["evidence_support_strength"].detach().cpu()[i]),
+                        "opposition_strength": float(outputs["evidence_opposition_strength"].detach().cpu()[i]),
+                        "uncertainty_strength": float(outputs["evidence_uncertainty_strength"].detach().cpu()[i]),
+                        "conflict_score": float(outputs["evidence_conflict_score"].detach().cpu()[i]),
+                        "temporal_conflict_score": float(outputs["evidence_temporal_conflict_score"].detach().cpu()[i]),
+                        "morphology_alignment_cosine": float(outputs["evidence_morphology_alignment_cosine"].detach().cpu()[i]),
+                        "q_support": float(outputs["q_support"].detach().cpu()[i]),
+                        "q_opposition": float(outputs["q_opposition"].detach().cpu()[i]),
+                        "evidence_gap": float(outputs["evidence_gap"].detach().cpu()[i]),
+                        "evidence_polarity": float(outputs["evidence_polarity"].detach().cpu()[i]),
+                        "evidence_confidence": float(outputs["evidence_confidence"].detach().cpu()[i]),
+                        "correction_magnitude": float(outputs["correction_magnitude"].detach().cpu()[i]),
+                        "effective_correction_magnitude": float(outputs["effective_correction_magnitude"].detach().cpu()[i]),
+                        "delta_c19": float(outputs["delta_c19"].detach().cpu()[i]),
                         "final_logit": float(outputs["logit"].detach().cpu()[i]),
                         "final_prob": float(outputs["prob"].detach().cpu()[i]),
                     }
@@ -462,7 +557,60 @@ def run_epoch(
         image_morphology_confidences,
         image_morphology_losses,
     )
-    if is_c17:
+    if is_c19:
+        delta_np = np.asarray(delta_values, dtype=float)
+        positive_delta_np = np.asarray(positive_delta_values, dtype=float)
+        negative_delta_np = np.asarray(negative_delta_values, dtype=float)
+        q_support_np = np.asarray(q_support_values, dtype=float)
+        q_opposition_np = np.asarray(q_opposition_values, dtype=float)
+        gap_np = np.asarray(evidence_gap_values, dtype=float)
+        polarity_np = np.asarray(evidence_polarity_values, dtype=float)
+        confidence_np = np.asarray(evidence_confidence_values, dtype=float)
+        magnitude_np = np.asarray(correction_magnitude_values, dtype=float)
+        effective_magnitude_np = np.asarray(effective_correction_magnitude_values, dtype=float)
+        metrics.update(
+            {
+                "polarity_loss": float(np.mean(polarity_losses)) if polarity_losses else 0.0,
+                "positive_preservation_loss": float(np.mean(positive_preservation_losses)) if positive_preservation_losses else 0.0,
+                "negative_preservation_loss": float(np.mean(negative_preservation_losses)) if negative_preservation_losses else 0.0,
+                "magnitude_loss": float(np.mean(magnitude_losses)) if magnitude_losses else 0.0,
+                "reliable_polarity_count": int(np.sum(reliable_polarity_counts)) if reliable_polarity_counts else 0,
+                "mean_q_support": float(q_support_np.mean()) if q_support_np.size else 0.0,
+                "mean_q_opposition": float(q_opposition_np.mean()) if q_opposition_np.size else 0.0,
+                "mean_evidence_gap": float(gap_np.mean()) if gap_np.size else 0.0,
+                "mean_evidence_polarity": float(polarity_np.mean()) if polarity_np.size else 0.0,
+                "mean_evidence_confidence": float(confidence_np.mean()) if confidence_np.size else 0.0,
+                "mean_delta_c19": float(delta_np.mean()) if delta_np.size else 0.0,
+                "std_delta_c19": float(delta_np.std(ddof=1)) if delta_np.size > 1 else 0.0,
+                "mean_positive_delta_c19": float(positive_delta_np.mean()) if positive_delta_np.size else 0.0,
+                "mean_negative_delta_c19": float(negative_delta_np.mean()) if negative_delta_np.size else 0.0,
+                "mean_correction_magnitude": float(magnitude_np.mean()) if magnitude_np.size else 0.0,
+                "mean_effective_correction_magnitude": float(effective_magnitude_np.mean()) if effective_magnitude_np.size else 0.0,
+                "fraction_positive_delta_below_minus_0_05": float((positive_delta_np < -0.05).mean()) if positive_delta_np.size else 0.0,
+                "fraction_negative_delta_above_plus_0_05": float((negative_delta_np > 0.05).mean()) if negative_delta_np.size else 0.0,
+                "fraction_delta_at_bound": float((effective_magnitude_np >= float(loss_cfg.get("magnitude_max", 0.20)) - 1e-5).mean()) if effective_magnitude_np.size else 0.0,
+                "positive_support_dominant_rate": float(np.mean(positive_support_dominant_values)) if positive_support_dominant_values else 0.0,
+                "negative_opposition_dominant_rate": float(np.mean(negative_opposition_dominant_values)) if negative_opposition_dominant_values else 0.0,
+                "reliable_polarity_rate": float(np.sum(reliable_polarity_counts)) / max(len(labels), 1) if reliable_polarity_counts else 0.0,
+                "_c19_route": True,
+            }
+        )
+        metrics.pop("AUPRC", None)
+        if positive_delta_np.size and negative_delta_np.size:
+            positive_logits = np.asarray(
+                [row["frozen_c17_logit"] + row["delta_c19"] for row in predictions if int(row["label"]) == 1],
+                dtype=float,
+            )
+            negative_logits = np.asarray(
+                [row["frozen_c17_logit"] + row["delta_c19"] for row in predictions if int(row["label"]) == 0],
+                dtype=float,
+            )
+            metrics["pairwise_inversion_count"] = int(
+                (positive_logits[:, None] - negative_logits[None, :] <= 0.0).sum()
+            )
+        else:
+            metrics["pairwise_inversion_count"] = 0
+    elif is_c17:
         delta_np = np.asarray(delta_values, dtype=float)
         positive_delta_np = np.asarray(positive_delta_values, dtype=float)
         negative_delta_np = np.asarray(negative_delta_values, dtype=float)
@@ -524,12 +672,49 @@ def loss_config_for_epoch(loss_cfg: Dict[str, Any], epoch: int) -> Dict[str, Any
         active_cfg["text_morphology_active"] = False
     else:
         active_cfg["text_morphology_active"] = float(loss_cfg.get("text_morphology_weight", 0.0)) > 0
-    if not bool(loss_cfg.get("c17", False)) and not bool(loss_cfg.get("c18", False)):
+    if not bool(loss_cfg.get("c17", False)) and not bool(loss_cfg.get("c18", False)) and not bool(loss_cfg.get("c19", False)):
         active_cfg.update(mea_loss_weights_for_epoch(loss_cfg, epoch))
     return active_cfg
 
 
 def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    if bool(train_metrics.get("_c19_route", False) or val_metrics.get("_c19_route", False)):
+        return {
+            "seed": int(seed),
+            "epoch": int(epoch),
+            "split": "train_val",
+            "train_total_loss": train_metrics.get("loss", 0.0),
+            "train_classification_loss": train_metrics.get("cls_loss", 0.0),
+            "train_polarity_loss": train_metrics.get("polarity_loss", 0.0),
+            "train_positive_preservation_loss": train_metrics.get("positive_preservation_loss", 0.0),
+            "train_negative_preservation_loss": train_metrics.get("negative_preservation_loss", 0.0),
+            "train_magnitude_loss": train_metrics.get("magnitude_loss", 0.0),
+            "train_reliable_polarity_count": train_metrics.get("reliable_polarity_count", 0),
+            "val_auc": val_metrics.get("AUC", 0.0),
+            "val_sensitivity": val_metrics.get("Sensitivity", 0.0),
+            "val_specificity": val_metrics.get("Specificity", 0.0),
+            "val_balanced_accuracy": val_metrics.get("Balanced_ACC", 0.0),
+            "val_positive_probability_mean": val_metrics.get("positive_prob_mean", 0.0),
+            "val_negative_probability_mean": val_metrics.get("negative_prob_mean", 0.0),
+            "val_positive_negative_gap": val_metrics.get("pos_neg_gap", 0.0),
+            "mean_q_support": val_metrics.get("mean_q_support", 0.0),
+            "mean_q_opposition": val_metrics.get("mean_q_opposition", 0.0),
+            "mean_evidence_gap": val_metrics.get("mean_evidence_gap", 0.0),
+            "mean_evidence_polarity": val_metrics.get("mean_evidence_polarity", 0.0),
+            "mean_evidence_confidence": val_metrics.get("mean_evidence_confidence", 0.0),
+            "mean_delta_c19": val_metrics.get("mean_delta_c19", 0.0),
+            "std_delta_c19": val_metrics.get("std_delta_c19", 0.0),
+            "mean_positive_delta_c19": val_metrics.get("mean_positive_delta_c19", 0.0),
+            "mean_negative_delta_c19": val_metrics.get("mean_negative_delta_c19", 0.0),
+            "mean_correction_magnitude": val_metrics.get("mean_correction_magnitude", 0.0),
+            "fraction_positive_delta_below_minus_0_05": val_metrics.get("fraction_positive_delta_below_minus_0_05", 0.0),
+            "fraction_negative_delta_above_plus_0_05": val_metrics.get("fraction_negative_delta_above_plus_0_05", 0.0),
+            "fraction_delta_at_bound": val_metrics.get("fraction_delta_at_bound", 0.0),
+            "positive_support_dominant_rate": val_metrics.get("positive_support_dominant_rate", 0.0),
+            "negative_opposition_dominant_rate": val_metrics.get("negative_opposition_dominant_rate", 0.0),
+            "pairwise_inversion_count": val_metrics.get("pairwise_inversion_count", 0),
+            "selected_by_val_auc": False,
+        }
     if bool(train_metrics.get("_c18_route", False) or val_metrics.get("_c18_route", False)):
         return {
             "seed": int(seed),
@@ -637,6 +822,8 @@ def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metr
 
 
 def build_model(config: Dict[str, Any], seed: int) -> torch.nn.Module:
+    if is_c19_config(config):
+        return C19PolarityLockedResidualModel(config, seed)
     if is_c18_config(config):
         return C18DirectionalResidualModel(config, seed)
     if is_c17_config(config):
@@ -714,7 +901,8 @@ def main() -> None:
     config = load_config(args.config)
     c17_route = is_c17_config(config)
     c18_route = is_c18_config(config)
-    auc_only_route = c17_route or c18_route
+    c19_route = is_c19_config(config)
+    auc_only_route = c17_route or c18_route or c19_route
     if args.data_root:
         config["project"]["data_root"] = args.data_root
     if args.manifest:

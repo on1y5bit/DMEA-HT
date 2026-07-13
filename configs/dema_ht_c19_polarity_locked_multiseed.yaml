@@ -1,0 +1,50 @@
+phase: c19
+
+project:
+  name: dema_ht_c19_polarity_locked_multiseed
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl
+  output_dir: runs/dema_ht_c19_polarity_locked_multiseed
+
+model:
+  name: dmea_ht
+  variant: dmea
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_patient: 28
+  image_size: 224
+  dropout: 0.15
+  mea_num_heads: 4
+
+c19:
+  variant: polarity_locked
+  c17_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_{seed}_best.pt
+  c13_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_{seed}_best.pt
+  magnitude_max: 0.20
+  residual_scale_init: 1.0e-9
+  polarity_temperature: 1.0
+
+training:
+  seeds: [0, 42, 3407]
+  batch_size: 4
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 30
+  patience: 8
+  primary_metric: val_AUC
+  num_workers: 2
+  evaluate_test: true
+
+loss:
+  c19: true
+  cls_weight: 1.0
+  lambda_polarity: 0.01
+  lambda_positive_preserve: 0.02
+  lambda_negative_preserve: 0.02
+  lambda_magnitude: 0.001
+  reliable_conflict_threshold: 0.35
+  reliable_uncertainty_threshold: 0.35
+  allowed_positive_delta: 0.02
+  magnitude_max: 0.20

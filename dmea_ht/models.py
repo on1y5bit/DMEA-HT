@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, Mapping
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 from dmea_ht.mechanism_evidence_alignment import MechanismEvidenceAlignment, TEXT_MASK_KEYS
@@ -529,4 +530,186 @@ class C18DirectionalResidualModel(nn.Module):
             "directional_delta": directional_delta,
             "delta_logit": directional_delta,
             "directional_feature_norm": features["support"].norm(dim=-1),
+        }
+
+
+class MonotonicSupportCalibrator(nn.Module):
+    """Fixed positive-slope calibration over frozen support evidence."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.register_buffer("raw_a_support", torch.tensor(0.54132485))
+        self.register_buffer("b_support", torch.tensor(0.0))
+
+    @property
+    def a_support(self) -> torch.Tensor:
+        return F.softplus(self.raw_a_support)
+
+    def forward(self, normalized_support_strength: torch.Tensor) -> torch.Tensor:
+        return F.softplus(self.a_support * normalized_support_strength + self.b_support)
+
+
+class MonotonicOppositionCalibrator(nn.Module):
+    """Fixed positive-slope calibration over frozen opposition evidence."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.register_buffer("raw_a_opposition", torch.tensor(0.54132485))
+        self.register_buffer("b_opposition", torch.tensor(0.0))
+
+    @property
+    def a_opposition(self) -> torch.Tensor:
+        return F.softplus(self.raw_a_opposition)
+
+    def forward(self, normalized_opposition_strength: torch.Tensor) -> torch.Tensor:
+        return F.softplus(self.a_opposition * normalized_opposition_strength + self.b_opposition)
+
+
+class EvidenceMagnitudeHead(nn.Module):
+    """Learn only a bounded correction magnitude from polarity confidence."""
+
+    def __init__(self, hidden_dim: int, dropout: float, magnitude_max: float = 0.20) -> None:
+        super().__init__()
+        self.magnitude_max = float(magnitude_max)
+        self.net = nn.Sequential(
+            nn.LayerNorm(4),
+            nn.Linear(4, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 1),
+        )
+        output_layer = self.net[-1]
+        assert isinstance(output_layer, nn.Linear)
+        nn.init.zeros_(output_layer.weight)
+        nn.init.zeros_(output_layer.bias)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        return self.magnitude_max * torch.sigmoid(self.net(features).squeeze(-1))
+
+
+class C19PolarityLockedResidualModel(nn.Module):
+    """Frozen C17 evidence with polarity-locked, magnitude-only residual correction."""
+
+    def __init__(self, config: Dict, seed: int) -> None:
+        super().__init__()
+        model_cfg = dict(config.get("model", {}))
+        c19_cfg = dict(config.get("c19", {}))
+        hidden_dim = int(model_cfg.get("hidden_dim", 256))
+        dropout = float(model_cfg.get("dropout", 0.15))
+        c17_checkpoint = _resolve_seed_path(c19_cfg["c17_checkpoint"], seed)
+        c13_checkpoint = c19_cfg["c13_checkpoint"]
+
+        # Reconstruct the C17 module only to load its full validation-selected state.
+        # Every C17 parameter is frozen before the new magnitude head is exposed.
+        from dmea_ht.c17_residual import C17ResidualModel
+
+        c17_config = copy.deepcopy(config)
+        c17_config["phase"] = "c17"
+        c17_config.pop("c19", None)
+        c17_config["c17"] = {
+            "variant": "positive_preserve",
+            "base_checkpoint": c13_checkpoint,
+            "init_mea_checkpoint": str(c17_checkpoint),
+            "delta_max": 0.50,
+        }
+        self.frozen_c17 = C17ResidualModel(c17_config, seed)
+        self.frozen_c17.load_state_dict(_checkpoint_state(c17_checkpoint), strict=True)
+        for parameter in self.frozen_c17.parameters():
+            parameter.requires_grad = False
+        self.frozen_c17.eval()
+
+        self.support_calibrator = MonotonicSupportCalibrator()
+        self.opposition_calibrator = MonotonicOppositionCalibrator()
+        self.magnitude_head = EvidenceMagnitudeHead(
+            hidden_dim,
+            dropout,
+            magnitude_max=float(c19_cfg.get("magnitude_max", 0.20)),
+        )
+        # A tiny positive scale preserves exact C17 behavior at initialization while
+        # retaining a direct, finite gradient for the learnable magnitude path.
+        self.residual_scale = nn.Parameter(
+            torch.tensor(float(c19_cfg.get("residual_scale_init", 1e-9)), dtype=torch.float32)
+        )
+        self.polarity_temperature = float(c19_cfg.get("polarity_temperature", 1.0))
+
+    def train(self, mode: bool = True) -> "C19PolarityLockedResidualModel":
+        super().train(mode)
+        self.frozen_c17.eval()
+        return self
+
+    @staticmethod
+    def _normalize_evidence(frozen_outputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        support = torch.sigmoid(frozen_outputs["evidence_support_strength"])
+        opposition = torch.sigmoid(frozen_outputs["evidence_opposition_strength"])
+        uncertainty = frozen_outputs["evidence_uncertainty_strength"].clamp(0.0, 1.0)
+        conflict = frozen_outputs["evidence_conflict_score"].clamp(0.0, 1.0)
+        temporal_conflict = frozen_outputs["evidence_temporal_conflict_score"].clamp(0.0, 1.0)
+        morphology_cosine = frozen_outputs["evidence_morphology_alignment_cosine"].clamp(-1.0, 1.0)
+        valid_mask = frozen_outputs["evidence_valid_mechanism"].clamp(0.0, 1.0)
+        mechanism_valid_norm = frozen_outputs["evidence_valid_mechanism_norm"].clamp_min(0.0) * valid_mask
+        return {
+            "normalized_support_strength": support * valid_mask,
+            "normalized_opposition_strength": opposition * valid_mask,
+            "normalized_uncertainty_strength": uncertainty,
+            "normalized_conflict_score": conflict,
+            "normalized_temporal_conflict_score": temporal_conflict,
+            "morphology_alignment_cosine": morphology_cosine,
+            "valid_mechanism_evidence_norm": mechanism_valid_norm,
+            "valid_mechanism_evidence_mask": valid_mask,
+        }
+
+    def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        with torch.no_grad():
+            frozen_outputs = self.frozen_c17(batch)
+
+        evidence = self._normalize_evidence(frozen_outputs)
+        q_support = self.support_calibrator(evidence["normalized_support_strength"])
+        q_opposition = self.opposition_calibrator(evidence["normalized_opposition_strength"])
+        evidence_gap = q_support - q_opposition
+        evidence_polarity = torch.tanh(evidence_gap / max(self.polarity_temperature, 1e-6))
+        evidence_confidence = (
+            evidence_polarity.abs()
+            * (1.0 - evidence["normalized_uncertainty_strength"])
+            * (1.0 - evidence["normalized_conflict_score"])
+        ).clamp(0.0, 1.0)
+        frozen_c17_logit = frozen_outputs["logit"]
+        magnitude_features = torch.stack(
+            [
+                evidence_polarity.abs(),
+                evidence_confidence,
+                frozen_c17_logit.abs(),
+                evidence["valid_mechanism_evidence_norm"],
+            ],
+            dim=-1,
+        )
+        correction_magnitude = self.magnitude_head(magnitude_features)
+        # Keep the scale non-negative without creating a dead branch if AdamW
+        # crosses zero from the tiny equivalence-preserving initialization.
+        magnitude_scale = self.residual_scale.abs().clamp(max=1.0)
+        effective_correction_magnitude = correction_magnitude * magnitude_scale
+        delta_c19 = evidence_polarity * evidence_confidence * effective_correction_magnitude
+        final_logit = frozen_c17_logit + delta_c19
+        return {
+            **frozen_outputs,
+            "frozen_c17_logit": frozen_c17_logit,
+            "frozen_c17_prob": torch.sigmoid(frozen_c17_logit),
+            "q_support": q_support,
+            "q_opposition": q_opposition,
+            "evidence_gap": evidence_gap,
+            "evidence_polarity": evidence_polarity,
+            "evidence_confidence": evidence_confidence,
+            "correction_magnitude": correction_magnitude,
+            "magnitude_scale": magnitude_scale.expand_as(correction_magnitude),
+            "effective_correction_magnitude": effective_correction_magnitude,
+            "normalized_support_strength": evidence["normalized_support_strength"],
+            "normalized_opposition_strength": evidence["normalized_opposition_strength"],
+            "normalized_uncertainty_strength": evidence["normalized_uncertainty_strength"],
+            "normalized_conflict_score": evidence["normalized_conflict_score"],
+            "normalized_temporal_conflict_score": evidence["normalized_temporal_conflict_score"],
+            "morphology_alignment_cosine": evidence["morphology_alignment_cosine"],
+            "valid_mechanism_evidence_norm": evidence["valid_mechanism_evidence_norm"],
+            "valid_mechanism_evidence_mask": evidence["valid_mechanism_evidence_mask"],
+            "logit": final_logit,
+            "prob": torch.sigmoid(final_logit),
+            "delta_c19": delta_c19,
         }
