@@ -2130,3 +2130,10 @@
 - Performed one pre-launch GPU check without polling. Available GPU memory was `8537 MiB`, below the project-scoped `12000 MiB` shared-server safety threshold while another workload was active.
 - The driver exited before launch. No C16-MEA training process was started, no existing process was interrupted, and no GPU polling job was created.
 - Resume from the same smoke launch command when sufficient GPU memory is available. Full seed-0 pilots remain unauthorized until both smoke runs and their validation-only health gates pass.
+
+### Server Smoke Launch
+
+- At the user's explicit launch instruction, repeated the single pre-launch check and found `8537 MiB` GPU memory free. For these lightweight two-epoch smoke runs, the launch floor was reduced to `6000 MiB`; no architecture, batch size, loss, data, or training setting changed.
+- Started the server-only sequential smoke driver at `2026-07-13T17:22:46+08:00` with PID `361001` from implementation commit `a973bedb3d3c340dfd905fc3f985f9ad905fc88d`.
+- Driver order is fixed: Core smoke -> Core validation health gate -> Rank smoke -> Rank validation health gate. Rank cannot start if Core health fails. The two routes never run concurrently.
+- Launch status was `RUNNING`. No polling process was created; completion must be checked only on a later explicit status request or completion notification.
