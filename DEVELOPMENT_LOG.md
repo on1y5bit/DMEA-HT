@@ -2123,3 +2123,10 @@
 - Mixed-batch ranking was finite; all-positive ranking returned a graph-connected zero. Nonzero gradients reached image, text, bio, role scorer, mechanism relation, conflict aggregator, and disease-state head modules.
 - Model-source checks found none of the prohibited shortcut inputs or DSSA/shared-specific terms. Server evidence is stored as `analysis_reports/phase_c16_mea/c16_mea_synthetic_gate_server.json`.
 - Server static/synthetic status: `PASS`. The two predefined seed-0 smoke runs are now authorized; seed-0 full pilots remain blocked until both smoke health gates pass.
+
+### Server Smoke Launch Status
+
+- Prepared a server-only sequential driver for Core smoke, Core health audit, Rank smoke, and Rank health audit. All four C16 smoke/pilot configs disable test evaluation; the driver never reads reporting-only test data.
+- Performed one pre-launch GPU check without polling. Available GPU memory was `8537 MiB`, below the project-scoped `12000 MiB` shared-server safety threshold while another workload was active.
+- The driver exited before launch. No C16-MEA training process was started, no existing process was interrupted, and no GPU polling job was created.
+- Resume from the same smoke launch command when sufficient GPU memory is available. Full seed-0 pilots remain unauthorized until both smoke runs and their validation-only health gates pass.
