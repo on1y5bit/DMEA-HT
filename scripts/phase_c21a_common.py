@@ -349,7 +349,8 @@ def mechanism_forward_trace(
         if edge in zero_edges:
             effective = torch.zeros_like(effective)
         source_by_edge[edge] = _edge_record(state, state, gate, effective, weight=weight)
-    disease_pre_norm = disease_attended.squeeze(1) + text_global_effective + bio_other_effective
+    context_effective = text_global_effective + bio_other_effective
+    disease_pre_norm = disease_attended.squeeze(1) + context_effective
     disease_state = mechanisms.disease_norm(disease_pre_norm)
 
     if skip_modulation:
