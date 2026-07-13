@@ -1960,3 +1960,12 @@
 - Frozen validation AUC: `0.8664554096876415 +/- 0.0077356303714961`; shortcut safety and the C14-E training block both passed verification.
 - Final decision: `FREEZE_C13_AS_STRICT_BEST_AND_REPORT_LIMITATION`; C15 remains unauthorized and the validation AUC 0.90 target was not reached.
 - Retrieved the 13-file final package to `analysis_reports/final_c13_delivery/` and independently confirmed zero failed checks and zero missing inventory artifacts locally.
+
+## 2026-07-13 PowerShell And SSH Transport Stabilization
+
+- Diagnosed Windows PowerShell 5.1 with code page `936`, console input `GB2312`, native pipeline encoding `US-ASCII`, and a pre-existing Conda `profile.ps1` blocked by the default `Restricted` execution policy.
+- Did not retain a broader PowerShell execution-policy change; restored `CurrentUser` to its original `Undefined` value.
+- Added `scripts/invoke_remote_bash.py`, which uses Python standard-library `subprocess` with `shell=False` and sends validated UTF-8 Bash files directly to SSH stdin.
+- This transport prevents PowerShell from expanding remote Bash expressions such as `$(pwd)` and awk `$3`, and avoids PowerShell native-pipeline transcoding.
+- Verified the transport against server `5090-01`: Chinese text round-tripped correctly, remote `$(pwd)` evaluated on Linux, and awk `$3` returned the expected value.
+- Codex-side PowerShell commands should use a non-login shell so the blocked Conda profile is not loaded; server commands should use the Python transport rather than embedded SSH one-liners.
