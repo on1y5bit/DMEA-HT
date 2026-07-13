@@ -54,6 +54,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--synthetic-smoke", action="store_true")
     parser.add_argument("--c13-config", default="configs/dmea_ht_v2_c13_temporal_focus_stress_seeds.yaml")
     parser.add_argument("--c16-config", default="configs/dmea_ht_v2_c16_dssa_smoke.yaml")
+    parser.add_argument("--pilot-config", default="configs/dmea_ht_v2_c16_dssa_seed0_pilot.yaml")
+    parser.add_argument("--stress-config", default="configs/dmea_ht_v2_c16_dssa_stress_seeds.yaml")
     parser.add_argument("--run-dirs", nargs="*", default=[])
     parser.add_argument("--output-dir", default="analysis_reports/phase_c16")
     parser.add_argument("--require-health-pass", action="store_true")
@@ -120,7 +122,13 @@ def gradient_present(model: torch.nn.Module, prefix: str) -> bool:
     )
 
 
-def run_synthetic_smoke(c13_config_path: Path, c16_config_path: Path, output_dir: Path) -> bool:
+def run_synthetic_smoke(
+    c13_config_path: Path,
+    c16_config_path: Path,
+    pilot_config_path: Path,
+    stress_config_path: Path,
+    output_dir: Path,
+) -> bool:
     checks: List[Dict[str, Any]] = []
 
     def check(name: str, passed: bool, evidence: Any) -> None:
@@ -143,6 +151,86 @@ def run_synthetic_smoke(c13_config_path: Path, c16_config_path: Path, output_dir
     check("legacy_forward_equivalence", max_legacy_difference == 0.0, max_legacy_difference)
 
     c16_config = load_config(c16_config_path)
+    pilot_config = load_config(pilot_config_path)
+    stress_config = load_config(stress_config_path)
+    c16_configs = (c16_config, pilot_config, stress_config)
+    check(
+        "frozen_data_contract",
+        all(
+            config["project"]["data_root"] == c13_config["project"]["data_root"]
+            and config["project"]["manifest"] == c13_config["project"]["manifest"]
+            for config in c16_configs
+        ),
+        [config["project"]["manifest"] for config in c16_configs],
+    )
+    frozen_model_keys = (
+        "variant",
+        "hidden_dim",
+        "text_vocab_size",
+        "text_max_length",
+        "bio_dim",
+        "max_images_per_patient",
+        "image_size",
+        "dropout",
+        "use_patient_anchor",
+        "use_evidence_role",
+        "use_discordance",
+    )
+    model_differences = {
+        key: [config["model"].get(key) for config in c16_configs]
+        for key in frozen_model_keys
+        if any(config["model"].get(key) != c13_config["model"].get(key) for config in c16_configs)
+    }
+    check("frozen_encoder_and_input_contract", not model_differences, model_differences)
+    frozen_training_keys = ("batch_size", "lr", "weight_decay", "epochs", "patience", "primary_metric", "num_workers")
+    training_differences = {
+        key: [config["training"].get(key) for config in (pilot_config, stress_config)]
+        for key in frozen_training_keys
+        if any(config["training"].get(key) != c13_config["training"].get(key) for config in (pilot_config, stress_config))
+    }
+    check("frozen_pilot_optimizer_contract", not training_differences, training_differences)
+    check(
+        "formal_seed_contract",
+        pilot_config["training"].get("seeds") == [0]
+        and stress_config["training"].get("seeds") == [42, 3407],
+        [pilot_config["training"].get("seeds"), stress_config["training"].get("seeds")],
+    )
+    expected_weights = {
+        "lambda_proto": 0.05,
+        "lambda_shared": 0.02,
+        "lambda_orth": 0.01,
+        "lambda_var": 0.005,
+        "lambda_sep": 0.01,
+        "lambda_rank": 0.02,
+    }
+    weight_differences = {
+        key: [config["loss"].get(key) for config in c16_configs]
+        for key, expected in expected_weights.items()
+        if any(float(config["loss"].get(key, float("nan"))) != expected for config in c16_configs)
+    }
+    check("fixed_dssa_loss_weights", not weight_differences, weight_differences)
+    forbidden_loss_keys = (
+        "text_morphology_weight",
+        "image_morphology_weight",
+        "text_negative_weight",
+        "bio_evidence_weight",
+        "discordance_label_weight",
+        "counterfactual_weight",
+        "matched_supcon_weight",
+    )
+    enabled_forbidden_losses = {
+        key: [config["loss"].get(key) for config in c16_configs]
+        for key in forbidden_loss_keys
+        if any(float(config["loss"].get(key, 0.0) or 0.0) != 0.0 for config in c16_configs)
+    }
+    check("forbidden_legacy_losses_disabled", not enabled_forbidden_losses, enabled_forbidden_losses)
+    residual_scales = [float(config["model"].get("dssa_residual_scale", 1.0)) for config in c16_configs]
+    check("bounded_specific_residual_scale", all(0.0 <= value <= 0.15 for value in residual_scales), residual_scales)
+    check(
+        "validation_auc_checkpoint_contract",
+        all(config["training"].get("primary_metric") == "val_AUC" for config in c16_configs),
+        [config["training"].get("primary_metric") for config in c16_configs],
+    )
     set_seed(1701)
     model = DMEAHTModel(c16_config).train()
     outputs = model(batch)
@@ -472,7 +560,13 @@ def main() -> None:
     output_dir = Path(args.output_dir)
     passed = True
     if args.synthetic_smoke:
-        passed = run_synthetic_smoke(Path(args.c13_config), Path(args.c16_config), output_dir)
+        passed = run_synthetic_smoke(
+            Path(args.c13_config),
+            Path(args.c16_config),
+            Path(args.pilot_config),
+            Path(args.stress_config),
+            output_dir,
+        )
     health_pass = True
     if args.run_dirs:
         health_pass = run_saved_audit(args.run_dirs, output_dir)
