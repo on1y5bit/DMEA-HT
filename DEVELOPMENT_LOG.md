@@ -2269,3 +2269,18 @@
 - Validation AUC is the only checkpoint and decision metric. AUPRC is excluded from C19 reports, and test remains reporting-only.
 - No smoke run and no seed-0-only pilot are permitted. After C19-A plus static/synthetic checks, formal seeds are [0, 42, 3407].
 - Local Python verification was limited to syntax compilation and git diff --check; data/model runtime remains server-only.
+
+### C19-A Gate Result
+
+- Implementation commit 018f3b3 was pulled on server canonical main at /home/linruixin/chen/project/DMEA-HT.
+- Server runtime environment: /home/linruixin/chen/conda/envs/ma; GPU: NVIDIA GeForce RTX 5090 with 32607 MiB.
+- The C19-A audit was validation-only and read no test prediction files.
+- All non-C19-A static, compile, checkpoint, legacy-config, and shortcut-exclusion checks passed (24/24).
+- C19-A found nonconstant support-opposition gaps for all seeds, but the polarity direction was not stable:
+  - seed 0: positive support-dominant 0.7446808511; negative opposition-dominant 0.3829787234;
+  - seed 42: positive support-dominant 0.1063829787; negative opposition-dominant 0.6808510638;
+  - seed 3407: positive support-dominant 0.2127659574; negative opposition-dominant 0.4680851064.
+- The minimum 0.60/0.60 polarity admissibility condition therefore failed. The C19-A decision is C19_POLARITY_BASE_INVALID.
+- Static/synthetic gate status is C19_DIRECT_MULTI_SEED_BLOCKED; synthetic checks were correctly skipped after C19-A failure.
+- No C19 formal training process was started. No smoke, no seed-0 pilot, and no test/AUPRC-based decision occurred.
+- Final action: retain frozen C17 Positive Preservation as the current strict best, with mean validation AUC 0.8696242644 +/- 0.0074797246.
