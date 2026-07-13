@@ -314,10 +314,12 @@ def mechanism_forward_trace(
     if bool(empty.any().item()):
         safe_valid[empty, 0] = True
     query = mechanisms.disease_query.expand(states.shape[0], -1, -1)
-    attention_values = states.clone()
-    for index, node in enumerate(NODE_NAMES):
-        if f"{node}_to_final_mechanism" in zero_edges:
-            attention_values[:, index] = 0.0
+    attention_edges_zeroed = any(f"{node}_to_final_mechanism" in zero_edges for node in NODE_NAMES)
+    attention_values = states.clone() if attention_edges_zeroed else states
+    if attention_edges_zeroed:
+        for index, node in enumerate(NODE_NAMES):
+            if f"{node}_to_final_mechanism" in zero_edges:
+                attention_values[:, index] = 0.0
     disease_attended, attention = mechanisms.disease_attn(
         query, states, attention_values, key_padding_mask=~safe_valid, need_weights=True
     )
