@@ -19,7 +19,7 @@ from dmea_ht.evidence_losses import confidence_weighted_bce_with_logits
 from dmea_ht.metrics import compute_binary_metrics, summarize_metrics
 from dmea_ht.mea_losses import mea_loss_weights_for_epoch, pairwise_ranking_loss, state_margin_loss
 from dmea_ht.c17_residual import C17ResidualModel
-from dmea_ht.models import DMEAHTModel
+from dmea_ht.models import C18DirectionalResidualModel, DMEAHTModel
 
 
 MEA_PATIENT_DIAGNOSTIC_KEYS = (
@@ -136,6 +136,33 @@ def is_c17_config(config: Dict[str, Any]) -> bool:
     return bool(config.get("c17")) or str(config.get("phase", "")).lower() == "c17"
 
 
+def is_c18_config(config: Dict[str, Any]) -> bool:
+    return bool(config.get("c18")) or str(config.get("phase", "")).lower() == "c18"
+
+
+def hard_pairwise_ranking_loss(
+    base_logit: torch.Tensor,
+    final_logit: torch.Tensor,
+    labels: torch.Tensor,
+    margin_threshold: float,
+) -> tuple[torch.Tensor, int]:
+    """Rank only training-batch positive-negative pairs with a hard base margin."""
+    positive = labels > 0.5
+    negative = ~positive
+    if not bool(positive.any().item()) or not bool(negative.any().item()):
+        return final_logit.sum() * 0.0, 0
+    base_positive = base_logit[positive].unsqueeze(1)
+    base_negative = base_logit[negative].unsqueeze(0)
+    hard = (base_positive - base_negative) < float(margin_threshold)
+    hard_count = int(hard.sum().detach().cpu())
+    if hard_count == 0:
+        return final_logit.sum() * 0.0, 0
+    final_positive = final_logit[positive].unsqueeze(1)
+    final_negative = final_logit[negative].unsqueeze(0)
+    loss = F.softplus(-(final_positive - final_negative)[hard]).mean()
+    return loss, hard_count
+
+
 def add_evidence_metrics(
     metrics: Dict[str, Any],
     prefix: str,
@@ -165,6 +192,8 @@ def run_epoch(
 ) -> Dict[str, Any]:
     is_train = optimizer is not None
     is_c17 = bool(loss_cfg.get("c17", False))
+    is_c18 = bool(loss_cfg.get("c18", False))
+    is_directional = is_c17 or is_c18
     model.train(is_train)
     labels: List[int] = []
     probs: List[float] = []
@@ -187,9 +216,16 @@ def run_epoch(
     image_morphology_losses: List[float] = []
     residual_regularization_losses: List[float] = []
     positive_preservation_losses: List[float] = []
+    hard_ranking_losses: List[float] = []
+    hard_pair_counts: List[int] = []
     delta_values: List[float] = []
     positive_delta_values: List[float] = []
     negative_delta_values: List[float] = []
+    support_delta_values: List[float] = []
+    opposition_delta_values: List[float] = []
+    support_gate_values: List[float] = []
+    opposition_gate_values: List[float] = []
+    conflict_suppression_values: List[float] = []
     predictions: List[Dict[str, Any]] = []
     criterion = torch.nn.BCEWithLogitsLoss(reduction="none")
     cls_weight = float(loss_cfg.get("cls_weight", 1.0))
@@ -199,9 +235,16 @@ def run_epoch(
     lambda_mech = float(loss_cfg.get("effective_lambda_mech", 0.0))
     lambda_role = float(loss_cfg.get("effective_lambda_role", 0.0))
     lambda_rank = float(loss_cfg.get("effective_lambda_rank", 0.0))
-    lambda_residual = float(loss_cfg.get("lambda_residual", 0.0))
+    lambda_residual = float(
+        loss_cfg.get(
+            "lambda_directional_residual" if is_c18 else "lambda_residual",
+            0.001 if is_c18 else 0.0,
+        )
+    )
     lambda_positive_preserve = float(loss_cfg.get("lambda_positive_preserve", 0.0))
     allowed_negative_delta = float(loss_cfg.get("allowed_negative_delta", 0.05))
+    lambda_hard_rank = float(loss_cfg.get("lambda_hard_rank", 0.0))
+    hard_margin_threshold = float(loss_cfg.get("hard_margin_threshold", 0.50))
 
     for batch in tqdm(loader, leave=False):
         batch = move_batch(batch, device)
@@ -210,7 +253,38 @@ def run_epoch(
             raw_loss = criterion(outputs["logit"], batch["label"])
             cls_loss = cls_weight * (raw_loss * batch["sample_weight"]).mean()
             loss = cls_loss
-            if is_c17:
+            if is_c18:
+                directional_delta = outputs["directional_delta"]
+                residual_loss = (
+                    outputs["effective_support_delta"].square()
+                    + outputs["effective_opposition_delta"].square()
+                ).mean()
+                positive_mask = batch["label"] > 0.5
+                if bool(positive_mask.any().item()):
+                    positive_loss = F.relu(-directional_delta[positive_mask] - allowed_negative_delta).mean()
+                else:
+                    positive_loss = directional_delta.sum() * 0.0
+                if bool(loss_cfg.get("hard_rank", False)) and is_train:
+                    hard_rank_loss, hard_pair_count = hard_pairwise_ranking_loss(
+                        outputs["base_logit"],
+                        outputs["logit"],
+                        batch["label"],
+                        hard_margin_threshold,
+                    )
+                else:
+                    hard_rank_loss = outputs["logit"].sum() * 0.0
+                    hard_pair_count = 0
+                loss = (
+                    loss
+                    + lambda_residual * residual_loss
+                    + lambda_positive_preserve * positive_loss
+                    + lambda_hard_rank * hard_rank_loss
+                )
+                residual_regularization_losses.append(float(residual_loss.detach().cpu()))
+                positive_preservation_losses.append(float(positive_loss.detach().cpu()))
+                hard_ranking_losses.append(float(hard_rank_loss.detach().cpu()))
+                hard_pair_counts.append(hard_pair_count)
+            elif is_c17:
                 delta = outputs["delta_logit"]
                 residual_loss = delta.square().mean()
                 positive_mask = batch["label"] > 0.5
@@ -262,12 +336,19 @@ def run_epoch(
         labels.extend(batch_labels)
         probs.extend(batch_probs)
 
-        if is_c17:
-            batch_delta = outputs["delta_logit"].detach().float().cpu().numpy()
+        if is_directional:
+            delta_key = "directional_delta" if is_c18 else "delta_logit"
+            batch_delta = outputs[delta_key].detach().float().cpu().numpy()
             delta_values.extend(float(value) for value in batch_delta)
             batch_labels_np = np.asarray(batch_labels, dtype=int)
             positive_delta_values.extend(float(value) for value in batch_delta[batch_labels_np == 1])
             negative_delta_values.extend(float(value) for value in batch_delta[batch_labels_np == 0])
+            if is_c18:
+                support_delta_values.extend(float(value) for value in outputs["support_delta"].detach().float().cpu().numpy())
+                opposition_delta_values.extend(float(value) for value in outputs["opposition_delta"].detach().float().cpu().numpy())
+                support_gate_values.extend(float(value) for value in outputs["support_gate"].detach().float().cpu().numpy())
+                opposition_gate_values.extend(float(value) for value in outputs["opposition_gate"].detach().float().cpu().numpy())
+                conflict_suppression_values.extend(float(value) for value in outputs["conflict_suppression"].detach().float().cpu().numpy())
 
         for key in MEA_PATIENT_DIAGNOSTIC_KEYS:
             if key in outputs:
@@ -304,6 +385,23 @@ def run_epoch(
                         "base_logit": float(outputs["base_logit"].detach().cpu()[i]),
                         "base_prob": float(outputs["base_prob"].detach().cpu()[i]),
                         "delta_logit": float(outputs["delta_logit"].detach().cpu()[i]),
+                        "final_logit": float(outputs["logit"].detach().cpu()[i]),
+                        "final_prob": float(outputs["prob"].detach().cpu()[i]),
+                    }
+                )
+            elif is_c18:
+                row.update(
+                    {
+                        "base_logit": float(outputs["base_logit"].detach().cpu()[i]),
+                        "base_prob": float(outputs["base_prob"].detach().cpu()[i]),
+                        "support_delta": float(outputs["support_delta"].detach().cpu()[i]),
+                        "opposition_delta": float(outputs["opposition_delta"].detach().cpu()[i]),
+                        "support_gate": float(outputs["support_gate"].detach().cpu()[i]),
+                        "opposition_gate": float(outputs["opposition_gate"].detach().cpu()[i]),
+                        "conflict_suppression": float(outputs["conflict_suppression"].detach().cpu()[i]),
+                        "effective_support_delta": float(outputs["effective_support_delta"].detach().cpu()[i]),
+                        "effective_opposition_delta": float(outputs["effective_opposition_delta"].detach().cpu()[i]),
+                        "directional_delta": float(outputs["directional_delta"].detach().cpu()[i]),
                         "final_logit": float(outputs["logit"].detach().cpu()[i]),
                         "final_prob": float(outputs["prob"].detach().cpu()[i]),
                     }
@@ -384,6 +482,37 @@ def run_epoch(
             }
         )
         metrics.pop("AUPRC", None)
+    elif is_c18:
+        delta_np = np.asarray(delta_values, dtype=float)
+        positive_delta_np = np.asarray(positive_delta_values, dtype=float)
+        negative_delta_np = np.asarray(negative_delta_values, dtype=float)
+        support_np = np.asarray(support_delta_values, dtype=float)
+        opposition_np = np.asarray(opposition_delta_values, dtype=float)
+        support_gate_np = np.asarray(support_gate_values, dtype=float)
+        opposition_gate_np = np.asarray(opposition_gate_values, dtype=float)
+        conflict_suppression_np = np.asarray(conflict_suppression_values, dtype=float)
+        metrics.update(
+            {
+                "directional_residual_loss": float(np.mean(residual_regularization_losses)) if residual_regularization_losses else 0.0,
+                "positive_preservation_loss": float(np.mean(positive_preservation_losses)) if positive_preservation_losses else 0.0,
+                "hard_rank_loss": float(np.mean(hard_ranking_losses)) if hard_ranking_losses else 0.0,
+                "hard_pair_count": int(np.sum(hard_pair_counts)) if hard_pair_counts else 0,
+                "mean_support_delta": float(support_np.mean()) if support_np.size else 0.0,
+                "mean_opposition_delta": float(opposition_np.mean()) if opposition_np.size else 0.0,
+                "mean_directional_delta": float(delta_np.mean()) if delta_np.size else 0.0,
+                "std_directional_delta": float(delta_np.std(ddof=1)) if delta_np.size > 1 else 0.0,
+                "mean_positive_directional_delta": float(positive_delta_np.mean()) if positive_delta_np.size else 0.0,
+                "mean_negative_directional_delta": float(negative_delta_np.mean()) if negative_delta_np.size else 0.0,
+                "mean_support_gate": float(support_gate_np.mean()) if support_gate_np.size else 0.0,
+                "mean_opposition_gate": float(opposition_gate_np.mean()) if opposition_gate_np.size else 0.0,
+                "mean_conflict_suppression": float(conflict_suppression_np.mean()) if conflict_suppression_np.size else 0.0,
+                "fraction_support_at_upper_bound": float((support_np >= 0.50 - 1e-5).mean()) if support_np.size else 0.0,
+                "fraction_opposition_at_upper_bound": float((opposition_np >= 0.50 - 1e-5).mean()) if opposition_np.size else 0.0,
+                "fraction_positive_delta_below_minus_0_10": float((positive_delta_np < -0.10).mean()) if positive_delta_np.size else 0.0,
+                "_c18_route": True,
+            }
+        )
+        metrics.pop("AUPRC", None)
     return {"metrics": metrics, "predictions": predictions}
 
 
@@ -395,12 +524,44 @@ def loss_config_for_epoch(loss_cfg: Dict[str, Any], epoch: int) -> Dict[str, Any
         active_cfg["text_morphology_active"] = False
     else:
         active_cfg["text_morphology_active"] = float(loss_cfg.get("text_morphology_weight", 0.0)) > 0
-    if not bool(loss_cfg.get("c17", False)):
+    if not bool(loss_cfg.get("c17", False)) and not bool(loss_cfg.get("c18", False)):
         active_cfg.update(mea_loss_weights_for_epoch(loss_cfg, epoch))
     return active_cfg
 
 
 def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    if bool(train_metrics.get("_c18_route", False) or val_metrics.get("_c18_route", False)):
+        return {
+            "seed": int(seed),
+            "epoch": int(epoch),
+            "split": "train_val",
+            "train_total_loss": train_metrics.get("loss", 0.0),
+            "train_classification_loss": train_metrics.get("cls_loss", 0.0),
+            "train_directional_residual_loss": train_metrics.get("directional_residual_loss", 0.0),
+            "train_positive_preservation_loss": train_metrics.get("positive_preservation_loss", 0.0),
+            "train_hard_rank_loss": train_metrics.get("hard_rank_loss", 0.0),
+            "train_hard_pair_count": train_metrics.get("hard_pair_count", 0),
+            "val_auc": val_metrics.get("AUC", 0.0),
+            "val_sensitivity": val_metrics.get("Sensitivity", 0.0),
+            "val_specificity": val_metrics.get("Specificity", 0.0),
+            "val_balanced_accuracy": val_metrics.get("Balanced_ACC", 0.0),
+            "val_positive_probability_mean": val_metrics.get("positive_prob_mean", 0.0),
+            "val_negative_probability_mean": val_metrics.get("negative_prob_mean", 0.0),
+            "val_positive_negative_gap": val_metrics.get("pos_neg_gap", 0.0),
+            "mean_support_delta": val_metrics.get("mean_support_delta", 0.0),
+            "mean_opposition_delta": val_metrics.get("mean_opposition_delta", 0.0),
+            "mean_directional_delta": val_metrics.get("mean_directional_delta", 0.0),
+            "std_directional_delta": val_metrics.get("std_directional_delta", 0.0),
+            "mean_positive_directional_delta": val_metrics.get("mean_positive_directional_delta", 0.0),
+            "mean_negative_directional_delta": val_metrics.get("mean_negative_directional_delta", 0.0),
+            "mean_support_gate": val_metrics.get("mean_support_gate", 0.0),
+            "mean_opposition_gate": val_metrics.get("mean_opposition_gate", 0.0),
+            "mean_conflict_suppression": val_metrics.get("mean_conflict_suppression", 0.0),
+            "fraction_support_at_upper_bound": val_metrics.get("fraction_support_at_upper_bound", 0.0),
+            "fraction_opposition_at_upper_bound": val_metrics.get("fraction_opposition_at_upper_bound", 0.0),
+            "fraction_positive_delta_below_minus_0_10": val_metrics.get("fraction_positive_delta_below_minus_0_10", 0.0),
+            "selected_by_val_auc": False,
+        }
     if bool(train_metrics.get("_c17_route", False) or val_metrics.get("_c17_route", False)):
         return {
             "seed": int(seed),
@@ -476,6 +637,8 @@ def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metr
 
 
 def build_model(config: Dict[str, Any], seed: int) -> torch.nn.Module:
+    if is_c18_config(config):
+        return C18DirectionalResidualModel(config, seed)
     if is_c17_config(config):
         return C17ResidualModel(config, seed)
     return DMEAHTModel(config)
@@ -550,6 +713,8 @@ def main() -> None:
     args = parser.parse_args()
     config = load_config(args.config)
     c17_route = is_c17_config(config)
+    c18_route = is_c18_config(config)
+    auc_only_route = c17_route or c18_route
     if args.data_root:
         config["project"]["data_root"] = args.data_root
     if args.manifest:
@@ -578,18 +743,18 @@ def main() -> None:
                 {
                     key: value
                     for key, value in result[split]["metrics"].items()
-                    if not str(key).startswith("_") and (not c17_route or key != "AUPRC")
+                    if not str(key).startswith("_") and (not auc_only_route or key != "AUPRC")
                 }
             )
             metrics_rows.append(metric_row)
 
     metrics_df = pd.DataFrame(metrics_rows)
-    if c17_route and "AUPRC" in metrics_df.columns:
+    if auc_only_route and "AUPRC" in metrics_df.columns:
         metrics_df = metrics_df.drop(columns=["AUPRC"])
     metrics_df.to_csv(out_dir / "reports" / "metrics_by_seed.csv", index=False)
     if epoch_rows:
         epoch_df = pd.DataFrame(epoch_rows)
-        if c17_route and "AUPRC" in epoch_df.columns:
+        if auc_only_route and "AUPRC" in epoch_df.columns:
             epoch_df = epoch_df.drop(columns=["AUPRC"])
         epoch_df.to_csv(out_dir / "reports" / "metrics_by_epoch.csv", index=False)
     summary_rows = []
@@ -616,7 +781,7 @@ def main() -> None:
             "valid_image_morphology_count",
             "mean_image_morphology_confidence",
         ]
-        if not c17_route:
+        if not auc_only_route:
             summary_keys.insert(1, "AUPRC")
         summary.update(summarize_metrics(split_rows, summary_keys))
         summary_rows.append(summary)

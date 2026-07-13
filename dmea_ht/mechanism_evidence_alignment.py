@@ -660,6 +660,8 @@ class MechanismEvidenceAlignment(nn.Module):
             "mea_opposition_state": aggregate["opposition"],
             "mea_uncertainty_state": aggregate["uncertainty"],
             "mea_conflict_state": aggregate["conflict"],
+            "mea_strengths": aggregate["strengths"],
+            "conflict_suppression": (1.0 - aggregate["conflict_score"]).clamp(0.0, 1.0),
             "mea_mechanism_alignment_loss": mechanism_alignment_loss,
             "mea_role_separation_loss": role_separation_loss,
             "patient_support_strength": head["q_support"],

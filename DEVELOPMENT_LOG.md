@@ -2208,3 +2208,30 @@
 - Residuals were nonzero and unsaturated for every seed. The largest shortcut-only label AUC across selected visit count, image usage/padding, bio availability/missingness, and report length was `0.5088275238`; the shortcut audit passed.
 - The formal gate passed all required checks, including the exact seed contract, validation AUC above C13, AUC standard deviation at most `0.02`, sensitivity/specificity floors, balanced-accuracy safety, positive preservation, residual health, inversion non-worsening, inversion decrease in `3/3` seeds, shortcut safety, and test-as-reporting-only compliance.
 - Final decision: `PROMOTE_DEMA_C17_POSITIVE_PRESERVATION`. The formal audit collector was committed as `eef2338` and executed in the isolated server worktree `/home/linruixin/chen/project/DMEA-HT-c17-formal-audit`; its gate and reports are under `analysis_reports/phase_c17_dema/` there.
+
+## 2026-07-13 Single-Project Consolidation And C18 Preparation
+
+### Consolidation Result
+
+- Official model name remains `DEMA-HT`; historical repository and Python package identifiers remain `DMEA-HT` and `dmea_ht`.
+- All server development work was consolidated into `/home/linruixin/chen/project/DMEA-HT` on the existing branch `feature/c16-disease-state-shared-specific-alignment`.
+- The canonical server commit after code merge and the consolidation verifier is `759353acf128364a24ad0ae5ac3d2e822c1a0028`.
+- C17 code, three validation-selected checkpoints, validation predictions, reporting-only test predictions, metrics, positive-preservation audit, inversion audit, shortcut audit, formal gate, and final report were migrated and reproduced before cleanup.
+- Canonical C17 reproduction status: `CANONICAL_DMEA_HT_VERIFIED`; validation AUC mean remains `0.8696242644 +/- 0.0074797246`.
+- Artifact migration preserved `1606` identical existing files, migrated `132` files, and retained `3` hash conflicts under `analysis_reports/project_consolidation/conflicts/` without overwrite.
+- The `76` untracked files from the eight old worktrees were archived and SHA256-verified under `/home/linruixin/chen/project_archive/dema_ht_consolidation_20260713_205355/old_worktrees/` before cleanup.
+- Removed registered worktrees: `DMEA-HT-c16`, `DMEA-HT-c16-mea`, `DMEA-HT-c16-mea-impl`, `DMEA-HT-c17-dema-residual`, `DMEA-HT-c17-dema-residual-v2`, `DMEA-HT-c17-dema-residual-v3`, `DMEA-HT-c17-dema-residual-v4`, and `DMEA-HT-c17-formal-audit`.
+- The only remaining registered server worktree is the canonical `DMEA-HT`. `main` remains the repository baseline; the unmerged remote `origin/codex/c16-mea-design-audit` remains retained and documented rather than deleted.
+- No new GitHub branch, Git worktree, or `DMEA-HT-*` server project directory was created. No reset, clean, force push, or destructive overwrite was used.
+- The C17 initialization checkpoint path was updated from the removed historical worktree to the migrated canonical artifact path; this is a path-compatibility fix and does not alter C17 outputs.
+- Consolidation status: `DMEA_HT_SINGLE_PROJECT_CONSOLIDATION_COMPLETE`.
+
+### C18 Implementation Contract
+
+- C18 freezes the C13 temporal-focus predictor and uses `base_logit` as the only base prediction input. Saved validation/test prediction CSVs are not training inputs.
+- C18 reuses the existing DEMA evidence projectors, mechanism relation layer, conflict aggregator, and mechanism representation. No new encoder, modality, graph node, shared/private representation, or DecAlign module is introduced.
+- Directional residuals are bounded support/opposition evidence corrections with separate support/opposition gates and deterministic `conflict_suppression = 1 - conflict_score`.
+- C18-D uses BCE plus `0.001 * mean(effective_support_delta^2 + effective_opposition_delta^2)` plus `0.02 * positive_preservation`.
+- C18-DH uses the identical objective plus `0.01 * hard_pair_ranking_loss` only for training-batch positive-negative pairs whose frozen-base margin is below `0.50`; single-class and no-pair cases are graph-connected zero.
+- Both formal configs use seeds `[0, 42, 3407]`, validation AUC checkpoint selection, and reporting-only test evaluation. No C18 smoke or seed-0-only pilot is authorized or planned.
+- Static and synthetic checks must pass in `/home/linruixin/chen/conda/envs/ma` before direct formal launch. Formal C18 results and the final decision label will be appended after both routes finish.

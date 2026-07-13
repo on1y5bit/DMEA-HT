@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import Dict
+import copy
+from pathlib import Path
+from typing import Dict, Mapping
 
 import torch
 from torch import nn
@@ -338,3 +340,193 @@ class DMEAHTModel(nn.Module):
 
     def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         return self.forward_from_encoded(batch, self.encode_modalities(batch))
+
+
+def _resolve_seed_path(value: str | Path, seed: int) -> Path:
+    return Path(str(value).replace("{seed}", str(seed))).expanduser()
+
+
+def _checkpoint_state(path: Path) -> Mapping[str, torch.Tensor]:
+    if not path.exists():
+        raise FileNotFoundError(f"checkpoint does not exist: {path}")
+    try:
+        payload = torch.load(path, map_location="cpu", weights_only=False)
+    except TypeError:
+        payload = torch.load(path, map_location="cpu")
+    state = payload.get("model", payload) if isinstance(payload, dict) else payload
+    if not isinstance(state, Mapping):
+        raise TypeError(f"unsupported checkpoint payload at {path}")
+    if any(str(key).startswith("module.") for key in state):
+        return {str(key)[len("module.") :]: value for key, value in state.items()}
+    return state
+
+
+class _DirectionalScalarMLP(nn.Module):
+    def __init__(self, input_dim: int, hidden_dim: int, dropout: float) -> None:
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.LayerNorm(input_dim),
+            nn.Linear(input_dim, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim, 1),
+        )
+        output_layer = self.net[-1]
+        assert isinstance(output_layer, nn.Linear)
+        nn.init.zeros_(output_layer.weight)
+        nn.init.zeros_(output_layer.bias)
+
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        return self.net(features).squeeze(-1)
+
+
+class MechanismSupportResidualHead(_DirectionalScalarMLP):
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        return 0.50 * torch.sigmoid(super().forward(features))
+
+
+class MechanismOppositionResidualHead(_DirectionalScalarMLP):
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        return 0.50 * torch.sigmoid(super().forward(features))
+
+
+class MechanismSupportGate(_DirectionalScalarMLP):
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        return torch.sigmoid(super().forward(features))
+
+
+class MechanismOppositionGate(_DirectionalScalarMLP):
+    def forward(self, features: torch.Tensor) -> torch.Tensor:
+        return torch.sigmoid(super().forward(features))
+
+
+class C18DirectionalResidualModel(nn.Module):
+    """Frozen C13 logit plus bounded, evidence-directional residuals."""
+
+    def __init__(self, config: Dict, seed: int) -> None:
+        super().__init__()
+        model_cfg = dict(config.get("model", {}))
+        c18_cfg = dict(config.get("c18", {}))
+        hidden_dim = int(model_cfg.get("hidden_dim", 256))
+        dropout = float(model_cfg.get("dropout", 0.15))
+        num_heads = int(model_cfg.get("mea_num_heads", 4))
+
+        base_config = copy.deepcopy(config)
+        base_config["model"] = dict(model_cfg)
+        base_config["model"]["use_mea"] = False
+        self.base_model = DMEAHTModel(base_config)
+        base_path = _resolve_seed_path(c18_cfg["base_checkpoint"], seed)
+        self.base_model.load_state_dict(_checkpoint_state(base_path), strict=True)
+        for parameter in self.base_model.parameters():
+            parameter.requires_grad = False
+        self.base_model.eval()
+
+        self.mechanism_evidence_alignment = MechanismEvidenceAlignment(
+            hidden_dim,
+            dropout,
+            num_heads=num_heads,
+        )
+        init_path_value = c18_cfg.get("init_mea_checkpoint")
+        if init_path_value:
+            init_path = _resolve_seed_path(init_path_value, seed)
+            source_state = _checkpoint_state(init_path)
+            prefix = "mechanism_evidence_alignment."
+            mea_state = {
+                str(key)[len(prefix) :]: value
+                for key, value in source_state.items()
+                if str(key).startswith(prefix)
+            }
+            if not mea_state:
+                raise KeyError(f"no DEMA mechanism state found in checkpoint: {init_path}")
+            missing, unexpected = self.mechanism_evidence_alignment.load_state_dict(mea_state, strict=False)
+            if missing or unexpected:
+                raise RuntimeError(
+                    f"C18 DEMA initialization mismatch: missing={list(missing)}, unexpected={list(unexpected)}"
+                )
+
+        self.support_head = MechanismSupportResidualHead(hidden_dim * 4 + 8, hidden_dim, dropout)
+        self.opposition_head = MechanismOppositionResidualHead(hidden_dim * 4 + 8, hidden_dim, dropout)
+        self.support_gate = MechanismSupportGate(hidden_dim * 3 + 8, hidden_dim, dropout)
+        self.opposition_gate = MechanismOppositionGate(hidden_dim * 3 + 8, hidden_dim, dropout)
+        self.seed = int(seed)
+
+    def train(self, mode: bool = True) -> "C18DirectionalResidualModel":
+        super().train(mode)
+        self.base_model.eval()
+        return self
+
+    @staticmethod
+    def _directional_features(mea_outputs: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        mechanism_state = mea_outputs["mea_mechanism_state"]
+        support_state = mea_outputs["mea_support_state"]
+        opposition_state = mea_outputs["mea_opposition_state"]
+        uncertainty_state = mea_outputs["mea_uncertainty_state"]
+        conflict_state = mea_outputs["mea_conflict_state"]
+        strengths = mea_outputs["mea_strengths"]
+        mechanism_valid = mea_outputs["mea_mechanism_valid"].to(mechanism_state.dtype)
+        support_features = torch.cat(
+            [support_state, mechanism_state, uncertainty_state, conflict_state, strengths, mechanism_valid],
+            dim=-1,
+        )
+        opposition_features = torch.cat(
+            [opposition_state, mechanism_state, uncertainty_state, conflict_state, strengths, mechanism_valid],
+            dim=-1,
+        )
+        support_gate_features = torch.cat(
+            [support_state, opposition_state, conflict_state, strengths, mechanism_valid],
+            dim=-1,
+        )
+        opposition_gate_features = torch.cat(
+            [opposition_state, support_state, conflict_state, strengths, mechanism_valid],
+            dim=-1,
+        )
+        return {
+            "support": support_features,
+            "opposition": opposition_features,
+            "support_gate": support_gate_features,
+            "opposition_gate": opposition_gate_features,
+        }
+
+    def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        with torch.no_grad():
+            encoded = self.base_model.encode_modalities(batch)
+            base_outputs = self.base_model.forward_from_encoded(batch, encoded)
+
+        text_masks = {key: batch[key] for key in TEXT_MASK_KEYS}
+        mea_outputs = self.mechanism_evidence_alignment(
+            image_tokens=encoded["image_tokens"],
+            image_mask=batch["image_mask"],
+            text_tokens=encoded["text_tokens"],
+            text_attention_mask=batch["report_attention_mask"],
+            bio_tokens=encoded["bio_tokens"],
+            bio_missing_mask=batch["bio_missing_mask"],
+            text_masks=text_masks,
+        )
+        features = self._directional_features(mea_outputs)
+        support_delta = self.support_head(features["support"])
+        opposition_delta = self.opposition_head(features["opposition"])
+        support_gate = self.support_gate(features["support_gate"])
+        opposition_gate = self.opposition_gate(features["opposition_gate"])
+        conflict_suppression = mea_outputs["conflict_suppression"]
+        effective_support_delta = support_gate * conflict_suppression * support_delta
+        effective_opposition_delta = opposition_gate * conflict_suppression * opposition_delta
+        directional_delta = effective_support_delta - effective_opposition_delta
+        base_logit = base_outputs["logit"]
+        final_logit = base_logit + directional_delta
+        return {
+            **mea_outputs,
+            "mechanism_logit": mea_outputs["logit"],
+            "logit": final_logit,
+            "prob": torch.sigmoid(final_logit),
+            "base_logit": base_logit,
+            "base_prob": torch.sigmoid(base_logit),
+            "support_delta": support_delta,
+            "opposition_delta": opposition_delta,
+            "support_gate": support_gate,
+            "opposition_gate": opposition_gate,
+            "effective_support_delta": effective_support_delta,
+            "effective_opposition_delta": effective_opposition_delta,
+            "directional_delta": directional_delta,
+            "delta_logit": directional_delta,
+            "directional_feature_norm": features["support"].norm(dim=-1),
+        }
