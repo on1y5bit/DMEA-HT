@@ -2153,3 +2153,12 @@
 - Server driver PID: `376289`; implementation worktree commit: `a973bedb3d3c340dfd905fc3f985f9ad905fc88d`.
 - Fixed order is Core seed-0 pilot -> Core validation health gate -> Rank seed-0 pilot -> Rank validation health gate. No test predictions are generated during this stage, and no route or hyperparameter changes are allowed.
 - Launch status: `RUNNING`. No polling process was created.
+
+### Seed-0 Pilot Completion And Gate Decision
+
+- The seed-0 pilot driver completed normally with `status=PASS` at `2026-07-13T17:36:37+08:00`; Core and Rank checkpoints were produced and both post-run health gates passed `15/15`.
+- Core seed-0: best epoch `3`, validation AUC `0.8764146673`, AUPRC `0.8337014838`, sensitivity `0.2978723404`, specificity `0.9574468085`, positive-negative gap `0.2253515064`, pairwise inversions `273` versus C13 `297`.
+- Rank seed-0: best epoch `3`, validation AUC `0.8759619737`, AUPRC `0.8266092853`, sensitivity `0.2978723404`, specificity `0.9574468085`, positive-negative gap `0.2251248348`, pairwise inversions `274` versus C13 `297`.
+- The validation-only route collector did not read test and returned exactly `C16_MEA_PILOT_FAIL_KEEP_C13` for both routes. Core and Rank failed the fixed pilot gate because AUPRC decreased by more than `0.005`, sensitivity fell below `0.55`, the positive-negative gap materially decreased, and positive probabilities showed global suppression.
+- C16-MEA therefore did not enter formal multi-seed evaluation. C13 temporal-focus remains the current strict-best and fallback; no additional C16 tuning or rescue run is authorized in this phase.
+- The server route decision artifacts are under `analysis_reports/phase_c16_mea/`; test remains ungenerated and reporting-only.

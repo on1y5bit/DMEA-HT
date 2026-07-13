@@ -1,0 +1,38 @@
+{
+  "stage": "seed0_validation_only",
+  "test_read_for_selection": false,
+  "selected_route": null,
+  "decision": "C16_MEA_PILOT_FAIL_KEEP_C13",
+  "routes": [
+    {
+      "route": "core",
+      "AUC": 0.8764146672702582,
+      "AUPRC": 0.8337014838323655,
+      "Sensitivity": 0.2978723404255319,
+      "Specificity": 0.9574468085106383,
+      "pos_neg_gap": 0.2253515064082247,
+      "positive_prob_mean": 0.4338806781997072,
+      "auc_delta_vs_c13_seed0": 0.010864644670258161,
+      "inversion_count": 273,
+      "c13_inversion_count": 297,
+      "health_status": "PASS",
+      "pilot_gate_pass": false,
+      "reasons": "AUPRC decrease exceeds 0.005; sensitivity below 0.55; positive-negative gap materially decreased; positive probabilities globally suppressed"
+    },
+    {
+      "route": "rank",
+      "AUC": 0.8759619737437755,
+      "AUPRC": 0.8266092852508052,
+      "Sensitivity": 0.2978723404255319,
+      "Specificity": 0.9574468085106383,
+      "pos_neg_gap": 0.2251248349376181,
+      "positive_prob_mean": 0.4333018181805915,
+      "auc_delta_vs_c13_seed0": 0.010411951143775466,
+      "inversion_count": 274,
+      "c13_inversion_count": 297,
+      "health_status": "PASS",
+      "pilot_gate_pass": false,
+      "reasons": "AUPRC decrease exceeds 0.005; sensitivity below 0.55; positive-negative gap materially decreased; positive probabilities globally suppressed"
+    }
+  ]
+}
