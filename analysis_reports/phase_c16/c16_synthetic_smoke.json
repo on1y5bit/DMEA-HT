@@ -1,0 +1,105 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "check": "legacy_state_dict_keys",
+      "status": "PASS",
+      "evidence": "65"
+    },
+    {
+      "check": "legacy_forward_equivalence",
+      "status": "PASS",
+      "evidence": "0.0"
+    },
+    {
+      "check": "c16_output_shape",
+      "status": "PASS",
+      "evidence": "(4,)"
+    },
+    {
+      "check": "all_outputs_finite",
+      "status": "PASS",
+      "evidence": "floating outputs"
+    },
+    {
+      "check": "shared_attention_masked_sum",
+      "status": "PASS",
+      "evidence": "0.0"
+    },
+    {
+      "check": "missing_modalities_masked",
+      "status": "PASS",
+      "evidence": "[[0.3234139680862427, 0.32958000898361206, 0.34700605273246765], [0.0, 0.4948659837245941, 0.5051340460777283], [0.5042345523834229, 0.49576544761657715, 0.0], [0.49134936928749084, 0.0, 0.5086506605148315]]"
+    },
+    {
+      "check": "ranking_mixed_finite",
+      "status": "PASS",
+      "evidence": "0.6814123392105103"
+    },
+    {
+      "check": "ranking_all_positive_zero",
+      "status": "PASS",
+      "evidence": "-0.0"
+    },
+    {
+      "check": "ranking_all_negative_zero",
+      "status": "PASS",
+      "evidence": "-0.0"
+    },
+    {
+      "check": "all_losses_finite",
+      "status": "PASS",
+      "evidence": "{'proto_classification_loss': 0.7867777347564697, 'shared_consistency_loss': 0.9628775715827942, 'shared_specific_orth_loss': 0.008313008584082127, 'specific_variance_loss': 0.26842203736305237, 'prototype_separation_loss': 0.08491624891757965, 'pairwise_ranking_loss': 0.6814123392105103}"
+    },
+    {
+      "check": "gradient_dssa_shared_projectors",
+      "status": "PASS",
+      "evidence": "dssa.shared_projectors"
+    },
+    {
+      "check": "gradient_dssa_specific_projectors",
+      "status": "PASS",
+      "evidence": "dssa.specific_projectors"
+    },
+    {
+      "check": "gradient_dssa_prototypes",
+      "status": "PASS",
+      "evidence": "dssa.prototypes"
+    },
+    {
+      "check": "gradient_dssa_shared_score",
+      "status": "PASS",
+      "evidence": "dssa.shared_score"
+    },
+    {
+      "check": "gradient_dssa_specific_gates",
+      "status": "PASS",
+      "evidence": "dssa.specific_gates"
+    },
+    {
+      "check": "gradient_dssa_specific_residual_projectors",
+      "status": "PASS",
+      "evidence": "dssa.specific_residual_projectors"
+    },
+    {
+      "check": "gradient_dssa_classifier",
+      "status": "PASS",
+      "evidence": "dssa.classifier"
+    },
+    {
+      "check": "prototype_not_collapsed",
+      "status": "PASS",
+      "evidence": "0.08491624891757965"
+    },
+    {
+      "check": "specific_residual_controlled",
+      "status": "PASS",
+      "evidence": "0.0012799017131328583"
+    },
+    {
+      "check": "shortcut_fields_absent",
+      "status": "PASS",
+      "evidence": "[]"
+    }
+  ]
+}

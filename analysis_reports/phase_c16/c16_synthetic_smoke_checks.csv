@@ -1,0 +1,21 @@
+check,status,evidence
+legacy_state_dict_keys,PASS,65
+legacy_forward_equivalence,PASS,0.0
+c16_output_shape,PASS,"(4,)"
+all_outputs_finite,PASS,floating outputs
+shared_attention_masked_sum,PASS,0.0
+missing_modalities_masked,PASS,"[[0.3234139680862427, 0.32958000898361206, 0.34700605273246765], [0.0, 0.4948659837245941, 0.5051340460777283], [0.5042345523834229, 0.49576544761657715, 0.0], [0.49134936928749084, 0.0, 0.5086506605148315]]"
+ranking_mixed_finite,PASS,0.6814123392105103
+ranking_all_positive_zero,PASS,-0.0
+ranking_all_negative_zero,PASS,-0.0
+all_losses_finite,PASS,"{'proto_classification_loss': 0.7867777347564697, 'shared_consistency_loss': 0.9628775715827942, 'shared_specific_orth_loss': 0.008313008584082127, 'specific_variance_loss': 0.26842203736305237, 'prototype_separation_loss': 0.08491624891757965, 'pairwise_ranking_loss': 0.6814123392105103}"
+gradient_dssa_shared_projectors,PASS,dssa.shared_projectors
+gradient_dssa_specific_projectors,PASS,dssa.specific_projectors
+gradient_dssa_prototypes,PASS,dssa.prototypes
+gradient_dssa_shared_score,PASS,dssa.shared_score
+gradient_dssa_specific_gates,PASS,dssa.specific_gates
+gradient_dssa_specific_residual_projectors,PASS,dssa.specific_residual_projectors
+gradient_dssa_classifier,PASS,dssa.classifier
+prototype_not_collapsed,PASS,0.08491624891757965
+specific_residual_controlled,PASS,0.0012799017131328583
+shortcut_fields_absent,PASS,[]

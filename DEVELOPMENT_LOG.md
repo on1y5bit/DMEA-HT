@@ -1998,3 +1998,15 @@
 - If seed 0 fails, permit exactly one fallback with `lambda_rank=0`; all other architecture and training settings remain fixed.
 - Run seeds `42` and `3407` only after a passing seed-0 route. Do not tune after seeing seed 0.
 - Promote C16 only if every formal performance, alignment, stability, positive-preservation, inversion, and shortcut gate passes. Otherwise keep C13 and use exactly one documented C16 decision label.
+
+### Static And Synthetic Result
+
+- Local `py_compile` and `git diff --check` passed for the DSSA module, legacy model integration, training loop, and C16 audit/report scripts.
+- Server `5090-01` synchronized the feature branch in the `ma` environment and completed the synthetic smoke.
+- Synthetic result: `20/20 PASS`.
+- Legacy absent-vs-explicit-disabled DSSA state-dict keys matched (`65` keys) and logits were exactly equal (`max_abs_difference=0.0`).
+- C16 output shape, all floating outputs, masked attention sums, and missing-modality behavior passed.
+- Ranking loss was finite for a mixed batch and returned graph-connected zero for all-positive and all-negative batches.
+- All six raw DSSA/ranking losses were finite. Nonzero finite gradients reached shared projectors, specific projectors, prototypes, shared attention score, specific gates, specific residual projectors, and the C16 classifier.
+- Initial prototype cosine was `0.08491625`; maximum scaled specific-residual/shared ratio was `0.00127990`; no shortcut field was present in the alignment module.
+- The first real 2-epoch smoke attempt stopped before training because the only visible RTX 5090 was occupied by another user's process (`12072 MiB`). No DMEA training process was launched, no process was interrupted, and no GPU polling was started.
