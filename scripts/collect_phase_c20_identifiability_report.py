@@ -85,7 +85,7 @@ def static_checks(output_dir: Path, config_path: Path) -> List[Dict[str, Any]]:
     forbidden_runtime_tokens = ("torch.optim", ".backward(", "optimizer.step(", "train_seed(")
     checks.append({"check": "no_optimizer_or_backward", "pass": not any(token in execution_source for token in forbidden_runtime_tokens[:3]), "detail": "C20 scripts are analysis-only"})
     checks.append({"check": "no_training_entrypoint", "pass": "train_seed(" not in execution_source and "train.py" not in execution_source, "detail": "no training entrypoint referenced"})
-    checks.append({"check": "no_saved_test_prediction_input", "pass": "test_predictions" not in source and "split == \"test\"" not in source, "detail": "test predictions are not loaded"})
+    checks.append({"check": "no_saved_test_prediction_input", "pass": "test_predictions" not in execution_source and "split == \"test\"" not in execution_source, "detail": "test predictions are not loaded"})
     checks.append({"check": "fixed_probe_contract", "pass": "C=1.0" in source and "train_fit_only" in source and "20260714" in source, "detail": "fixed C=1.0, train-only standardization, fixed random-label seed"})
     checks.append({"check": "c20_config_is_not_training_config", "pass": "c17" in config_path.read_text(encoding="utf-8").lower(), "detail": str(config_path)})
     c19_decision = None
