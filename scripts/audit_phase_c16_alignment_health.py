@@ -376,6 +376,13 @@ def shared_health(metrics: pd.DataFrame, predictions: pd.DataFrame) -> pd.DataFr
         for left, right in (("img", "txt"), ("img", "bio"), ("txt", "bio")):
             available = pd.to_numeric(group[f"shared_pair_available_{left}_{right}"], errors="coerce") > 0.5
             row[f"mean_shared_cosine_{left}_{right}"] = finite_mean(group.loc[available, f"shared_cosine_{left}_{right}"])
+        for modality in ("img", "txt", "bio"):
+            available = pd.to_numeric(group[f"modality_available_{modality}"], errors="coerce") > 0.5
+            attention = pd.to_numeric(group.loc[available, f"shared_attention_{modality}"], errors="coerce").dropna()
+            row[f"shared_attention_{modality}_mean"] = float(attention.mean()) if not attention.empty else float("nan")
+            row[f"shared_attention_{modality}_std"] = float(attention.std(ddof=1)) if len(attention) > 1 else 0.0
+            row[f"shared_attention_{modality}_p05"] = float(attention.quantile(0.05)) if not attention.empty else float("nan")
+            row[f"shared_attention_{modality}_p95"] = float(attention.quantile(0.95)) if not attention.empty else float("nan")
         metric_row = metrics[(metrics["model_id"] == model_id) & (metrics["seed"] == seed) & (metrics["split"] == split)]
         collapse_inputs = []
         if not metric_row.empty:
@@ -408,11 +415,25 @@ def specific_health(metrics: pd.DataFrame, predictions: pd.DataFrame) -> pd.Data
             gate = pd.to_numeric(group.loc[available, f"specific_gate_{modality}"], errors="coerce")
             row[f"mean_abs_shared_specific_cosine_{modality}"] = float(cosine.abs().mean()) if not cosine.empty else float("nan")
             row[f"mean_specific_gate_{modality}"] = float(gate.mean()) if not gate.empty else float("nan")
+            row[f"specific_gate_{modality}_std"] = float(gate.std(ddof=1)) if len(gate) > 1 else 0.0
+            row[f"specific_gate_{modality}_p05"] = float(gate.quantile(0.05)) if not gate.empty else float("nan")
+            row[f"specific_gate_{modality}_p95"] = float(gate.quantile(0.95)) if not gate.empty else float("nan")
+            row[f"specific_gate_{modality}_saturation_fraction"] = (
+                float(((gate <= 0.01) | (gate >= 0.99)).mean()) if not gate.empty else float("nan")
+            )
             feature_std = float(metric_row.iloc[0].get(f"specific_{modality}_feature_std_mean", float("nan"))) if not metric_row.empty else float("nan")
             row[f"specific_{modality}_feature_std_mean"] = feature_std
             duplicate_flags.append(math.isfinite(row[f"mean_abs_shared_specific_cosine_{modality}"]) and row[f"mean_abs_shared_specific_cosine_{modality}"] >= 0.95)
             collapse_flags.append(math.isfinite(feature_std) and feature_std <= 1e-3)
-            gate_flags.append(not gate.empty and (float(gate.mean()) <= 0.01 or float(gate.mean()) >= 0.99))
+            gate_saturation_fraction = float(((gate <= 0.01) | (gate >= 0.99)).mean()) if not gate.empty else 1.0
+            gate_flags.append(
+                not gate.empty
+                and (
+                    float(gate.mean()) <= 0.01
+                    or float(gate.mean()) >= 0.99
+                    or gate_saturation_fraction >= 0.50
+                )
+            )
         row["specific_duplicates_shared_flag"] = int(any(duplicate_flags))
         row["specific_collapse_flag"] = int(any(collapse_flags))
         row["specific_dominates_shared_flag"] = int(row["specific_residual_shared_ratio_mean"] >= 1.0)

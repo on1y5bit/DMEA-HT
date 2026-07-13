@@ -3,7 +3,9 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import platform
 from pathlib import Path
+import subprocess
 import sys
 from typing import Any, Dict, Iterable, List, Sequence
 
@@ -23,6 +25,37 @@ from scripts.audit_prediction_shortcut_residual import (  # noqa: E402
 C13_AUC_MEAN = 0.8664554096876415
 C13_AUPRC_MEAN = 0.8570449989296317
 FORMAL_SEEDS = (0, 42, 3407)
+
+
+def collect_environment() -> Dict[str, Any]:
+    def git_value(*args: str) -> str:
+        try:
+            return subprocess.check_output(["git", *args], text=True, stderr=subprocess.DEVNULL).strip()
+        except Exception:
+            return "unavailable"
+
+    environment: Dict[str, Any] = {
+        "python_version": sys.version,
+        "platform": platform.platform(),
+        "repo_commit": git_value("rev-parse", "HEAD"),
+        "repo_commit_short": git_value("rev-parse", "--short", "HEAD"),
+        "git_branch": git_value("branch", "--show-current"),
+        "tracked_worktree_status": git_value("status", "--porcelain", "--untracked-files=no"),
+    }
+    try:
+        import torch
+
+        environment.update(
+            {
+                "torch_version": torch.__version__,
+                "cuda_available": bool(torch.cuda.is_available()),
+                "cuda_device_count": int(torch.cuda.device_count()),
+                "cuda_device_names": [torch.cuda.get_device_name(index) for index in range(torch.cuda.device_count())],
+            }
+        )
+    except Exception as exc:
+        environment["torch_environment_error"] = str(exc)
+    return environment
 
 
 def parse_args() -> argparse.Namespace:
@@ -183,6 +216,84 @@ def positive_preservation(c16_predictions: pd.DataFrame, c13_predictions: pd.Dat
     return merged
 
 
+def positive_preservation_summary(preservation: pd.DataFrame) -> pd.DataFrame:
+    rows: List[Dict[str, Any]] = []
+    for seed, group in preservation.groupby("seed"):
+        positives = group[group["label"] == 1]
+        negatives = group[group["label"] == 0]
+        rows.append(
+            {
+                "scope": "seed",
+                "seed": int(seed),
+                "positive_probability_delta_mean": float(positives["positive_probability_delta"].mean()),
+                "negative_probability_delta_mean": float(negatives["positive_probability_delta"].mean()),
+                "positive_absolute_error_delta_mean": float(positives["absolute_error_delta"].mean()),
+                "negative_absolute_error_delta_mean": float(negatives["absolute_error_delta"].mean()),
+                "c13_fn": int((positives["c13_error_type"] == "FN").sum()),
+                "c16_fn": int((positives["c16_error_type"] == "FN").sum()),
+                "c13_tp": int((positives["c13_error_type"] == "correct").sum()),
+                "c16_tp": int((positives["c16_error_type"] == "correct").sum()),
+                "c13_fp": int((negatives["c13_error_type"] == "FP").sum()),
+                "c16_fp": int((negatives["c16_error_type"] == "FP").sum()),
+            }
+        )
+    seed_count = int(preservation["seed"].nunique())
+    if seed_count > 1:
+        positives = preservation[preservation["label"] == 1]
+        negatives = preservation[preservation["label"] == 0]
+        positive_patient = positives.groupby("patient_id").agg(
+            seed_count=("seed", "nunique"),
+            c13_fn_count=("c13_error_type", lambda values: int((values == "FN").sum())),
+            c16_fn_count=("c16_error_type", lambda values: int((values == "FN").sum())),
+            c13_tp_count=("c13_error_type", lambda values: int((values == "correct").sum())),
+            c16_tp_count=("c16_error_type", lambda values: int((values == "correct").sum())),
+        )
+        negative_patient = negatives.groupby("patient_id").agg(
+            seed_count=("seed", "nunique"),
+            c13_fp_count=("c13_error_type", lambda values: int((values == "FP").sum())),
+            c16_fp_count=("c16_error_type", lambda values: int((values == "FP").sum())),
+        )
+        rows.append(
+            {
+                "scope": "all_seed_patient",
+                "seed": "all",
+                "formal_seed_count": seed_count,
+                "c13_all_seed_fn_patients": int(((positive_patient["seed_count"] == seed_count) & (positive_patient["c13_fn_count"] == seed_count)).sum()),
+                "c16_all_seed_fn_patients": int(((positive_patient["seed_count"] == seed_count) & (positive_patient["c16_fn_count"] == seed_count)).sum()),
+                "c13_all_seed_tp_patients": int(((positive_patient["seed_count"] == seed_count) & (positive_patient["c13_tp_count"] == seed_count)).sum()),
+                "c16_all_seed_tp_patients": int(((positive_patient["seed_count"] == seed_count) & (positive_patient["c16_tp_count"] == seed_count)).sum()),
+                "c13_all_seed_fp_patients": int(((negative_patient["seed_count"] == seed_count) & (negative_patient["c13_fp_count"] == seed_count)).sum()),
+                "c16_all_seed_fp_patients": int(((negative_patient["seed_count"] == seed_count) & (negative_patient["c16_fp_count"] == seed_count)).sum()),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def model_comparison(
+    c16_metrics: pd.DataFrame,
+    c13_metrics: pd.DataFrame,
+    c16_pairwise: pd.DataFrame,
+    c13_pairwise: pd.DataFrame,
+) -> pd.DataFrame:
+    metric_keys = ("AUC", "AUPRC", "Sensitivity", "Specificity", "Balanced_ACC", "pos_neg_gap")
+    c16 = c16_metrics[c16_metrics["split"] == "val"][["seed", *metric_keys]].copy()
+    c13 = c13_metrics[c13_metrics["split"] == "val"][["seed", *metric_keys]].copy()
+    comparison = c16.merge(c13, on="seed", suffixes=("_c16", "_c13"), how="inner")
+    for key in metric_keys:
+        comparison[f"{key}_delta"] = pd.to_numeric(comparison[f"{key}_c16"]) - pd.to_numeric(comparison[f"{key}_c13"])
+    comparison = comparison.merge(
+        c16_pairwise[["seed", "inversion_count"]].rename(columns={"inversion_count": "inversion_count_c16"}),
+        on="seed",
+        how="left",
+    ).merge(
+        c13_pairwise[["seed", "inversion_count"]].rename(columns={"inversion_count": "inversion_count_c13"}),
+        on="seed",
+        how="left",
+    )
+    comparison["inversion_count_delta"] = comparison["inversion_count_c16"] - comparison["inversion_count_c13"]
+    return comparison
+
+
 def shortcut_audit(manifest_path: Path, predictions: pd.DataFrame) -> pd.DataFrame:
     manifest = read_manifest_frame(manifest_path, DEFAULT_SHORTCUT_FIELDS)
     rows: List[Dict[str, Any]] = []
@@ -208,6 +319,7 @@ def load_health(output_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFr
 def health_gate(
     seed: int,
     metrics: pd.DataFrame,
+    epochs: pd.DataFrame,
     prototype: pd.DataFrame,
     shared: pd.DataFrame,
     specific: pd.DataFrame,
@@ -216,6 +328,13 @@ def health_gate(
     proto = prototype[(prototype["seed"] == seed) & (prototype["split"] == "val")]
     shared_seed = shared[(shared["seed"] == seed) & (shared["split"] == "val")]
     specific_seed = specific[(specific["seed"] == seed) & (specific["split"] == "val")]
+    seed_epochs = epochs[epochs["seed"] == seed].sort_values("epoch")
+    selected_epochs = seed_epochs[pd.to_numeric(seed_epochs.get("selected_by_val_auc", 0), errors="coerce") == 1]
+    first_shared_loss = float(seed_epochs.iloc[0].get("train_shared_consistency_loss", float("nan"))) if not seed_epochs.empty else float("nan")
+    selected_shared_loss = float(selected_epochs.iloc[0].get("train_shared_consistency_loss", float("nan"))) if not selected_epochs.empty else float("nan")
+    margin_label0 = float(proto.iloc[0].get("disease_margin_label0_mean", float("nan"))) if not proto.empty else float("nan")
+    margin_label1 = float(proto.iloc[0].get("disease_margin_label1_mean", float("nan"))) if not proto.empty else float("nan")
+    prototype_accuracy = float(proto.iloc[0].get("prototype_assignment_accuracy", float("nan"))) if not proto.empty else float("nan")
     evidence = {
         "prototype_collapse": int(proto["prototype_collapse_flag"].max()) if not proto.empty else 1,
         "shared_sample_collapse": int(shared_seed["shared_sample_collapse_flag"].max()) if not shared_seed.empty else 1,
@@ -224,8 +343,29 @@ def health_gate(
         "specific_dominates_shared": int(specific_seed["specific_dominates_shared_flag"].max()) if not specific_seed.empty else 1,
         "global_gate_saturation": int(specific_seed["global_gate_saturation_flag"].max()) if not specific_seed.empty else 1,
         "global_attention_collapse": int(val_metrics.iloc[0].get("global_attention_collapse_flag", 1)) if not val_metrics.empty else 1,
+        "disease_margin_direction_fail": int(
+            not (math.isfinite(margin_label0) and math.isfinite(margin_label1) and margin_label1 > margin_label0)
+        ),
+        "prototype_assignment_fail": int(not (math.isfinite(prototype_accuracy) and prototype_accuracy > 0.50)),
+        "shared_alignment_improvement_fail": int(
+            not (
+                math.isfinite(first_shared_loss)
+                and math.isfinite(selected_shared_loss)
+                and selected_shared_loss < first_shared_loss
+            )
+        ),
     }
-    return all(value == 0 for value in evidence.values()), evidence
+    evidence.update(
+        {
+            "disease_margin_label0_mean": margin_label0,
+            "disease_margin_label1_mean": margin_label1,
+            "prototype_assignment_accuracy": prototype_accuracy,
+            "first_train_shared_consistency_loss": first_shared_loss,
+            "selected_train_shared_consistency_loss": selected_shared_loss,
+        }
+    )
+    flag_keys = [key for key in evidence if key.endswith("collapse") or key.endswith("shared") or key.endswith("dominant") or key.endswith("saturation") or key.endswith("fail")]
+    return all(int(evidence[key]) == 0 for key in flag_keys), evidence
 
 
 def shortcut_gate(seed: int, shortcut: pd.DataFrame) -> tuple[bool, Dict[str, Any]]:
@@ -248,6 +388,7 @@ def shortcut_gate(seed: int, shortcut: pd.DataFrame) -> tuple[bool, Dict[str, An
 
 def pilot_gate(
     c16_metrics: pd.DataFrame,
+    c16_epochs: pd.DataFrame,
     c13_metrics: pd.DataFrame,
     c16_pairwise: pd.DataFrame,
     c13_pairwise: pd.DataFrame,
@@ -260,7 +401,7 @@ def pilot_gate(
     c13 = c13_metrics[(c13_metrics["seed"] == 0) & (c13_metrics["split"] == "val")].iloc[0]
     c16_inversions = int(c16_pairwise[c16_pairwise["seed"] == 0].iloc[0]["inversion_count"])
     c13_inversions = int(c13_pairwise[c13_pairwise["seed"] == 0].iloc[0]["inversion_count"])
-    health_pass, health_evidence = health_gate(0, c16_metrics, prototype, shared, specific)
+    health_pass, health_evidence = health_gate(0, c16_metrics, c16_epochs, prototype, shared, specific)
     shortcut_pass, shortcut_evidence = shortcut_gate(0, shortcut)
     checks = [
         ("val_auc_not_below_c13", float(c16["AUC"]) >= float(c13["AUC"]), f"{c16['AUC']} vs {c13['AUC']}"),
@@ -280,6 +421,7 @@ def pilot_gate(
 
 def formal_gate(
     metrics: pd.DataFrame,
+    epochs: pd.DataFrame,
     c13_metrics: pd.DataFrame,
     pairwise: pd.DataFrame,
     c13_pairwise: pd.DataFrame,
@@ -298,7 +440,7 @@ def formal_gate(
         c13_pairwise[["seed", "inversion_count"]], on="seed", suffixes=("_c16", "_c13")
     )
     inversion_improved = int((inversion_compare["inversion_count_c16"] < inversion_compare["inversion_count_c13"]).sum())
-    health_rows = [health_gate(seed, metrics, prototype, shared, specific)[0] for seed in FORMAL_SEEDS]
+    health_rows = [health_gate(seed, metrics, epochs, prototype, shared, specific)[0] for seed in FORMAL_SEEDS]
     shortcut_rows = [shortcut_gate(seed, shortcut)[0] for seed in FORMAL_SEEDS]
     checks = [
         ("formal_seeds_complete", set(validation["seed"].astype(int)) == set(FORMAL_SEEDS), validation["seed"].tolist()),
@@ -333,22 +475,35 @@ def write_reports(
     output_dir: Path,
     metrics: pd.DataFrame,
     summary: pd.DataFrame,
+    comparison: pd.DataFrame,
+    preservation_summary: pd.DataFrame,
+    prototype: pd.DataFrame,
+    shared: pd.DataFrame,
+    specific: pd.DataFrame,
+    shortcut: pd.DataFrame,
     pilot: pd.DataFrame,
     formal: pd.DataFrame,
     state: str,
     decision: str | None,
+    environment: Dict[str, Any],
+    synthetic: Dict[str, Any],
 ) -> None:
-    validation = metrics[metrics["split"] == "val"]
+    validation = metrics[metrics["split"] == "val"].sort_values("seed")
+    testing = metrics[metrics["split"] == "test"].sort_values("seed")
+    validation_summary = summary[summary["split"] == "val"]
+    mean_validation_auc = float(validation_summary.iloc[0]["AUC_mean"]) if not validation_summary.empty else float("nan")
+    formal_complete = set(validation["seed"].astype(int)) == set(FORMAL_SEEDS)
+    current_strict_best = "C16 DSSA" if decision == "PROMOTE_C16_DSSA" else "C13 temporal-focus DMEA-HT"
     lines = [
         "# C16 DSSA Model Comparison",
         "",
         "C13 remains the frozen fallback unless the full three-seed promotion gate passes.",
         "",
-        "## C16 Validation Metrics",
+        "## Seed-Wise C13 Comparison",
         "",
-        frame_to_markdown(validation[[column for column in ("model_id", "seed", "AUC", "AUPRC", "Sensitivity", "Specificity", "pos_neg_gap", "pairwise_inversion_count") if column in validation.columns]]),
+        frame_to_markdown(comparison),
         "",
-        "## Aggregate",
+        "## C16 Aggregate",
         "",
         frame_to_markdown(summary),
         "",
@@ -372,17 +527,67 @@ def write_reports(
         f"Status: `{state}`.",
         f"Final decision label: `{decision}`." if decision else "Final decision label: not assigned while the serial gate is incomplete.",
         "",
-        "- C13 remains the current strict best unless `PROMOTE_C16_DSSA` is reached after all three formal seeds.",
+        f"- Current strict best: `{current_strict_best}`.",
+        f"- Stress seeds completed: `{formal_complete}`.",
         "- Checkpoints are selected by validation AUC only; test is reporting-only.",
         "- Labels, patient split, C13 temporal-focus manifest, and report construction remain unchanged.",
         "- Shortcut fields are audit-only and are not model or loss inputs.",
-        f"- Mean validation AUC reached 0.90: `{bool(not summary.empty and float(summary[summary['split'] == 'val'].iloc[0]['AUC_mean']) >= 0.90)}`.",
+        f"- Mean validation AUC: `{mean_validation_auc}`.",
+        f"- Mean validation AUC reached 0.90: `{bool(math.isfinite(mean_validation_auc) and mean_validation_auc >= 0.90)}`.",
         "",
-        "## Metrics",
+        "## Commit, Worktree, And Server Environment",
+        "",
+        frame_to_markdown(pd.DataFrame([{"field": key, "value": value} for key, value in environment.items()])),
+        "",
+        "## Legacy Compatibility And Synthetic Gate",
+        "",
+        f"Synthetic/config contract status: `{synthetic.get('status', 'missing')}`.",
+        "",
+        frame_to_markdown(pd.DataFrame(synthetic.get("checks", []))),
+        "",
+        "## Seed-0 Pilot Gate",
+        "",
+        frame_to_markdown(pilot),
+        "",
+        "## Seed-Wise Validation Metrics",
         "",
         frame_to_markdown(validation),
         "",
-        "## Gate",
+        "## Mean And Standard Deviation",
+        "",
+        frame_to_markdown(summary),
+        "",
+        "## Test Metrics, Reporting Only",
+        "",
+        "These metrics were computed only after validation-AUC checkpoint selection and do not affect any gate.",
+        "",
+        frame_to_markdown(testing),
+        "",
+        "## C13 Performance And Inversion Comparison",
+        "",
+        frame_to_markdown(comparison),
+        "",
+        "## Prototype Health",
+        "",
+        frame_to_markdown(prototype[prototype["split"] == "val"]),
+        "",
+        "## Shared Alignment Health",
+        "",
+        frame_to_markdown(shared[shared["split"] == "val"]),
+        "",
+        "## Specific Branch Health",
+        "",
+        frame_to_markdown(specific[specific["split"] == "val"]),
+        "",
+        "## Positive Preservation And FN/TP Changes",
+        "",
+        frame_to_markdown(preservation_summary),
+        "",
+        "## Shortcut Safety",
+        "",
+        frame_to_markdown(shortcut[shortcut["split"] == "val"]),
+        "",
+        "## Active Gate",
         "",
         frame_to_markdown(formal if not formal.empty else pilot),
     ]
@@ -394,7 +599,8 @@ def main() -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     smoke_path = Path(args.synthetic_smoke)
-    if not smoke_path.is_file() or json.loads(smoke_path.read_text(encoding="utf-8")).get("status") != "PASS":
+    synthetic = json.loads(smoke_path.read_text(encoding="utf-8")) if smoke_path.is_file() else {}
+    if synthetic.get("status") != "PASS":
         raise RuntimeError("C16 synthetic smoke must pass before report collection")
 
     metrics, epochs, predictions, configs = load_run_data(args.c16_runs)
@@ -403,23 +609,29 @@ def main() -> None:
     pairwise = build_pairwise_summary(predictions)
     c13_pairwise = build_pairwise_summary(c13_predictions)
     preservation = positive_preservation(predictions, c13_predictions)
+    preservation_summary = positive_preservation_summary(preservation)
+    comparison = model_comparison(metrics, c13_metrics, pairwise, c13_pairwise)
     shortcut = shortcut_audit(Path(args.manifest), predictions)
     summary = summarize(metrics)
+    environment = collect_environment()
 
     metrics.to_csv(output_dir / "c16_metrics_by_seed.csv", index=False)
     summary.to_csv(output_dir / "c16_metrics_summary.csv", index=False)
     epochs.to_csv(output_dir / "c16_metrics_by_epoch.csv", index=False)
     preservation.to_csv(output_dir / "c16_positive_preservation_audit.csv", index=False)
+    preservation_summary.to_csv(output_dir / "c16_positive_preservation_summary.csv", index=False)
+    comparison.to_csv(output_dir / "c16_model_comparison_by_seed.csv", index=False)
     shortcut.to_csv(output_dir / "c16_shortcut_residual_audit.csv", index=False)
+    (output_dir / "c16_server_environment.json").write_text(json.dumps(environment, indent=2), encoding="utf-8")
 
-    pilot = pilot_gate(metrics, c13_metrics, pairwise, c13_pairwise, prototype, shared, specific, shortcut)
+    pilot = pilot_gate(metrics, epochs, c13_metrics, pairwise, c13_pairwise, prototype, shared, specific, shortcut)
     pilot.to_csv(output_dir / "c16_pilot_gate.csv", index=False)
     pilot_pass = bool((pilot["status"] == "PASS").all())
     validation_seeds = set(metrics[metrics["split"] == "val"]["seed"].astype(int))
     formal = pd.DataFrame()
     decision: str | None = None
     if validation_seeds == set(FORMAL_SEEDS):
-        formal, decision = formal_gate(metrics, c13_metrics, pairwise, c13_pairwise, prototype, shared, specific, shortcut)
+        formal, decision = formal_gate(metrics, epochs, c13_metrics, pairwise, c13_pairwise, prototype, shared, specific, shortcut)
         state = "FORMAL_COMPLETE"
     elif validation_seeds == {0} and pilot_pass:
         state = "PILOT_PASS_STRESS_AUTHORIZED"
@@ -437,7 +649,23 @@ def main() -> None:
 
     if not formal.empty:
         formal.to_csv(output_dir / "c16_formal_gate.csv", index=False)
-    write_reports(output_dir, metrics, summary, pilot, formal, state, decision)
+    write_reports(
+        output_dir,
+        metrics,
+        summary,
+        comparison,
+        preservation_summary,
+        prototype,
+        shared,
+        specific,
+        shortcut,
+        pilot,
+        formal,
+        state,
+        decision,
+        environment,
+        synthetic,
+    )
     result = {
         "state": state,
         "decision": decision,
