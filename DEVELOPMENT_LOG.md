@@ -1948,3 +1948,15 @@
 - The formal claim remains the mean of seeds `[0, 42, 3407]` selected by validation AUC; test metrics remain reporting-only.
 - C15 remains blocked because C14-E returned `DATA_LIMIT_NO_GENERAL_MODEL_FIX`; no additional training was launched.
 - The final server verifier is not yet declared complete. Two bundle upload attempts timed out while connecting to `10.21.71.74:22`; server execution and artifact retrieval remain required before closing the delivery goal.
+
+## 2026-07-13 Final C13 Delivery Completion
+
+- Server connectivity recovered and the repository was fast-forwarded from GitHub without modifying the 39 historical untracked scripts, logs, or backup directories.
+- Ran `scripts/collect_final_c13_delivery.py` in `/home/linruixin/chen/conda/envs/ma/bin/python` on server `5090-01`; no training was started.
+- Corrected the Markdown serializer to preserve integer seed and epoch fields, synchronized commit `00cf4f0`, and reran the complete verifier.
+- Final verifier result: `delivery_pass=true`; all `16/16` delivery checks passed and all `16/16` inventory entries existed with SHA256 hashes.
+- Verified manifest size `780` with frozen patient-level counts: train `301/301`, validation `47/47`, and test `42/42` for labels `0/1`.
+- Verified all three checkpoints load with matching seed and best-epoch metadata, validation prediction rows `94` per seed, test reporting-only rows `84` per seed, and C14-B reproduction maximum absolute probability difference `1.11e-16` per seed.
+- Frozen validation AUC: `0.8664554096876415 +/- 0.0077356303714961`; shortcut safety and the C14-E training block both passed verification.
+- Final decision: `FREEZE_C13_AS_STRICT_BEST_AND_REPORT_LIMITATION`; C15 remains unauthorized and the validation AUC 0.90 target was not reached.
+- Retrieved the 13-file final package to `analysis_reports/final_c13_delivery/` and independently confirmed zero failed checks and zero missing inventory artifacts locally.

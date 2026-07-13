@@ -1,0 +1,14 @@
+{
+  "python_version": "3.10.20 (main, Mar 11 2026, 17:46:40) [GCC 14.3.0]",
+  "platform": "Linux-6.8.0-90-generic-x86_64-with-glibc2.35",
+  "repo_commit": "00cf4f04406dec44b21bb2315d7d6a7421f9486f",
+  "repo_commit_short": "00cf4f0",
+  "git_branch": "main",
+  "delivery_pass": true,
+  "torch_version": "2.12.0+cu130",
+  "cuda_available": true,
+  "cuda_device_count": 1,
+  "cuda_device_names": [
+    "NVIDIA GeForce RTX 5090"
+  ]
+}

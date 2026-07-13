@@ -1,0 +1,17 @@
+check,status,evidence
+formal_seeds,PASS,"[0, 42, 3407]"
+primary_metric,PASS,val_AUC
+manifest_path,PASS,/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl
+manifest_rows,PASS,780
+manifest_split_label_counts,PASS,"{""test_0"": 42, ""test_1"": 42, ""train_0"": 301, ""train_1"": 301, ""val_0"": 47, ""val_1"": 47}"
+checkpoints_exist,PASS,"[1, 1, 1]"
+checkpoints_load,PASS,"['loaded', 'loaded', 'loaded']"
+checkpoint_seed_metadata,PASS,"[{'seed': 0, 'checkpoint_seed': 0}, {'seed': 42, 'checkpoint_seed': 42}, {'seed': 3407, 'checkpoint_seed': 3407}]"
+checkpoint_epoch_metadata,PASS,"[{'seed': 0, 'best_epoch_checkpoint': 16, 'best_epoch_metrics_csv': 16}, {'seed': 42, 'best_epoch_checkpoint': 17, 'best_epoch_metrics_csv': 17}, {'seed': 3407, 'best_epoch_checkpoint': 15, 'best_epoch_metrics_csv': 15}]"
+validation_prediction_rows,PASS,"[94, 94, 94]"
+test_prediction_rows_reporting_only,PASS,"[84, 84, 84]"
+c14b_reproduction,PASS,"[{'seed': 0, 'max_abs_prob_diff': 1.1102230246251563e-16, 'reproduction_pass': 1}, {'seed': 42, 'max_abs_prob_diff': 1.1102230246251563e-16, 'reproduction_pass': 1}, {'seed': 3407, 'max_abs_prob_diff': 1.1102230246251563e-16, 'reproduction_pass': 1}]"
+validation_auc_frozen,PASS,0.8664554096876415
+shortcut_safety_recorded,PASS,"{'max_abs_spearman': 0.1548552043965999, 'linear_r2_prob_from_shortcuts': 0.0600662470693158, 'shortcut_only_label_auc_audit_only': 0.4762084402193048}"
+c14e_training_blocked,PASS,"{'route': 'DATA_LIMIT_NO_GENERAL_MODEL_FIX', 'allowed_next_step': 'KEEP_C13_AND_REPORT_LIMITATION', 'training_authorized': 0}"
+inventory_complete,PASS,[]
