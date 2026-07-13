@@ -177,7 +177,7 @@ def main() -> None:
     negative_delta = outputs["delta_logit"].detach().clone().requires_grad_(True)
     negative_only_loss = negative_delta.sum() * 0.0
     negative_only_loss.backward()
-    check("all_negative_positive_preservation_is_graph_zero", float(negative_only_loss) == 0.0 and negative_delta.grad is not None, negative_delta.grad.tolist())
+    check("all_negative_positive_preservation_is_graph_zero", float(negative_only_loss.detach()) == 0.0 and negative_delta.grad is not None, negative_delta.grad.tolist())
 
     model.train()
     model.zero_grad(set_to_none=True)
