@@ -2146,3 +2146,10 @@
 - Both health reports passed `15/15`; all prediction diagnostics were finite, prediction standard deviation was `0.1282`, role probabilities were normalized, conflict was not saturated, modality weights were not saturated, mechanism norms were bounded, and evidence roles did not collapse.
 - Smoke configs generated no test predictions. Rank weight remained effectively zero during the two-epoch warmup, so identical Core/Rank smoke metrics are expected and are not a route selection result.
 - Both predefined seed-0 full pilots are now authorized. No architecture or loss tuning is permitted between them, and test remains disabled until formal route selection.
+
+### Seed-0 Pilot Launch
+
+- After the two smoke routes and both `15/15` health gates passed, started the fixed seed-0 pilot driver on the server at `2026-07-13T17:28:57+08:00`.
+- Server driver PID: `376289`; implementation worktree commit: `a973bedb3d3c340dfd905fc3f985f9ad905fc88d`.
+- Fixed order is Core seed-0 pilot -> Core validation health gate -> Rank seed-0 pilot -> Rank validation health gate. No test predictions are generated during this stage, and no route or hyperparameter changes are allowed.
+- Launch status: `RUNNING`. No polling process was created.
