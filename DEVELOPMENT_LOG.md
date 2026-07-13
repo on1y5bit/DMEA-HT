@@ -2284,3 +2284,9 @@
 - Static/synthetic gate status is C19_DIRECT_MULTI_SEED_BLOCKED; synthetic checks were correctly skipped after C19-A failure.
 - No C19 formal training process was started. No smoke, no seed-0 pilot, and no test/AUPRC-based decision occurred.
 - Final action: retain frozen C17 Positive Preservation as the current strict best, with mean validation AUC 0.8696242644 +/- 0.0074797246.
+
+### Operational Execution Rule
+
+- When every explicitly defined static, synthetic, evidence, and safety gate passes, launch the authorized formal multi-seed training automatically with seeds [0, 42, 3407].
+- Do not wait for an additional user confirmation after a passing gate.
+- When any required gate fails, do not launch training or bypass the gate; record the failure and retain the current strict-best route.
