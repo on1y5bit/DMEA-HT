@@ -283,6 +283,7 @@ def main() -> None:
     )
     group_masks = c17_group_masks(c17_predictions, val[0]["patient_id"], val[0]["labels"])
     group_masks.update(transition_groups)
+    group_masks["all"] = np.ones(len(val[0]["patient_id"]), dtype=bool)
     group_masks["hard"] = group_masks["hard"] | group_masks["c18_repaired"] | group_masks["c18_introduced"]
     group_masks["non_hard"] = ~group_masks["hard"]
 

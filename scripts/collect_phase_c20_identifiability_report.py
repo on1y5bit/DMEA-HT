@@ -37,6 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--c18-hardrank-prediction-dir", default="runs/dema_ht_c18_directional_hardrank_multiseed/predictions")
     parser.add_argument("--manifest")
     parser.add_argument("--data-root")
+    parser.add_argument("--reuse-export", action="store_true", help="reuse the already validated server-only C20 NPZ export")
     parser.add_argument("--require-pass", action="store_true")
     return parser.parse_args()
 
@@ -117,7 +118,7 @@ def main() -> None:
 
     command_log_path = output_dir / "c20_command_log.txt"
     with command_log_path.open("w", encoding="utf-8") as log_handle:
-        if static_pass:
+        if static_pass and not args.reuse_export:
             export_command = [
                 sys.executable,
                 str(REPO_ROOT / "scripts" / "export_phase_c20_c17_internal_representations.py"),
@@ -131,6 +132,15 @@ def main() -> None:
                 export_command.extend(["--data-root", args.data_root])
             export_result = run_command(export_command, output_dir, log_handle)
             export_pass = export_result.returncode == 0
+        elif static_pass and args.reuse_export:
+            required_exports = (
+                output_dir / "c20_internal_representations_train.npz",
+                output_dir / "c20_internal_representations_val.npz",
+                output_dir / "c20_reproduction_check_by_seed.csv",
+            )
+            reproduction_rows = read_rows(output_dir / "c20_reproduction_check_by_seed.csv")
+            export_pass = all(path.exists() for path in required_exports) and bool(reproduction_rows) and all(row.get("pass", "False").lower() == "true" for row in reproduction_rows)
+            log_handle.write(f"Reusing validated C20 export: {export_pass}\n")
         else:
             export_pass = False
             log_handle.write("C20 static gate failed; representation export was not started.\n")
