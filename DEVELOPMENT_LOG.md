@@ -2026,3 +2026,17 @@
 - The clean C16 worktree remained unchanged at `282c95f`; no smoke, pilot, fallback, or stress training process was started.
 - Static/config/synthetic work is complete (`28/28 PASS`), but the required real 2-epoch smoke cannot be replaced by a narrower CPU or synthetic result.
 - Phase C16 is formally blocked at the real-smoke gate until the GPU becomes available. The goal must be resumed from the smoke step; seed-0 pilot remains unauthorized until smoke and health checks pass.
+
+## 2026-07-13 Urgent C16 DSSA Correction
+
+- The prior C16 DSSA/shared-specific plan was invalid for this project and is superseded by this correction.
+- One seed-0 two-epoch smoke had completed and produced a checkpoint before the correction. The full seed-0 pilot and stress seeds were never started.
+- No C16 process was alive when the correction was applied. The isolated server smoke and audit directories were preserved and marked `ABORTED_MISGUIDED_C16`, `NOT_FOR_MODEL_SELECTION`, and `NOT_FOR_REPORTING`.
+- The mistaken C16 commits were never merged into `main`; both `main` and `origin/main` remained at the verified pre-C16 base `b91bd1d`.
+- The complete mistaken branch delta was preserved in `analysis_reports/c16_correction/mistaken_c16_changes.patch` before reverting.
+- `dmea_ht/models.py` and `train.py` were restored exactly to the pre-C16 base. DSSA-only alignment, config, audit, collector, and synthetic-report files were removed from the corrected feature-branch state.
+- No result from the mistaken C16 branch is valid for model selection, comparison, promotion, or scientific reporting.
+- The project main line remains disease-mechanism and evidence-aware multimodal alignment for next-year HT prediction; it is not related to DecAlign and must not inherit shared/private decomposition concepts or terminology.
+- C13 temporal-focus remains intact and is the current strict-best baseline with mean validation AUC `0.8664554097` over seeds `[0, 42, 3407]`.
+- The corrected next phase is C16-MEA. It may begin with a design audit only; no new implementation or training is authorized until that audit is complete and reviewed.
+- Correction status: `MISGUIDED_C16_STOPPED_AND_REVERTED`.

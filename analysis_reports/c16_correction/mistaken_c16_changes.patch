@@ -1,0 +1,2433 @@
+diff --git a/DEVELOPMENT_LOG.md b/DEVELOPMENT_LOG.md
+index 7cded40..28c7335 100644
+--- a/DEVELOPMENT_LOG.md
++++ b/DEVELOPMENT_LOG.md
+@@ -1969,3 +1969,60 @@
+ - This transport prevents PowerShell from expanding remote Bash expressions such as `$(pwd)` and awk `$3`, and avoids PowerShell native-pipeline transcoding.
+ - Verified the transport against server `5090-01`: Chinese text round-tripped correctly, remote `$(pwd)` evaluated on Linux, and awk `$3` returned the expected value.
+ - Codex-side PowerShell commands should use a non-login shell so the blocked Conda profile is not loaded; server commands should use the Python transport rather than embedded SSH one-liners.
++
++## 2026-07-13 Phase C16 Disease-State Anchored Shared-Specific Alignment
++
++### Baseline And Authorization
++
++- Started from clean commit `b91bd1d` on branch `feature/c16-disease-state-shared-specific-alignment`.
++- C13 temporal-focus DMEA-HT remains the frozen strict-best fallback: validation AUC `0.8664554097 +/- 0.0077356304`, formal seeds `[0, 42, 3407]`.
++- C16 is an explicitly authorized, independent disease-state alignment hypothesis. It does not reopen C15 or the C14-E local patch routes.
++- Keep the C13 manifest, patient IDs, labels, patient-level split, image paths, bio values, prediction horizon, report construction, encoders, optimizer family, and validation-AUC checkpoint rule unchanged.
++- Test remains reporting-only and cannot select the architecture, loss, checkpoint, threshold, fallback, or promotion decision.
++
++### Implementation Plan
++
++- Add an optional DSSA module that is instantiated only when `model.use_dssa=true`; the disabled path must preserve legacy module construction and forward behavior.
++- Reuse the C13 image, text, and bio encoder global outputs. For each modality, learn lightweight shared and specific projections; normalize only the shared representation.
++- Learn two normalized disease-state prototypes initialized deterministically after the training seed is set. Compute per-modality prototype logits for training-label CE, but never pass labels into model inference.
++- Align only same-patient shared components. Keep specific components complementary with shared-specific orthogonality, batch variance protection, bounded residual scale `rho=0.10`, near-zero residual initialization, and validity-mask-aware attention/gates.
++- Form the C16 representation from patient shared state, soft predicted disease anchor, controlled specific residual, and prototype disease margin. Shortcut/audit fields are never read by the module or losses.
++- Add training-only positive-negative batch ranking with safe zero return for one-class batches. BCE remains dominant.
++- Use three classification-only warmup epochs, ramp DSSA/ranking weights to their fixed targets through epoch 8, then keep them fixed. Log all raw losses, effective weights, prototype/attention/gate/norm health, validation metrics, and selection state.
++- Export selected-checkpoint patient diagnostics and pairwise validation ranking, then generate prototype, shared, specific, positive-preservation, inversion, shortcut, seed-stability, comparison, and final gate reports.
++
++### Execution Gate
++
++- Run static/synthetic checks and a 1-2 epoch seed-0 smoke first. Stop on non-finite values, constant predictions, prototype or sample collapse, global attention/gate saturation, residual domination, legacy incompatibility, or shortcut leakage.
++- Run the full seed-0 pilot only after smoke passes. Compare against C13 seed-0 validation AUC `0.8655500226` and all documented performance/alignment/safety gates.
++- If seed 0 fails, permit exactly one fallback with `lambda_rank=0`; all other architecture and training settings remain fixed.
++- Run seeds `42` and `3407` only after a passing seed-0 route. Do not tune after seeing seed 0.
++- Promote C16 only if every formal performance, alignment, stability, positive-preservation, inversion, and shortcut gate passes. Otherwise keep C13 and use exactly one documented C16 decision label.
++
++### Static And Synthetic Result
++
++- Local `py_compile` and `git diff --check` passed for the DSSA module, legacy model integration, training loop, and C16 audit/report scripts.
++- Server `5090-01` synchronized the feature branch in the `ma` environment and completed the synthetic smoke.
++- Expanded synthetic/config-contract result: `28/28 PASS`.
++- Legacy absent-vs-explicit-disabled DSSA state-dict keys matched (`65` keys) and logits were exactly equal (`max_abs_difference=0.0`).
++- C16 output shape, all floating outputs, masked attention sums, and missing-modality behavior passed.
++- Ranking loss was finite for a mixed batch and returned graph-connected zero for all-positive and all-negative batches.
++- All six raw DSSA/ranking losses were finite. Nonzero finite gradients reached shared projectors, specific projectors, prototypes, shared attention score, specific gates, specific residual projectors, and the C16 classifier.
++- Initial prototype cosine was `0.08491625`; maximum scaled specific-residual/shared ratio was `0.00127990`; no shortcut field was present in the alignment module.
++- The expanded gate also verified the frozen C13 data/manifest, encoder/input settings, pilot/stress optimizer and epoch budget, formal seed partition, fixed DSSA loss weights, disabled legacy weak-label losses, bounded residual scale, and validation-AUC checkpoint contract.
++- The first real 2-epoch smoke attempt stopped before training because the only visible RTX 5090 was occupied by another user's process (`12072 MiB`). No DMEA training process was launched, no process was interrupted, and no GPU polling was started.
++
++### Server Worktree And Reporting Audit
++
++- A second one-shot GPU check found the same external process still using `12072 MiB`; C16 training remained stopped and no polling process was created.
++- The original server worktree contained only the two synthetic reports regenerated by this task as tracked modifications. Their Git blob hashes exactly matched the incoming committed versions, but the worktree was left untouched in accordance with the no-reset/no-stash rule.
++- Created a clean detached server worktree at `/home/linruixin/chen/project/DMEA-HT-c16` from commit `282c95f`. Server `py_compile` and CLI import/help checks passed there.
++- Expanded the C16 collector to record commit/worktree/server environment, validation and reporting-only test metrics, seed-wise C13 deltas, inversion deltas, positive-preservation and all-seed FN/TP/FP changes, prototype/shared/specific health, shortcut safety, target-AUC status, final decision label, and the current strict best.
++- Strengthened the health gate with disease-margin direction, prototype assignment, selected-epoch shared-consistency improvement, gate/attention distributions, and explicit collapse/duplication/dominance flags.
++
++### GPU Blocked Audit
++
++- A third consecutive goal turn found the same external process (`PID 89376`) using `12072 MiB` on the only visible RTX 5090.
++- The clean C16 worktree remained unchanged at `282c95f`; no smoke, pilot, fallback, or stress training process was started.
++- Static/config/synthetic work is complete (`28/28 PASS`), but the required real 2-epoch smoke cannot be replaced by a narrower CPU or synthetic result.
++- Phase C16 is formally blocked at the real-smoke gate until the GPU becomes available. The goal must be resumed from the smoke step; seed-0 pilot remains unauthorized until smoke and health checks pass.
+diff --git a/analysis_reports/phase_c16/c16_synthetic_smoke.json b/analysis_reports/phase_c16/c16_synthetic_smoke.json
+new file mode 100644
+index 0000000..983cd1b
+--- /dev/null
++++ b/analysis_reports/phase_c16/c16_synthetic_smoke.json
+@@ -0,0 +1,145 @@
++{
++  "status": "PASS",
++  "checks": [
++    {
++      "check": "legacy_state_dict_keys",
++      "status": "PASS",
++      "evidence": "65"
++    },
++    {
++      "check": "legacy_forward_equivalence",
++      "status": "PASS",
++      "evidence": "0.0"
++    },
++    {
++      "check": "frozen_data_contract",
++      "status": "PASS",
++      "evidence": "['/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl', '/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl', '/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl']"
++    },
++    {
++      "check": "frozen_encoder_and_input_contract",
++      "status": "PASS",
++      "evidence": "{}"
++    },
++    {
++      "check": "frozen_pilot_optimizer_contract",
++      "status": "PASS",
++      "evidence": "{}"
++    },
++    {
++      "check": "formal_seed_contract",
++      "status": "PASS",
++      "evidence": "[[0], [42, 3407]]"
++    },
++    {
++      "check": "fixed_dssa_loss_weights",
++      "status": "PASS",
++      "evidence": "{}"
++    },
++    {
++      "check": "forbidden_legacy_losses_disabled",
++      "status": "PASS",
++      "evidence": "{}"
++    },
++    {
++      "check": "bounded_specific_residual_scale",
++      "status": "PASS",
++      "evidence": "[0.1, 0.1, 0.1]"
++    },
++    {
++      "check": "validation_auc_checkpoint_contract",
++      "status": "PASS",
++      "evidence": "['val_AUC', 'val_AUC', 'val_AUC']"
++    },
++    {
++      "check": "c16_output_shape",
++      "status": "PASS",
++      "evidence": "(4,)"
++    },
++    {
++      "check": "all_outputs_finite",
++      "status": "PASS",
++      "evidence": "floating outputs"
++    },
++    {
++      "check": "shared_attention_masked_sum",
++      "status": "PASS",
++      "evidence": "0.0"
++    },
++    {
++      "check": "missing_modalities_masked",
++      "status": "PASS",
++      "evidence": "[[0.3302609622478485, 0.32740023732185364, 0.34233883023262024], [0.0, 0.48717984557151794, 0.5128201842308044], [0.5074397325515747, 0.4925602674484253, 0.0], [0.4929766356945038, 0.0, 0.5070233941078186]]"
++    },
++    {
++      "check": "ranking_mixed_finite",
++      "status": "PASS",
++      "evidence": "0.5857452154159546"
++    },
++    {
++      "check": "ranking_all_positive_zero",
++      "status": "PASS",
++      "evidence": "-0.0"
++    },
++    {
++      "check": "ranking_all_negative_zero",
++      "status": "PASS",
++      "evidence": "-0.0"
++    },
++    {
++      "check": "all_losses_finite",
++      "status": "PASS",
++      "evidence": "{'proto_classification_loss': 0.5587654113769531, 'shared_consistency_loss': 0.9689175486564636, 'shared_specific_orth_loss': 0.007956184446811676, 'specific_variance_loss': 0.29254576563835144, 'prototype_separation_loss': 0.08491624891757965, 'pairwise_ranking_loss': 0.5857452154159546}"
++    },
++    {
++      "check": "gradient_dssa_shared_projectors",
++      "status": "PASS",
++      "evidence": "dssa.shared_projectors"
++    },
++    {
++      "check": "gradient_dssa_specific_projectors",
++      "status": "PASS",
++      "evidence": "dssa.specific_projectors"
++    },
++    {
++      "check": "gradient_dssa_prototypes",
++      "status": "PASS",
++      "evidence": "dssa.prototypes"
++    },
++    {
++      "check": "gradient_dssa_shared_score",
++      "status": "PASS",
++      "evidence": "dssa.shared_score"
++    },
++    {
++      "check": "gradient_dssa_specific_gates",
++      "status": "PASS",
++      "evidence": "dssa.specific_gates"
++    },
++    {
++      "check": "gradient_dssa_specific_residual_projectors",
++      "status": "PASS",
++      "evidence": "dssa.specific_residual_projectors"
++    },
++    {
++      "check": "gradient_dssa_classifier",
++      "status": "PASS",
++      "evidence": "dssa.classifier"
++    },
++    {
++      "check": "prototype_not_collapsed",
++      "status": "PASS",
++      "evidence": "0.08491624891757965"
++    },
++    {
++      "check": "specific_residual_controlled",
++      "status": "PASS",
++      "evidence": "0.0012678686762228608"
++    },
++    {
++      "check": "shortcut_fields_absent",
++      "status": "PASS",
++      "evidence": "[]"
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/analysis_reports/phase_c16/c16_synthetic_smoke_checks.csv b/analysis_reports/phase_c16/c16_synthetic_smoke_checks.csv
+new file mode 100644
+index 0000000..39d0d05
+--- /dev/null
++++ b/analysis_reports/phase_c16/c16_synthetic_smoke_checks.csv
+@@ -0,0 +1,29 @@
++check,status,evidence
++legacy_state_dict_keys,PASS,65
++legacy_forward_equivalence,PASS,0.0
++frozen_data_contract,PASS,"['/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl', '/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl', '/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl']"
++frozen_encoder_and_input_contract,PASS,{}
++frozen_pilot_optimizer_contract,PASS,{}
++formal_seed_contract,PASS,"[[0], [42, 3407]]"
++fixed_dssa_loss_weights,PASS,{}
++forbidden_legacy_losses_disabled,PASS,{}
++bounded_specific_residual_scale,PASS,"[0.1, 0.1, 0.1]"
++validation_auc_checkpoint_contract,PASS,"['val_AUC', 'val_AUC', 'val_AUC']"
++c16_output_shape,PASS,"(4,)"
++all_outputs_finite,PASS,floating outputs
++shared_attention_masked_sum,PASS,0.0
++missing_modalities_masked,PASS,"[[0.3302609622478485, 0.32740023732185364, 0.34233883023262024], [0.0, 0.48717984557151794, 0.5128201842308044], [0.5074397325515747, 0.4925602674484253, 0.0], [0.4929766356945038, 0.0, 0.5070233941078186]]"
++ranking_mixed_finite,PASS,0.5857452154159546
++ranking_all_positive_zero,PASS,-0.0
++ranking_all_negative_zero,PASS,-0.0
++all_losses_finite,PASS,"{'proto_classification_loss': 0.5587654113769531, 'shared_consistency_loss': 0.9689175486564636, 'shared_specific_orth_loss': 0.007956184446811676, 'specific_variance_loss': 0.29254576563835144, 'prototype_separation_loss': 0.08491624891757965, 'pairwise_ranking_loss': 0.5857452154159546}"
++gradient_dssa_shared_projectors,PASS,dssa.shared_projectors
++gradient_dssa_specific_projectors,PASS,dssa.specific_projectors
++gradient_dssa_prototypes,PASS,dssa.prototypes
++gradient_dssa_shared_score,PASS,dssa.shared_score
++gradient_dssa_specific_gates,PASS,dssa.specific_gates
++gradient_dssa_specific_residual_projectors,PASS,dssa.specific_residual_projectors
++gradient_dssa_classifier,PASS,dssa.classifier
++prototype_not_collapsed,PASS,0.08491624891757965
++specific_residual_controlled,PASS,0.0012678686762228608
++shortcut_fields_absent,PASS,[]
+diff --git a/configs/dmea_ht_v2_c16_dssa_seed0_pilot.yaml b/configs/dmea_ht_v2_c16_dssa_seed0_pilot.yaml
+new file mode 100644
+index 0000000..207644a
+--- /dev/null
++++ b/configs/dmea_ht_v2_c16_dssa_seed0_pilot.yaml
+@@ -0,0 +1,48 @@
++project:
++  name: dmea_ht_v2_c16_dssa_seed0_pilot
++  data_root: /data/csb/DMEA-HT/HT_2025.12_25
++  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl
++  output_dir: runs/dmea_ht_v2_c16_dssa_seed0_pilot
++
++model:
++  name: dmea_ht
++  variant: dmea
++  hidden_dim: 256
++  text_vocab_size: 50000
++  text_max_length: 256
++  bio_dim: 7
++  max_images_per_patient: 28
++  image_size: 224
++  dropout: 0.15
++  use_patient_anchor: true
++  use_evidence_role: true
++  use_discordance: true
++  use_dssa: true
++  dssa_shared_dim: 256
++  dssa_temperature: 0.10
++  dssa_anchor_temperature: 0.10
++  dssa_margin_proto: 0.0
++  dssa_specific_variance_gamma: 0.50
++  dssa_residual_scale: 0.10
++
++training:
++  seeds: [0]
++  batch_size: 4
++  lr: 0.0001
++  weight_decay: 0.0001
++  epochs: 30
++  patience: 8
++  primary_metric: val_AUC
++  num_workers: 2
++
++loss:
++  cls_weight: 1.0
++  lambda_proto: 0.05
++  lambda_shared: 0.02
++  lambda_orth: 0.01
++  lambda_var: 0.005
++  lambda_sep: 0.01
++  lambda_rank: 0.02
++  dssa_warmup_epochs: 3
++  dssa_ramp_epochs: 5
++
+diff --git a/configs/dmea_ht_v2_c16_dssa_smoke.yaml b/configs/dmea_ht_v2_c16_dssa_smoke.yaml
+new file mode 100644
+index 0000000..b8b5ba6
+--- /dev/null
++++ b/configs/dmea_ht_v2_c16_dssa_smoke.yaml
+@@ -0,0 +1,48 @@
++project:
++  name: dmea_ht_v2_c16_dssa_smoke
++  data_root: /data/csb/DMEA-HT/HT_2025.12_25
++  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl
++  output_dir: runs/dmea_ht_v2_c16_dssa_smoke
++
++model:
++  name: dmea_ht
++  variant: dmea
++  hidden_dim: 256
++  text_vocab_size: 50000
++  text_max_length: 256
++  bio_dim: 7
++  max_images_per_patient: 28
++  image_size: 224
++  dropout: 0.15
++  use_patient_anchor: true
++  use_evidence_role: true
++  use_discordance: true
++  use_dssa: true
++  dssa_shared_dim: 256
++  dssa_temperature: 0.10
++  dssa_anchor_temperature: 0.10
++  dssa_margin_proto: 0.0
++  dssa_specific_variance_gamma: 0.50
++  dssa_residual_scale: 0.10
++
++training:
++  seeds: [0]
++  batch_size: 4
++  lr: 0.0001
++  weight_decay: 0.0001
++  epochs: 2
++  patience: 2
++  primary_metric: val_AUC
++  num_workers: 2
++
++loss:
++  cls_weight: 1.0
++  lambda_proto: 0.05
++  lambda_shared: 0.02
++  lambda_orth: 0.01
++  lambda_var: 0.005
++  lambda_sep: 0.01
++  lambda_rank: 0.02
++  dssa_warmup_epochs: 3
++  dssa_ramp_epochs: 5
++
+diff --git a/configs/dmea_ht_v2_c16_dssa_stress_seeds.yaml b/configs/dmea_ht_v2_c16_dssa_stress_seeds.yaml
+new file mode 100644
+index 0000000..ab7a2d0
+--- /dev/null
++++ b/configs/dmea_ht_v2_c16_dssa_stress_seeds.yaml
+@@ -0,0 +1,47 @@
++project:
++  name: dmea_ht_v2_c16_dssa_stress_seeds
++  data_root: /data/csb/DMEA-HT/HT_2025.12_25
++  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl
++  output_dir: runs/dmea_ht_v2_c16_dssa_stress_seeds
++
++model:
++  name: dmea_ht
++  variant: dmea
++  hidden_dim: 256
++  text_vocab_size: 50000
++  text_max_length: 256
++  bio_dim: 7
++  max_images_per_patient: 28
++  image_size: 224
++  dropout: 0.15
++  use_patient_anchor: true
++  use_evidence_role: true
++  use_discordance: true
++  use_dssa: true
++  dssa_shared_dim: 256
++  dssa_temperature: 0.10
++  dssa_anchor_temperature: 0.10
++  dssa_margin_proto: 0.0
++  dssa_specific_variance_gamma: 0.50
++  dssa_residual_scale: 0.10
++
++training:
++  seeds: [42, 3407]
++  batch_size: 4
++  lr: 0.0001
++  weight_decay: 0.0001
++  epochs: 30
++  patience: 8
++  primary_metric: val_AUC
++  num_workers: 2
++
++loss:
++  cls_weight: 1.0
++  lambda_proto: 0.05
++  lambda_shared: 0.02
++  lambda_orth: 0.01
++  lambda_var: 0.005
++  lambda_sep: 0.01
++  lambda_rank: 0.02
++  dssa_warmup_epochs: 3
++  dssa_ramp_epochs: 5
+diff --git a/dmea_ht/alignment.py b/dmea_ht/alignment.py
+new file mode 100644
+index 0000000..d0187ef
+--- /dev/null
++++ b/dmea_ht/alignment.py
+@@ -0,0 +1,235 @@
++from __future__ import annotations
++
++from itertools import combinations
++from typing import Dict
++
++import torch
++import torch.nn.functional as F
++from torch import nn
++
++
++MODALITIES = ("img", "txt", "bio")
++
++
++class ProjectionHead(nn.Module):
++    def __init__(self, hidden_dim: int, output_dim: int, dropout: float) -> None:
++        super().__init__()
++        self.net = nn.Sequential(
++            nn.Linear(hidden_dim, output_dim),
++            nn.LayerNorm(output_dim),
++            nn.GELU(),
++            nn.Dropout(dropout),
++            nn.Linear(output_dim, output_dim),
++        )
++
++    def forward(self, feature: torch.Tensor) -> torch.Tensor:
++        return self.net(feature)
++
++
++def masked_mean(values: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
++    selected = values[mask]
++    return selected.mean() if selected.numel() else values.sum() * 0.0
++
++
++class DSSAAlignment(nn.Module):
++    def __init__(
++        self,
++        hidden_dim: int,
++        dropout: float,
++        shared_dim: int | None = None,
++        temperature: float = 0.10,
++        anchor_temperature: float = 0.10,
++        margin_proto: float = 0.0,
++        specific_variance_gamma: float = 0.50,
++        residual_scale: float = 0.10,
++    ) -> None:
++        super().__init__()
++        shared_dim = int(shared_dim or hidden_dim)
++        if residual_scale < 0.0 or residual_scale > 0.15:
++            raise ValueError("DSSA residual_scale must be within [0.0, 0.15]")
++        if temperature <= 0.0 or anchor_temperature <= 0.0:
++            raise ValueError("DSSA temperatures must be positive")
++
++        self.shared_dim = shared_dim
++        self.temperature = float(temperature)
++        self.anchor_temperature = float(anchor_temperature)
++        self.margin_proto = float(margin_proto)
++        self.specific_variance_gamma = float(specific_variance_gamma)
++        self.residual_scale = float(residual_scale)
++
++        self.shared_projectors = nn.ModuleDict(
++            {name: ProjectionHead(hidden_dim, shared_dim, dropout) for name in MODALITIES}
++        )
++        self.specific_projectors = nn.ModuleDict(
++            {name: ProjectionHead(hidden_dim, shared_dim, dropout) for name in MODALITIES}
++        )
++        self.shared_score = nn.Linear(shared_dim, 1)
++        self.specific_residual_projectors = nn.ModuleDict(
++            {name: nn.Linear(shared_dim, shared_dim) for name in MODALITIES}
++        )
++        self.specific_gates = nn.ModuleDict(
++            {
++                name: nn.Sequential(
++                    nn.Linear(shared_dim * 3, shared_dim),
++                    nn.GELU(),
++                    nn.Linear(shared_dim, shared_dim),
++                )
++                for name in MODALITIES
++            }
++        )
++        self.prototypes = nn.Parameter(torch.randn(2, shared_dim) * 0.02)
++        self.classifier = nn.Sequential(
++            nn.LayerNorm(shared_dim * 3 + 1),
++            nn.Linear(shared_dim * 3 + 1, hidden_dim),
++            nn.GELU(),
++            nn.Dropout(dropout),
++            nn.Linear(hidden_dim, 1),
++        )
++        self._initialize_specific_residuals()
++
++    def _initialize_specific_residuals(self) -> None:
++        for projector in self.specific_residual_projectors.values():
++            nn.init.normal_(projector.weight, mean=0.0, std=1e-3)
++            nn.init.zeros_(projector.bias)
++        for gate in self.specific_gates.values():
++            final = gate[-1]
++            nn.init.normal_(final.weight, mean=0.0, std=1e-3)
++            nn.init.constant_(final.bias, -2.0)
++
++    @staticmethod
++    def modality_mask(batch: Dict[str, torch.Tensor]) -> torch.Tensor:
++        image_available = batch["image_mask"].sum(dim=1) > 0
++        text_available = batch["report_attention_mask"].sum(dim=1) > 2
++        bio_available = (batch["bio_missing_mask"] < 0.5).any(dim=1)
++        return torch.stack([image_available, text_available, bio_available], dim=1)
++
++    def _shared_consistency_loss(self, shared: torch.Tensor, available: torch.Tensor) -> torch.Tensor:
++        losses = []
++        for left, right in combinations(range(len(MODALITIES)), 2):
++            pair_available = available[:, left] & available[:, right]
++            pair_loss = 1.0 - (shared[:, left] * shared[:, right]).sum(dim=-1)
++            if bool(pair_available.any().item()):
++                losses.append(pair_loss[pair_available])
++        return torch.cat(losses).mean() if losses else shared.sum() * 0.0
++
++    def _orthogonality_loss(
++        self,
++        shared: torch.Tensor,
++        specific: torch.Tensor,
++        available: torch.Tensor,
++    ) -> torch.Tensor:
++        specific_normalized = F.normalize(specific, dim=-1, eps=1e-8)
++        cosine_squared = ((shared * specific_normalized).sum(dim=-1)) ** 2
++        return masked_mean(cosine_squared, available)
++
++    def _specific_variance_loss(self, specific: torch.Tensor, available: torch.Tensor) -> torch.Tensor:
++        losses = []
++        for index in range(len(MODALITIES)):
++            selected = specific[available[:, index], index]
++            if selected.shape[0] < 2:
++                continue
++            feature_std = selected.std(dim=0, unbiased=False)
++            losses.append(F.relu(self.specific_variance_gamma - feature_std).mean())
++        return torch.stack(losses).mean() if losses else specific.sum() * 0.0
++
++    def forward(
++        self,
++        image_feature: torch.Tensor,
++        text_feature: torch.Tensor,
++        bio_feature: torch.Tensor,
++        batch: Dict[str, torch.Tensor],
++    ) -> Dict[str, torch.Tensor]:
++        features = {"img": image_feature, "txt": text_feature, "bio": bio_feature}
++        available = self.modality_mask(batch)
++        available_float = available.unsqueeze(-1).to(image_feature.dtype)
++
++        shared_by_modality = {
++            name: F.normalize(self.shared_projectors[name](features[name]), dim=-1, eps=1e-8)
++            for name in MODALITIES
++        }
++        specific_by_modality = {
++            name: self.specific_projectors[name](features[name]) for name in MODALITIES
++        }
++        shared = torch.stack([shared_by_modality[name] for name in MODALITIES], dim=1) * available_float
++        specific = torch.stack([specific_by_modality[name] for name in MODALITIES], dim=1) * available_float
++
++        raw_attention = self.shared_score(shared).squeeze(-1).masked_fill(~available, -1e4)
++        shared_attention = torch.softmax(raw_attention, dim=1) * available.to(raw_attention.dtype)
++        shared_attention = shared_attention / shared_attention.sum(dim=1, keepdim=True).clamp_min(1e-8)
++        patient_shared = (shared_attention.unsqueeze(-1) * shared).sum(dim=1)
++
++        prototypes = F.normalize(self.prototypes, dim=-1, eps=1e-8)
++        modality_prototype_logits = torch.einsum("bmh,kh->bmk", shared, prototypes) / self.temperature
++        patient_similarities = F.cosine_similarity(
++            patient_shared.unsqueeze(1), prototypes.unsqueeze(0), dim=-1, eps=1e-8
++        )
++        disease_margin = patient_similarities[:, 1] - patient_similarities[:, 0]
++        disease_weights = torch.softmax(patient_similarities / self.anchor_temperature, dim=-1)
++        disease_anchor = disease_weights @ prototypes
++
++        residual_parts = []
++        gate_means = []
++        for index, name in enumerate(MODALITIES):
++            gate_input = torch.cat([shared[:, index], specific[:, index], disease_anchor], dim=-1)
++            gate = torch.sigmoid(self.specific_gates[name](gate_input)) * available_float[:, index]
++            residual = self.specific_residual_projectors[name](specific[:, index])
++            residual_parts.append(shared_attention[:, index : index + 1] * gate * residual)
++            gate_means.append(gate.mean(dim=-1))
++        specific_residual = torch.stack(residual_parts, dim=1).sum(dim=1)
++        specific_gate = torch.stack(gate_means, dim=1)
++
++        patient_shared_norm = patient_shared.norm(dim=-1)
++        specific_residual_norm = specific_residual.norm(dim=-1)
++        residual_shared_ratio = (
++            self.residual_scale * specific_residual_norm / patient_shared_norm.clamp_min(1e-8)
++        )
++        final_representation = torch.cat(
++            [
++                patient_shared,
++                disease_anchor,
++                self.residual_scale * specific_residual,
++                disease_margin.unsqueeze(-1),
++            ],
++            dim=-1,
++        )
++        logit = self.classifier(final_representation).squeeze(-1)
++
++        prototype_cosine = (prototypes[0] * prototypes[1]).sum()
++        outputs: Dict[str, torch.Tensor] = {
++            "logit": logit,
++            "prob": torch.sigmoid(logit),
++            "dssa_prototype_logits": modality_prototype_logits,
++            "dssa_available_mask": available,
++            "dssa_shared_consistency_loss": self._shared_consistency_loss(shared, available),
++            "dssa_shared_specific_orth_loss": self._orthogonality_loss(shared, specific, available),
++            "dssa_specific_variance_loss": self._specific_variance_loss(specific, available),
++            "dssa_prototype_separation_loss": F.relu(prototype_cosine - self.margin_proto),
++            "prototype_cosine": prototype_cosine,
++            "prototype_distance": 1.0 - prototype_cosine,
++            "prototype_similarity_non_ht": patient_similarities[:, 0],
++            "prototype_similarity_ht": patient_similarities[:, 1],
++            "disease_margin": disease_margin,
++            "patient_shared_norm": patient_shared_norm,
++            "specific_residual_norm": specific_residual_norm,
++            "specific_residual_shared_ratio": residual_shared_ratio,
++            "soft_disease_anchor_norm": disease_anchor.norm(dim=-1),
++            "dssa_shared_representations": shared,
++            "dssa_specific_representations": specific,
++        }
++        for index, name in enumerate(MODALITIES):
++            outputs[f"modality_available_{name}"] = available[:, index].to(logit.dtype)
++            outputs[f"shared_attention_{name}"] = shared_attention[:, index]
++            outputs[f"specific_gate_{name}"] = specific_gate[:, index]
++            outputs[f"shared_{name}_norm"] = shared[:, index].norm(dim=-1)
++            outputs[f"specific_{name}_norm"] = specific[:, index].norm(dim=-1)
++            outputs[f"shared_specific_cosine_{name}"] = (
++                shared[:, index] * F.normalize(specific[:, index], dim=-1, eps=1e-8)
++            ).sum(dim=-1)
++        for left, right in combinations(range(len(MODALITIES)), 2):
++            left_name = MODALITIES[left]
++            right_name = MODALITIES[right]
++            pair_available = available[:, left] & available[:, right]
++            pair_cosine = (shared[:, left] * shared[:, right]).sum(dim=-1)
++            outputs[f"shared_pair_available_{left_name}_{right_name}"] = pair_available.to(logit.dtype)
++            outputs[f"shared_cosine_{left_name}_{right_name}"] = pair_cosine * pair_available.to(logit.dtype)
++        return outputs
+diff --git a/dmea_ht/models.py b/dmea_ht/models.py
+index a6c5d00..a09a547 100644
+--- a/dmea_ht/models.py
++++ b/dmea_ht/models.py
+@@ -5,6 +5,8 @@ from typing import Dict
+ import torch
+ from torch import nn
+ 
++from dmea_ht.alignment import DSSAAlignment
++
+ 
+ class ImageEncoder(nn.Module):
+     def __init__(self, hidden_dim: int, dropout: float) -> None:
+@@ -228,6 +230,21 @@ class DMEAHTModel(nn.Module):
+             nn.Linear(hidden_dim, 1) if self.use_text_morphology_head and self.text_evidence_anchor is None else None
+         )
+         self.image_morphology_head = nn.Linear(hidden_dim, 1) if self.use_image_morphology_head else None
++        self.use_dssa = bool(model_cfg.get("use_dssa", False))
++        self.dssa = (
++            DSSAAlignment(
++                hidden_dim=hidden_dim,
++                dropout=dropout,
++                shared_dim=int(model_cfg.get("dssa_shared_dim", hidden_dim)),
++                temperature=float(model_cfg.get("dssa_temperature", 0.10)),
++                anchor_temperature=float(model_cfg.get("dssa_anchor_temperature", 0.10)),
++                margin_proto=float(model_cfg.get("dssa_margin_proto", 0.0)),
++                specific_variance_gamma=float(model_cfg.get("dssa_specific_variance_gamma", 0.50)),
++                residual_scale=float(model_cfg.get("dssa_residual_scale", 0.10)),
++            )
++            if self.use_dssa
++            else None
++        )
+         self.baseline_head = nn.Sequential(
+             nn.Linear(hidden_dim * 3, hidden_dim),
+             nn.GELU(),
+@@ -261,6 +278,11 @@ class DMEAHTModel(nn.Module):
+         )
+         aux_outputs = self._auxiliary_outputs(image_global, text_global, text_tokens, batch["report_attention_mask"])
+ 
++        if self.dssa is not None:
++            outputs = self.dssa(image_global, text_global, bio_global, batch)
++            outputs.update(aux_outputs)
++            return outputs
++
+         if self.variant in {"image_only", "text_only", "bio_only", "concat"}:
+             parts = {
+                 "image_only": [image_global, torch.zeros_like(text_global), torch.zeros_like(bio_global)],
+diff --git a/scripts/audit_phase_c16_alignment_health.py b/scripts/audit_phase_c16_alignment_health.py
+new file mode 100644
+index 0000000..e0e57cf
+--- /dev/null
++++ b/scripts/audit_phase_c16_alignment_health.py
+@@ -0,0 +1,601 @@
++from __future__ import annotations
++
++import argparse
++import copy
++import json
++import math
++from pathlib import Path
++import sys
++from typing import Any, Dict, Iterable, List, Sequence
++
++import numpy as np
++import pandas as pd
++import torch
++import torch.nn.functional as F
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++
++from dmea_ht.config import load_config  # noqa: E402
++from dmea_ht.models import DMEAHTModel  # noqa: E402
++from train import DSSA_LOSS_WEIGHTS, dssa_loss_terms, pairwise_ranking_loss, set_seed  # noqa: E402
++
++
++PATIENT_DIAGNOSTIC_COLUMNS = (
++    "patient_id",
++    "seed",
++    "split",
++    "label",
++    "pred_prob",
++    "logit",
++    "prototype_similarity_non_ht",
++    "prototype_similarity_ht",
++    "disease_margin",
++    "shared_attention_img",
++    "shared_attention_txt",
++    "shared_attention_bio",
++    "specific_gate_img",
++    "specific_gate_txt",
++    "specific_gate_bio",
++    "shared_img_norm",
++    "shared_txt_norm",
++    "shared_bio_norm",
++    "specific_img_norm",
++    "specific_txt_norm",
++    "specific_bio_norm",
++    "specific_residual_norm",
++    "patient_shared_norm",
++    "soft_disease_anchor_norm",
++    "specific_residual_shared_ratio",
++)
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser(description="Audit C16 DSSA synthetic and saved-run alignment health.")
++    parser.add_argument("--synthetic-smoke", action="store_true")
++    parser.add_argument("--c13-config", default="configs/dmea_ht_v2_c13_temporal_focus_stress_seeds.yaml")
++    parser.add_argument("--c16-config", default="configs/dmea_ht_v2_c16_dssa_smoke.yaml")
++    parser.add_argument("--pilot-config", default="configs/dmea_ht_v2_c16_dssa_seed0_pilot.yaml")
++    parser.add_argument("--stress-config", default="configs/dmea_ht_v2_c16_dssa_stress_seeds.yaml")
++    parser.add_argument("--run-dirs", nargs="*", default=[])
++    parser.add_argument("--output-dir", default="analysis_reports/phase_c16")
++    parser.add_argument("--require-health-pass", action="store_true")
++    return parser.parse_args()
++
++
++def frame_to_markdown(frame: pd.DataFrame) -> str:
++    if frame.empty:
++        return "_No rows._"
++    columns = [str(column) for column in frame.columns]
++    lines = ["| " + " | ".join(columns) + " |", "| " + " | ".join("---" for _ in columns) + " |"]
++    for row in frame.to_dict(orient="records"):
++        values = []
++        for column in frame.columns:
++            value = row[column]
++            if value is None or (isinstance(value, float) and math.isnan(value)):
++                text = "NA"
++            else:
++                text = str(value)
++            values.append(text.replace("|", "/").replace("\n", " "))
++        lines.append("| " + " | ".join(values) + " |")
++    return "\n".join(lines)
++
++
++def synthetic_batch(batch_size: int = 4, bio_dim: int = 7) -> Dict[str, Any]:
++    images = torch.randn(batch_size, 2, 3, 32, 32)
++    image_mask = torch.ones(batch_size, 2)
++    image_mask[1] = 0
++    input_ids = torch.randint(2, 200, (batch_size, 12))
++    attention_mask = torch.ones(batch_size, 12, dtype=torch.long)
++    attention_mask[3] = 0
++    bio_values = torch.randn(batch_size, bio_dim)
++    bio_missing_mask = torch.zeros(batch_size, bio_dim)
++    bio_missing_mask[2] = 1
++    return {
++        "patient_id": [f"synthetic_{index}" for index in range(batch_size)],
++        "label": torch.tensor([0.0, 1.0, 0.0, 1.0]),
++        "images": images,
++        "image_mask": image_mask,
++        "report_input_ids": input_ids,
++        "report_attention_mask": attention_mask,
++        "bio_values": bio_values,
++        "bio_missing_mask": bio_missing_mask,
++        "bio_abnormal_flags": torch.zeros(batch_size, bio_dim),
++        "sample_weight": torch.ones(batch_size),
++    }
++
++
++def all_floating_outputs_finite(outputs: Dict[str, torch.Tensor]) -> bool:
++    return all(
++        bool(torch.isfinite(value).all().item())
++        for value in outputs.values()
++        if torch.is_tensor(value) and torch.is_floating_point(value)
++    )
++
++
++def gradient_present(model: torch.nn.Module, prefix: str) -> bool:
++    parameters = [parameter for name, parameter in model.named_parameters() if name.startswith(prefix)]
++    return bool(parameters) and any(
++        parameter.grad is not None
++        and bool(torch.isfinite(parameter.grad).all().item())
++        and float(parameter.grad.detach().abs().sum()) > 0.0
++        for parameter in parameters
++    )
++
++
++def run_synthetic_smoke(
++    c13_config_path: Path,
++    c16_config_path: Path,
++    pilot_config_path: Path,
++    stress_config_path: Path,
++    output_dir: Path,
++) -> bool:
++    checks: List[Dict[str, Any]] = []
++
++    def check(name: str, passed: bool, evidence: Any) -> None:
++        checks.append({"check": name, "status": "PASS" if passed else "FAIL", "evidence": str(evidence)})
++
++    c13_config = load_config(c13_config_path)
++    c13_explicit_disabled = copy.deepcopy(c13_config)
++    c13_explicit_disabled.setdefault("model", {})["use_dssa"] = False
++    batch = synthetic_batch(bio_dim=int(c13_config["model"].get("bio_dim", 7)))
++
++    set_seed(1701)
++    legacy_default = DMEAHTModel(c13_config).eval()
++    set_seed(1701)
++    legacy_disabled = DMEAHTModel(c13_explicit_disabled).eval()
++    with torch.no_grad():
++        legacy_default_output = legacy_default(batch)
++        legacy_disabled_output = legacy_disabled(batch)
++    check("legacy_state_dict_keys", legacy_default.state_dict().keys() == legacy_disabled.state_dict().keys(), len(legacy_default.state_dict()))
++    max_legacy_difference = float((legacy_default_output["logit"] - legacy_disabled_output["logit"]).abs().max())
++    check("legacy_forward_equivalence", max_legacy_difference == 0.0, max_legacy_difference)
++
++    c16_config = load_config(c16_config_path)
++    pilot_config = load_config(pilot_config_path)
++    stress_config = load_config(stress_config_path)
++    c16_configs = (c16_config, pilot_config, stress_config)
++    check(
++        "frozen_data_contract",
++        all(
++            config["project"]["data_root"] == c13_config["project"]["data_root"]
++            and config["project"]["manifest"] == c13_config["project"]["manifest"]
++            for config in c16_configs
++        ),
++        [config["project"]["manifest"] for config in c16_configs],
++    )
++    frozen_model_keys = (
++        "variant",
++        "hidden_dim",
++        "text_vocab_size",
++        "text_max_length",
++        "bio_dim",
++        "max_images_per_patient",
++        "image_size",
++        "dropout",
++        "use_patient_anchor",
++        "use_evidence_role",
++        "use_discordance",
++    )
++    model_differences = {
++        key: [config["model"].get(key) for config in c16_configs]
++        for key in frozen_model_keys
++        if any(config["model"].get(key) != c13_config["model"].get(key) for config in c16_configs)
++    }
++    check("frozen_encoder_and_input_contract", not model_differences, model_differences)
++    frozen_training_keys = ("batch_size", "lr", "weight_decay", "epochs", "patience", "primary_metric", "num_workers")
++    training_differences = {
++        key: [config["training"].get(key) for config in (pilot_config, stress_config)]
++        for key in frozen_training_keys
++        if any(config["training"].get(key) != c13_config["training"].get(key) for config in (pilot_config, stress_config))
++    }
++    check("frozen_pilot_optimizer_contract", not training_differences, training_differences)
++    check(
++        "formal_seed_contract",
++        pilot_config["training"].get("seeds") == [0]
++        and stress_config["training"].get("seeds") == [42, 3407],
++        [pilot_config["training"].get("seeds"), stress_config["training"].get("seeds")],
++    )
++    expected_weights = {
++        "lambda_proto": 0.05,
++        "lambda_shared": 0.02,
++        "lambda_orth": 0.01,
++        "lambda_var": 0.005,
++        "lambda_sep": 0.01,
++        "lambda_rank": 0.02,
++    }
++    weight_differences = {
++        key: [config["loss"].get(key) for config in c16_configs]
++        for key, expected in expected_weights.items()
++        if any(float(config["loss"].get(key, float("nan"))) != expected for config in c16_configs)
++    }
++    check("fixed_dssa_loss_weights", not weight_differences, weight_differences)
++    forbidden_loss_keys = (
++        "text_morphology_weight",
++        "image_morphology_weight",
++        "text_negative_weight",
++        "bio_evidence_weight",
++        "discordance_label_weight",
++        "counterfactual_weight",
++        "matched_supcon_weight",
++    )
++    enabled_forbidden_losses = {
++        key: [config["loss"].get(key) for config in c16_configs]
++        for key in forbidden_loss_keys
++        if any(float(config["loss"].get(key, 0.0) or 0.0) != 0.0 for config in c16_configs)
++    }
++    check("forbidden_legacy_losses_disabled", not enabled_forbidden_losses, enabled_forbidden_losses)
++    residual_scales = [float(config["model"].get("dssa_residual_scale", 1.0)) for config in c16_configs]
++    check("bounded_specific_residual_scale", all(0.0 <= value <= 0.15 for value in residual_scales), residual_scales)
++    check(
++        "validation_auc_checkpoint_contract",
++        all(config["training"].get("primary_metric") == "val_AUC" for config in c16_configs),
++        [config["training"].get("primary_metric") for config in c16_configs],
++    )
++    set_seed(1701)
++    model = DMEAHTModel(c16_config).train()
++    outputs = model(batch)
++    check("c16_output_shape", tuple(outputs["logit"].shape) == (4,), tuple(outputs["logit"].shape))
++    check("all_outputs_finite", all_floating_outputs_finite(outputs), "floating outputs")
++
++    available = outputs["dssa_available_mask"].bool()
++    attention = torch.stack([outputs[f"shared_attention_{name}"] for name in ("img", "txt", "bio")], dim=1)
++    expected_attention_sum = available.any(dim=1).to(attention.dtype)
++    max_attention_error = float((attention.sum(dim=1) - expected_attention_sum).abs().max().detach())
++    check("shared_attention_masked_sum", max_attention_error <= 1e-6, max_attention_error)
++    check("missing_modalities_masked", bool((attention[~available] == 0).all().item()), attention.detach().tolist())
++
++    mixed_rank = pairwise_ranking_loss(outputs["logit"], batch["label"])
++    all_positive_rank = pairwise_ranking_loss(outputs["logit"], torch.ones_like(batch["label"]))
++    all_negative_rank = pairwise_ranking_loss(outputs["logit"], torch.zeros_like(batch["label"]))
++    check("ranking_mixed_finite", bool(torch.isfinite(mixed_rank).item()), float(mixed_rank.detach()))
++    check("ranking_all_positive_zero", float(all_positive_rank.detach()) == 0.0, float(all_positive_rank.detach()))
++    check("ranking_all_negative_zero", float(all_negative_rank.detach()) == 0.0, float(all_negative_rank.detach()))
++
++    terms = dssa_loss_terms(outputs, batch["label"], include_ranking=True)
++    weighted = F.binary_cross_entropy_with_logits(outputs["logit"], batch["label"])
++    loss_cfg = c16_config["loss"]
++    for term_name, term in terms.items():
++        weighted = weighted + float(loss_cfg[f"lambda_{DSSA_LOSS_WEIGHTS[term_name]}"]) * term
++    check("all_losses_finite", bool(torch.isfinite(weighted).item()) and all(bool(torch.isfinite(term).item()) for term in terms.values()), {key: float(value.detach()) for key, value in terms.items()})
++    weighted.backward()
++    for prefix in (
++        "dssa.shared_projectors",
++        "dssa.specific_projectors",
++        "dssa.prototypes",
++        "dssa.shared_score",
++        "dssa.specific_gates",
++        "dssa.specific_residual_projectors",
++        "dssa.classifier",
++    ):
++        check(f"gradient_{prefix.replace('.', '_')}", gradient_present(model, prefix), prefix)
++
++    prototype_cosine = float(outputs["prototype_cosine"].detach())
++    residual_ratio = float(outputs["specific_residual_shared_ratio"].detach().max())
++    check("prototype_not_collapsed", prototype_cosine < 0.95, prototype_cosine)
++    check("specific_residual_controlled", residual_ratio < 1.0, residual_ratio)
++
++    forbidden = (
++        "n_images",
++        "n_visits",
++        "selected_n_visits",
++        "used_images",
++        "image_padding_count",
++        "report_length",
++        "source_folder",
++    )
++    alignment_source = (Path(__file__).resolve().parents[1] / "dmea_ht" / "alignment.py").read_text(encoding="utf-8")
++    leaked = [field for field in forbidden if field in alignment_source]
++    check("shortcut_fields_absent", not leaked, leaked)
++
++    output_dir.mkdir(parents=True, exist_ok=True)
++    result = {
++        "status": "PASS" if all(row["status"] == "PASS" for row in checks) else "FAIL",
++        "checks": checks,
++    }
++    (output_dir / "c16_synthetic_smoke.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
++    pd.DataFrame(checks).to_csv(output_dir / "c16_synthetic_smoke_checks.csv", index=False)
++    print(json.dumps({"synthetic_smoke": result["status"], "checks": len(checks), "output_dir": str(output_dir)}))
++    return result["status"] == "PASS"
++
++
++def parse_named_path(value: str) -> tuple[str, Path]:
++    if "=" not in value:
++        raise ValueError(f"expected name=path, got: {value}")
++    name, raw_path = value.split("=", 1)
++    return name.strip(), Path(raw_path.strip())
++
++
++def read_run_frames(run_specs: Sequence[str]) -> tuple[pd.DataFrame, pd.DataFrame]:
++    metric_frames: List[pd.DataFrame] = []
++    prediction_frames: List[pd.DataFrame] = []
++    for model_id, run_dir in [parse_named_path(value) for value in run_specs]:
++        metric_path = run_dir / "reports" / "metrics_by_seed.csv"
++        if metric_path.is_file():
++            metrics = pd.read_csv(metric_path)
++            metrics.insert(0, "model_id", model_id)
++            metric_frames.append(metrics)
++        for split in ("train", "val"):
++            for path in sorted((run_dir / "predictions").glob(f"{split}_predictions_seed_*.csv")):
++                frame = pd.read_csv(path)
++                frame["patient_id"] = frame["patient_id"].astype(str)
++                frame["split"] = split
++                frame["model_id"] = model_id
++                prediction_frames.append(frame)
++    metrics = pd.concat(metric_frames, ignore_index=True) if metric_frames else pd.DataFrame()
++    predictions = pd.concat(prediction_frames, ignore_index=True) if prediction_frames else pd.DataFrame()
++    return metrics, predictions
++
++
++def finite_mean(values: Iterable[Any]) -> float:
++    numeric = pd.to_numeric(pd.Series(list(values), dtype="object"), errors="coerce").dropna()
++    return float(numeric.mean()) if not numeric.empty else float("nan")
++
++
++def prototype_health(metrics: pd.DataFrame, predictions: pd.DataFrame) -> pd.DataFrame:
++    rows: List[Dict[str, Any]] = []
++    for (model_id, seed, split), group in predictions.groupby(["model_id", "seed", "split"]):
++        label = pd.to_numeric(group["label"], errors="coerce").astype(int)
++        margin = pd.to_numeric(group["disease_margin"], errors="coerce")
++        metric_row = metrics[(metrics["model_id"] == model_id) & (metrics["seed"] == seed) & (metrics["split"] == split)]
++        cosine = float(metric_row.iloc[0].get("prototype_cosine", float("nan"))) if not metric_row.empty else float("nan")
++        rows.append(
++            {
++                "model_id": model_id,
++                "seed": int(seed),
++                "split": split,
++                "n_patients": int(len(group)),
++                "prototype_cosine": cosine,
++                "prototype_distance": 1.0 - cosine,
++                "non_ht_similarity_label0_mean": finite_mean(group.loc[label == 0, "prototype_similarity_non_ht"]),
++                "ht_similarity_label1_mean": finite_mean(group.loc[label == 1, "prototype_similarity_ht"]),
++                "disease_margin_label0_mean": finite_mean(margin[label == 0]),
++                "disease_margin_label0_std": float(margin[label == 0].std(ddof=1)),
++                "disease_margin_label1_mean": finite_mean(margin[label == 1]),
++                "disease_margin_label1_std": float(margin[label == 1].std(ddof=1)),
++                "prototype_assignment_accuracy": float(((margin >= 0).astype(int) == label).mean()),
++                "prototype_collapse_flag": int(math.isfinite(cosine) and cosine >= 0.95),
++            }
++        )
++    return pd.DataFrame(rows)
++
++
++def shared_health(metrics: pd.DataFrame, predictions: pd.DataFrame) -> pd.DataFrame:
++    frame = predictions.copy()
++    frame["correct"] = ((pd.to_numeric(frame["pred_prob"]) >= 0.5).astype(int) == pd.to_numeric(frame["label"]).astype(int)).astype(int)
++    rows: List[Dict[str, Any]] = []
++    for keys, group in frame.groupby(["model_id", "seed", "split", "label", "correct"]):
++        model_id, seed, split, label, correct = keys
++        row: Dict[str, Any] = {
++            "model_id": model_id,
++            "seed": int(seed),
++            "split": split,
++            "label": int(label),
++            "correct": int(correct),
++            "n_patients": int(len(group)),
++        }
++        for left, right in (("img", "txt"), ("img", "bio"), ("txt", "bio")):
++            available = pd.to_numeric(group[f"shared_pair_available_{left}_{right}"], errors="coerce") > 0.5
++            row[f"mean_shared_cosine_{left}_{right}"] = finite_mean(group.loc[available, f"shared_cosine_{left}_{right}"])
++        for modality in ("img", "txt", "bio"):
++            available = pd.to_numeric(group[f"modality_available_{modality}"], errors="coerce") > 0.5
++            attention = pd.to_numeric(group.loc[available, f"shared_attention_{modality}"], errors="coerce").dropna()
++            row[f"shared_attention_{modality}_mean"] = float(attention.mean()) if not attention.empty else float("nan")
++            row[f"shared_attention_{modality}_std"] = float(attention.std(ddof=1)) if len(attention) > 1 else 0.0
++            row[f"shared_attention_{modality}_p05"] = float(attention.quantile(0.05)) if not attention.empty else float("nan")
++            row[f"shared_attention_{modality}_p95"] = float(attention.quantile(0.95)) if not attention.empty else float("nan")
++        metric_row = metrics[(metrics["model_id"] == model_id) & (metrics["seed"] == seed) & (metrics["split"] == split)]
++        collapse_inputs = []
++        if not metric_row.empty:
++            for modality in ("img", "txt", "bio"):
++                row[f"shared_{modality}_feature_std_mean"] = metric_row.iloc[0].get(f"shared_{modality}_feature_std_mean", float("nan"))
++                row[f"shared_{modality}_offdiag_cosine_mean"] = metric_row.iloc[0].get(f"shared_{modality}_offdiag_cosine_mean", float("nan"))
++                collapse_inputs.append(float(row[f"shared_{modality}_offdiag_cosine_mean"]))
++        row["shared_sample_collapse_flag"] = int(bool(collapse_inputs) and max(collapse_inputs) >= 0.98)
++        rows.append(row)
++    return pd.DataFrame(rows)
++
++
++def specific_health(metrics: pd.DataFrame, predictions: pd.DataFrame) -> pd.DataFrame:
++    rows: List[Dict[str, Any]] = []
++    for (model_id, seed, split), group in predictions.groupby(["model_id", "seed", "split"]):
++        metric_row = metrics[(metrics["model_id"] == model_id) & (metrics["seed"] == seed) & (metrics["split"] == split)]
++        row: Dict[str, Any] = {
++            "model_id": model_id,
++            "seed": int(seed),
++            "split": split,
++            "n_patients": int(len(group)),
++            "specific_residual_shared_ratio_mean": finite_mean(group["specific_residual_shared_ratio"]),
++        }
++        duplicate_flags = []
++        collapse_flags = []
++        gate_flags = []
++        for modality in ("img", "txt", "bio"):
++            available = pd.to_numeric(group[f"modality_available_{modality}"], errors="coerce") > 0.5
++            cosine = pd.to_numeric(group.loc[available, f"shared_specific_cosine_{modality}"], errors="coerce")
++            gate = pd.to_numeric(group.loc[available, f"specific_gate_{modality}"], errors="coerce")
++            row[f"mean_abs_shared_specific_cosine_{modality}"] = float(cosine.abs().mean()) if not cosine.empty else float("nan")
++            row[f"mean_specific_gate_{modality}"] = float(gate.mean()) if not gate.empty else float("nan")
++            row[f"specific_gate_{modality}_std"] = float(gate.std(ddof=1)) if len(gate) > 1 else 0.0
++            row[f"specific_gate_{modality}_p05"] = float(gate.quantile(0.05)) if not gate.empty else float("nan")
++            row[f"specific_gate_{modality}_p95"] = float(gate.quantile(0.95)) if not gate.empty else float("nan")
++            row[f"specific_gate_{modality}_saturation_fraction"] = (
++                float(((gate <= 0.01) | (gate >= 0.99)).mean()) if not gate.empty else float("nan")
++            )
++            feature_std = float(metric_row.iloc[0].get(f"specific_{modality}_feature_std_mean", float("nan"))) if not metric_row.empty else float("nan")
++            row[f"specific_{modality}_feature_std_mean"] = feature_std
++            duplicate_flags.append(math.isfinite(row[f"mean_abs_shared_specific_cosine_{modality}"]) and row[f"mean_abs_shared_specific_cosine_{modality}"] >= 0.95)
++            collapse_flags.append(math.isfinite(feature_std) and feature_std <= 1e-3)
++            gate_saturation_fraction = float(((gate <= 0.01) | (gate >= 0.99)).mean()) if not gate.empty else 1.0
++            gate_flags.append(
++                not gate.empty
++                and (
++                    float(gate.mean()) <= 0.01
++                    or float(gate.mean()) >= 0.99
++                    or gate_saturation_fraction >= 0.50
++                )
++            )
++        row["specific_duplicates_shared_flag"] = int(any(duplicate_flags))
++        row["specific_collapse_flag"] = int(any(collapse_flags))
++        row["specific_dominates_shared_flag"] = int(row["specific_residual_shared_ratio_mean"] >= 1.0)
++        row["global_gate_saturation_flag"] = int(any(gate_flags))
++        rows.append(row)
++    return pd.DataFrame(rows)
++
++
++def pairwise_rows(predictions: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
++    rows: List[Dict[str, Any]] = []
++    validation = predictions[predictions["split"] == "val"]
++    for (model_id, seed), group in validation.groupby(["model_id", "seed"]):
++        positives = group[pd.to_numeric(group["label"]).astype(int) == 1].to_dict("records")
++        negatives = group[pd.to_numeric(group["label"]).astype(int) == 0].to_dict("records")
++        for positive in positives:
++            for negative in negatives:
++                margin = float(positive["logit"]) - float(negative["logit"])
++                rows.append(
++                    {
++                        "model_id": model_id,
++                        "seed": int(seed),
++                        "positive_patient_id": positive["patient_id"],
++                        "negative_patient_id": negative["patient_id"],
++                        "positive_logit": float(positive["logit"]),
++                        "negative_logit": float(negative["logit"]),
++                        "pair_margin": margin,
++                        "is_inversion": int(margin <= 0.0),
++                    }
++                )
++    pairwise = pd.DataFrame(rows)
++    if pairwise.empty:
++        return pairwise, pd.DataFrame()
++    summary = pairwise.groupby(["model_id", "seed"], as_index=False).agg(
++        pair_count=("is_inversion", "size"),
++        inversion_count=("is_inversion", "sum"),
++        pair_margin_mean=("pair_margin", "mean"),
++        pair_margin_std=("pair_margin", "std"),
++    )
++    summary["inversion_rate"] = summary["inversion_count"] / summary["pair_count"].clip(lower=1)
++    return pairwise, summary
++
++
++def alignment_health_gate(
++    metrics: pd.DataFrame,
++    predictions: pd.DataFrame,
++    prototype: pd.DataFrame,
++    shared: pd.DataFrame,
++    specific: pd.DataFrame,
++) -> pd.DataFrame:
++    rows: List[Dict[str, Any]] = []
++    validation = predictions[predictions["split"] == "val"]
++    for (model_id, seed), group in validation.groupby(["model_id", "seed"]):
++        metric_row = metrics[
++            (metrics["model_id"] == model_id) & (metrics["seed"] == seed) & (metrics["split"] == "val")
++        ]
++        proto_row = prototype[
++            (prototype["model_id"] == model_id) & (prototype["seed"] == seed) & (prototype["split"] == "val")
++        ]
++        shared_rows = shared[
++            (shared["model_id"] == model_id) & (shared["seed"] == seed) & (shared["split"] == "val")
++        ]
++        specific_row = specific[
++            (specific["model_id"] == model_id) & (specific["seed"] == seed) & (specific["split"] == "val")
++        ]
++        probabilities = pd.to_numeric(group["pred_prob"], errors="coerce")
++        residual_ratio = pd.to_numeric(group["specific_residual_shared_ratio"], errors="coerce")
++        checks = {
++            "finite_predictions": bool(np.isfinite(probabilities).all()),
++            "nonconstant_predictions": bool(probabilities.std(ddof=1) > 1e-6),
++            "prototype_not_collapsed": bool(not proto_row.empty and int(proto_row["prototype_collapse_flag"].max()) == 0),
++            "shared_not_collapsed": bool(not shared_rows.empty and int(shared_rows["shared_sample_collapse_flag"].max()) == 0),
++            "specific_not_collapsed": bool(not specific_row.empty and int(specific_row["specific_collapse_flag"].max()) == 0),
++            "specific_not_duplicate": bool(not specific_row.empty and int(specific_row["specific_duplicates_shared_flag"].max()) == 0),
++            "specific_not_dominant": bool(not residual_ratio.empty and float(residual_ratio.max()) < 1.0),
++            "attention_not_collapsed": bool(not metric_row.empty and int(metric_row.iloc[0].get("global_attention_collapse_flag", 1)) == 0),
++            "gates_not_saturated": bool(not specific_row.empty and int(specific_row["global_gate_saturation_flag"].max()) == 0),
++        }
++        row: Dict[str, Any] = {
++            "model_id": model_id,
++            "seed": int(seed),
++            **{name: int(passed) for name, passed in checks.items()},
++            "prediction_std": float(probabilities.std(ddof=1)),
++            "max_specific_residual_shared_ratio": float(residual_ratio.max()),
++            "health_pass": int(all(checks.values())),
++        }
++        rows.append(row)
++    return pd.DataFrame(rows)
++
++
++def write_health_report(title: str, frame: pd.DataFrame, path: Path, notes: Sequence[str]) -> None:
++    lines = [f"# {title}", "", *notes, "", frame_to_markdown(frame)]
++    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
++
++
++def run_saved_audit(run_specs: Sequence[str], output_dir: Path) -> bool:
++    metrics, predictions = read_run_frames(run_specs)
++    if predictions.empty:
++        raise FileNotFoundError("No C16 train/validation prediction files were found")
++    output_dir.mkdir(parents=True, exist_ok=True)
++    prototype = prototype_health(metrics, predictions)
++    shared = shared_health(metrics, predictions)
++    specific = specific_health(metrics, predictions)
++    pairwise, inversion = pairwise_rows(predictions)
++    health_gate = alignment_health_gate(metrics, predictions, prototype, shared, specific)
++
++    prototype.to_csv(output_dir / "c16_prototype_health_by_seed.csv", index=False)
++    shared.to_csv(output_dir / "c16_shared_alignment_by_seed.csv", index=False)
++    specific.to_csv(output_dir / "c16_specific_health_by_seed.csv", index=False)
++    pairwise.to_csv(output_dir / "c16_pairwise_ranking_val.csv", index=False)
++    inversion.to_csv(output_dir / "c16_pairwise_inversion_summary.csv", index=False)
++    health_gate.to_csv(output_dir / "c16_alignment_health_gate.csv", index=False)
++    validation = predictions[predictions["split"] == "val"].copy()
++    keep = [column for column in PATIENT_DIAGNOSTIC_COLUMNS if column in validation.columns]
++    validation[keep].to_csv(output_dir / "c16_patient_diagnostics_val.csv", index=False)
++
++    write_health_report(
++        "C16 Prototype Health",
++        prototype,
++        output_dir / "c16_prototype_health_report.md",
++        ["Prototype metrics are audit-only and never select checkpoints."],
++    )
++    write_health_report(
++        "C16 Shared Alignment Health",
++        shared,
++        output_dir / "c16_shared_alignment_report.md",
++        ["Shared cosine is stratified by split, label, and prediction correctness."],
++    )
++    write_health_report(
++        "C16 Specific Branch Health",
++        specific,
++        output_dir / "c16_specific_health_report.md",
++        ["Specific features must remain non-collapsed, non-duplicative, and norm-controlled."],
++    )
++    health_pass = bool(not health_gate.empty and (health_gate["health_pass"] == 1).all())
++    (output_dir / "c16_alignment_health_gate.json").write_text(
++        json.dumps({"health_pass": health_pass, "rows": health_gate.to_dict("records")}, indent=2),
++        encoding="utf-8",
++    )
++    print(json.dumps({"prediction_rows": len(predictions), "pairwise_rows": len(pairwise), "health_pass": health_pass, "output_dir": str(output_dir)}))
++    return health_pass
++
++
++def main() -> None:
++    args = parse_args()
++    output_dir = Path(args.output_dir)
++    passed = True
++    if args.synthetic_smoke:
++        passed = run_synthetic_smoke(
++            Path(args.c13_config),
++            Path(args.c16_config),
++            Path(args.pilot_config),
++            Path(args.stress_config),
++            output_dir,
++        )
++    health_pass = True
++    if args.run_dirs:
++        health_pass = run_saved_audit(args.run_dirs, output_dir)
++    if not args.synthetic_smoke and not args.run_dirs:
++        raise SystemExit("Specify --synthetic-smoke and/or --run-dirs")
++    if not passed or (args.require_health_pass and not health_pass):
++        raise SystemExit(1)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/collect_phase_c16_report.py b/scripts/collect_phase_c16_report.py
+new file mode 100644
+index 0000000..bec7c37
+--- /dev/null
++++ b/scripts/collect_phase_c16_report.py
+@@ -0,0 +1,682 @@
++from __future__ import annotations
++
++import argparse
++import json
++import math
++import platform
++from pathlib import Path
++import subprocess
++import sys
++from typing import Any, Dict, Iterable, List, Sequence
++
++import numpy as np
++import pandas as pd
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
++
++from scripts.audit_prediction_shortcut_residual import (  # noqa: E402
++    DEFAULT_SHORTCUT_FIELDS,
++    audit_frame,
++    merge_shortcuts,
++    read_manifest_frame,
++)
++
++
++C13_AUC_MEAN = 0.8664554096876415
++C13_AUPRC_MEAN = 0.8570449989296317
++FORMAL_SEEDS = (0, 42, 3407)
++
++
++def collect_environment() -> Dict[str, Any]:
++    def git_value(*args: str) -> str:
++        try:
++            return subprocess.check_output(["git", *args], text=True, stderr=subprocess.DEVNULL).strip()
++        except Exception:
++            return "unavailable"
++
++    environment: Dict[str, Any] = {
++        "python_version": sys.version,
++        "platform": platform.platform(),
++        "repo_commit": git_value("rev-parse", "HEAD"),
++        "repo_commit_short": git_value("rev-parse", "--short", "HEAD"),
++        "git_branch": git_value("branch", "--show-current"),
++        "tracked_worktree_status": git_value("status", "--porcelain", "--untracked-files=no"),
++    }
++    try:
++        import torch
++
++        environment.update(
++            {
++                "torch_version": torch.__version__,
++                "cuda_available": bool(torch.cuda.is_available()),
++                "cuda_device_count": int(torch.cuda.device_count()),
++                "cuda_device_names": [torch.cuda.get_device_name(index) for index in range(torch.cuda.device_count())],
++            }
++        )
++    except Exception as exc:
++        environment["torch_environment_error"] = str(exc)
++    return environment
++
++
++def parse_args() -> argparse.Namespace:
++    parser = argparse.ArgumentParser(description="Collect C16 DSSA pilot or formal gate report.")
++    parser.add_argument("--manifest", required=True)
++    parser.add_argument("--c13-run-dir", required=True)
++    parser.add_argument("--c16-runs", nargs="+", required=True, help="name=run_dir entries for the selected C16 route")
++    parser.add_argument("--output-dir", default="analysis_reports/phase_c16")
++    parser.add_argument("--synthetic-smoke", default="analysis_reports/phase_c16/c16_synthetic_smoke.json")
++    return parser.parse_args()
++
++
++def parse_named_path(value: str) -> tuple[str, Path]:
++    if "=" not in value:
++        raise ValueError(f"expected name=path, got: {value}")
++    name, raw_path = value.split("=", 1)
++    return name.strip(), Path(raw_path.strip())
++
++
++def frame_to_markdown(frame: pd.DataFrame) -> str:
++    if frame.empty:
++        return "_No rows._"
++    columns = [str(column) for column in frame.columns]
++    lines = ["| " + " | ".join(columns) + " |", "| " + " | ".join("---" for _ in columns) + " |"]
++    for row in frame.to_dict(orient="records"):
++        values = []
++        for column in frame.columns:
++            value = row[column]
++            if value is None or (isinstance(value, float) and math.isnan(value)):
++                text = "NA"
++            else:
++                text = str(value)
++            values.append(text.replace("|", "/").replace("\n", " "))
++        lines.append("| " + " | ".join(values) + " |")
++    return "\n".join(lines)
++
++
++def load_run_data(run_specs: Sequence[str]) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, Dict[str, Dict[str, Any]]]:
++    metric_frames: List[pd.DataFrame] = []
++    epoch_frames: List[pd.DataFrame] = []
++    prediction_frames: List[pd.DataFrame] = []
++    configs: Dict[str, Dict[str, Any]] = {}
++    for model_id, run_dir in [parse_named_path(value) for value in run_specs]:
++        metrics_path = run_dir / "reports" / "metrics_by_seed.csv"
++        if not metrics_path.is_file():
++            raise FileNotFoundError(metrics_path)
++        metrics = pd.read_csv(metrics_path)
++        metrics.insert(0, "model_id", model_id)
++        metric_frames.append(metrics)
++        epochs_path = run_dir / "reports" / "metrics_by_epoch.csv"
++        if epochs_path.is_file():
++            epochs = pd.read_csv(epochs_path)
++            epochs.insert(0, "model_id", model_id)
++            epoch_frames.append(epochs)
++        config_path = run_dir / "reports" / "run_config.json"
++        configs[model_id] = json.loads(config_path.read_text(encoding="utf-8"))
++        for split in ("train", "val", "test"):
++            for path in sorted((run_dir / "predictions").glob(f"{split}_predictions_seed_*.csv")):
++                frame = pd.read_csv(path)
++                frame["patient_id"] = frame["patient_id"].astype(str)
++                frame["split"] = split
++                frame["model_id"] = model_id
++                prediction_frames.append(frame)
++    metrics = pd.concat(metric_frames, ignore_index=True)
++    epochs = pd.concat(epoch_frames, ignore_index=True) if epoch_frames else pd.DataFrame()
++    predictions = pd.concat(prediction_frames, ignore_index=True) if prediction_frames else pd.DataFrame()
++    duplicated = metrics[metrics["split"] == "val"].duplicated(["seed"], keep=False)
++    if bool(duplicated.any()):
++        duplicates = metrics.loc[metrics["split"] == "val"].loc[duplicated, ["model_id", "seed"]].to_dict("records")
++        raise ValueError(f"selected C16 route contains duplicate validation seeds: {duplicates}")
++    return metrics, epochs, predictions, configs
++
++
++def load_c13(c13_run_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
++    metrics = pd.read_csv(c13_run_dir / "reports" / "metrics_by_seed.csv")
++    predictions = []
++    for split in ("val", "test"):
++        for path in sorted((c13_run_dir / "predictions").glob(f"{split}_predictions_seed_*.csv")):
++            frame = pd.read_csv(path)
++            frame["patient_id"] = frame["patient_id"].astype(str)
++            frame["split"] = split
++            predictions.append(frame)
++    return metrics, pd.concat(predictions, ignore_index=True)
++
++
++def summarize(metrics: pd.DataFrame) -> pd.DataFrame:
++    keys = (
++        "AUC",
++        "AUPRC",
++        "ACC",
++        "F1",
++        "Sensitivity",
++        "Specificity",
++        "Balanced_ACC",
++        "pos_neg_gap",
++        "pairwise_inversion_count",
++        "prototype_cosine",
++        "prototype_assignment_accuracy",
++        "specific_residual_shared_ratio",
++    )
++    rows: List[Dict[str, Any]] = []
++    for split in ("val", "test"):
++        group = metrics[metrics["split"] == split]
++        if group.empty:
++            continue
++        row: Dict[str, Any] = {"split": split, "seed_count": int(group["seed"].nunique())}
++        for key in keys:
++            if key not in group.columns:
++                continue
++            values = pd.to_numeric(group[key], errors="coerce").dropna().to_numpy(dtype=float)
++            if values.size:
++                row[f"{key}_mean"] = float(values.mean())
++                row[f"{key}_std"] = float(values.std(ddof=1)) if values.size > 1 else 0.0
++        rows.append(row)
++    return pd.DataFrame(rows)
++
++
++def build_pairwise_summary(predictions: pd.DataFrame) -> pd.DataFrame:
++    rows: List[Dict[str, Any]] = []
++    for seed, group in predictions[predictions["split"] == "val"].groupby("seed"):
++        labels = pd.to_numeric(group["label"], errors="coerce").astype(int)
++        positives = pd.to_numeric(group.loc[labels == 1, "logit"], errors="coerce").to_numpy(dtype=float)
++        negatives = pd.to_numeric(group.loc[labels == 0, "logit"], errors="coerce").to_numpy(dtype=float)
++        margins = positives[:, None] - negatives[None, :]
++        rows.append(
++            {
++                "seed": int(seed),
++                "pair_count": int(margins.size),
++                "inversion_count": int((margins <= 0.0).sum()),
++                "inversion_rate": float((margins <= 0.0).mean()),
++                "pair_margin_mean": float(margins.mean()),
++            }
++        )
++    return pd.DataFrame(rows)
++
++
++def positive_preservation(c16_predictions: pd.DataFrame, c13_predictions: pd.DataFrame) -> pd.DataFrame:
++    c16 = c16_predictions[c16_predictions["split"] == "val"].copy()
++    c13 = c13_predictions[c13_predictions["split"] == "val"].copy()
++    keep = ["patient_id", "seed", "label", "pred_prob", "logit"]
++    merged = c16[keep].merge(c13[keep], on=["patient_id", "seed", "label"], suffixes=("_c16", "_c13"), how="inner")
++    merged["positive_probability_delta"] = merged["pred_prob_c16"] - merged["pred_prob_c13"]
++    merged["absolute_error_delta"] = (
++        (merged["pred_prob_c16"] - merged["label"]).abs() - (merged["pred_prob_c13"] - merged["label"]).abs()
++    )
++    merged["c13_prediction"] = (merged["pred_prob_c13"] >= 0.5).astype(int)
++    merged["c16_prediction"] = (merged["pred_prob_c16"] >= 0.5).astype(int)
++    merged["c13_error_type"] = np.select(
++        [(merged["label"] == 1) & (merged["c13_prediction"] == 0), (merged["label"] == 0) & (merged["c13_prediction"] == 1)],
++        ["FN", "FP"],
++        default="correct",
++    )
++    merged["c16_error_type"] = np.select(
++        [(merged["label"] == 1) & (merged["c16_prediction"] == 0), (merged["label"] == 0) & (merged["c16_prediction"] == 1)],
++        ["FN", "FP"],
++        default="correct",
++    )
++    return merged
++
++
++def positive_preservation_summary(preservation: pd.DataFrame) -> pd.DataFrame:
++    rows: List[Dict[str, Any]] = []
++    for seed, group in preservation.groupby("seed"):
++        positives = group[group["label"] == 1]
++        negatives = group[group["label"] == 0]
++        rows.append(
++            {
++                "scope": "seed",
++                "seed": int(seed),
++                "positive_probability_delta_mean": float(positives["positive_probability_delta"].mean()),
++                "negative_probability_delta_mean": float(negatives["positive_probability_delta"].mean()),
++                "positive_absolute_error_delta_mean": float(positives["absolute_error_delta"].mean()),
++                "negative_absolute_error_delta_mean": float(negatives["absolute_error_delta"].mean()),
++                "c13_fn": int((positives["c13_error_type"] == "FN").sum()),
++                "c16_fn": int((positives["c16_error_type"] == "FN").sum()),
++                "c13_tp": int((positives["c13_error_type"] == "correct").sum()),
++                "c16_tp": int((positives["c16_error_type"] == "correct").sum()),
++                "c13_fp": int((negatives["c13_error_type"] == "FP").sum()),
++                "c16_fp": int((negatives["c16_error_type"] == "FP").sum()),
++            }
++        )
++    seed_count = int(preservation["seed"].nunique())
++    if seed_count > 1:
++        positives = preservation[preservation["label"] == 1]
++        negatives = preservation[preservation["label"] == 0]
++        positive_patient = positives.groupby("patient_id").agg(
++            seed_count=("seed", "nunique"),
++            c13_fn_count=("c13_error_type", lambda values: int((values == "FN").sum())),
++            c16_fn_count=("c16_error_type", lambda values: int((values == "FN").sum())),
++            c13_tp_count=("c13_error_type", lambda values: int((values == "correct").sum())),
++            c16_tp_count=("c16_error_type", lambda values: int((values == "correct").sum())),
++        )
++        negative_patient = negatives.groupby("patient_id").agg(
++            seed_count=("seed", "nunique"),
++            c13_fp_count=("c13_error_type", lambda values: int((values == "FP").sum())),
++            c16_fp_count=("c16_error_type", lambda values: int((values == "FP").sum())),
++        )
++        rows.append(
++            {
++                "scope": "all_seed_patient",
++                "seed": "all",
++                "formal_seed_count": seed_count,
++                "c13_all_seed_fn_patients": int(((positive_patient["seed_count"] == seed_count) & (positive_patient["c13_fn_count"] == seed_count)).sum()),
++                "c16_all_seed_fn_patients": int(((positive_patient["seed_count"] == seed_count) & (positive_patient["c16_fn_count"] == seed_count)).sum()),
++                "c13_all_seed_tp_patients": int(((positive_patient["seed_count"] == seed_count) & (positive_patient["c13_tp_count"] == seed_count)).sum()),
++                "c16_all_seed_tp_patients": int(((positive_patient["seed_count"] == seed_count) & (positive_patient["c16_tp_count"] == seed_count)).sum()),
++                "c13_all_seed_fp_patients": int(((negative_patient["seed_count"] == seed_count) & (negative_patient["c13_fp_count"] == seed_count)).sum()),
++                "c16_all_seed_fp_patients": int(((negative_patient["seed_count"] == seed_count) & (negative_patient["c16_fp_count"] == seed_count)).sum()),
++            }
++        )
++    return pd.DataFrame(rows)
++
++
++def model_comparison(
++    c16_metrics: pd.DataFrame,
++    c13_metrics: pd.DataFrame,
++    c16_pairwise: pd.DataFrame,
++    c13_pairwise: pd.DataFrame,
++) -> pd.DataFrame:
++    metric_keys = ("AUC", "AUPRC", "Sensitivity", "Specificity", "Balanced_ACC", "pos_neg_gap")
++    c16 = c16_metrics[c16_metrics["split"] == "val"][["seed", *metric_keys]].copy()
++    c13 = c13_metrics[c13_metrics["split"] == "val"][["seed", *metric_keys]].copy()
++    comparison = c16.merge(c13, on="seed", suffixes=("_c16", "_c13"), how="inner")
++    for key in metric_keys:
++        comparison[f"{key}_delta"] = pd.to_numeric(comparison[f"{key}_c16"]) - pd.to_numeric(comparison[f"{key}_c13"])
++    comparison = comparison.merge(
++        c16_pairwise[["seed", "inversion_count"]].rename(columns={"inversion_count": "inversion_count_c16"}),
++        on="seed",
++        how="left",
++    ).merge(
++        c13_pairwise[["seed", "inversion_count"]].rename(columns={"inversion_count": "inversion_count_c13"}),
++        on="seed",
++        how="left",
++    )
++    comparison["inversion_count_delta"] = comparison["inversion_count_c16"] - comparison["inversion_count_c13"]
++    return comparison
++
++
++def shortcut_audit(manifest_path: Path, predictions: pd.DataFrame) -> pd.DataFrame:
++    manifest = read_manifest_frame(manifest_path, DEFAULT_SHORTCUT_FIELDS)
++    rows: List[Dict[str, Any]] = []
++    for split in ("val", "test"):
++        split_frame = predictions[predictions["split"] == split].copy()
++        if split_frame.empty:
++            continue
++        split_frame["pred_prob_for_audit"] = pd.to_numeric(split_frame["pred_prob"], errors="coerce")
++        merged = merge_shortcuts(split_frame, manifest, DEFAULT_SHORTCUT_FIELDS)
++        for seed, seed_frame in merged.groupby("seed"):
++            rows.append(audit_frame("C16_DSSA", split, str(int(seed)), seed_frame, DEFAULT_SHORTCUT_FIELDS))
++        rows.append(audit_frame("C16_DSSA", split, "pooled", merged, DEFAULT_SHORTCUT_FIELDS))
++    return pd.DataFrame(rows)
++
++
++def load_health(output_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
++    prototype = pd.read_csv(output_dir / "c16_prototype_health_by_seed.csv")
++    shared = pd.read_csv(output_dir / "c16_shared_alignment_by_seed.csv")
++    specific = pd.read_csv(output_dir / "c16_specific_health_by_seed.csv")
++    return prototype, shared, specific
++
++
++def health_gate(
++    seed: int,
++    metrics: pd.DataFrame,
++    epochs: pd.DataFrame,
++    prototype: pd.DataFrame,
++    shared: pd.DataFrame,
++    specific: pd.DataFrame,
++) -> tuple[bool, Dict[str, Any]]:
++    val_metrics = metrics[(metrics["seed"] == seed) & (metrics["split"] == "val")]
++    proto = prototype[(prototype["seed"] == seed) & (prototype["split"] == "val")]
++    shared_seed = shared[(shared["seed"] == seed) & (shared["split"] == "val")]
++    specific_seed = specific[(specific["seed"] == seed) & (specific["split"] == "val")]
++    seed_epochs = epochs[epochs["seed"] == seed].sort_values("epoch")
++    selected_epochs = seed_epochs[pd.to_numeric(seed_epochs.get("selected_by_val_auc", 0), errors="coerce") == 1]
++    first_shared_loss = float(seed_epochs.iloc[0].get("train_shared_consistency_loss", float("nan"))) if not seed_epochs.empty else float("nan")
++    selected_shared_loss = float(selected_epochs.iloc[0].get("train_shared_consistency_loss", float("nan"))) if not selected_epochs.empty else float("nan")
++    margin_label0 = float(proto.iloc[0].get("disease_margin_label0_mean", float("nan"))) if not proto.empty else float("nan")
++    margin_label1 = float(proto.iloc[0].get("disease_margin_label1_mean", float("nan"))) if not proto.empty else float("nan")
++    prototype_accuracy = float(proto.iloc[0].get("prototype_assignment_accuracy", float("nan"))) if not proto.empty else float("nan")
++    evidence = {
++        "prototype_collapse": int(proto["prototype_collapse_flag"].max()) if not proto.empty else 1,
++        "shared_sample_collapse": int(shared_seed["shared_sample_collapse_flag"].max()) if not shared_seed.empty else 1,
++        "specific_collapse": int(specific_seed["specific_collapse_flag"].max()) if not specific_seed.empty else 1,
++        "specific_duplicates_shared": int(specific_seed["specific_duplicates_shared_flag"].max()) if not specific_seed.empty else 1,
++        "specific_dominates_shared": int(specific_seed["specific_dominates_shared_flag"].max()) if not specific_seed.empty else 1,
++        "global_gate_saturation": int(specific_seed["global_gate_saturation_flag"].max()) if not specific_seed.empty else 1,
++        "global_attention_collapse": int(val_metrics.iloc[0].get("global_attention_collapse_flag", 1)) if not val_metrics.empty else 1,
++        "disease_margin_direction_fail": int(
++            not (math.isfinite(margin_label0) and math.isfinite(margin_label1) and margin_label1 > margin_label0)
++        ),
++        "prototype_assignment_fail": int(not (math.isfinite(prototype_accuracy) and prototype_accuracy > 0.50)),
++        "shared_alignment_improvement_fail": int(
++            not (
++                math.isfinite(first_shared_loss)
++                and math.isfinite(selected_shared_loss)
++                and selected_shared_loss < first_shared_loss
++            )
++        ),
++    }
++    evidence.update(
++        {
++            "disease_margin_label0_mean": margin_label0,
++            "disease_margin_label1_mean": margin_label1,
++            "prototype_assignment_accuracy": prototype_accuracy,
++            "first_train_shared_consistency_loss": first_shared_loss,
++            "selected_train_shared_consistency_loss": selected_shared_loss,
++        }
++    )
++    flag_keys = [key for key in evidence if key.endswith("collapse") or key.endswith("shared") or key.endswith("dominant") or key.endswith("saturation") or key.endswith("fail")]
++    return all(int(evidence[key]) == 0 for key in flag_keys), evidence
++
++
++def shortcut_gate(seed: int, shortcut: pd.DataFrame) -> tuple[bool, Dict[str, Any]]:
++    row = shortcut[(shortcut["split"] == "val") & (shortcut["seed"].astype(str) == str(seed))]
++    if row.empty:
++        return False, {"reason": "missing shortcut row"}
++    values = row.iloc[0]
++    evidence = {
++        "max_abs_spearman": float(values["max_abs_spearman"]),
++        "linear_r2_prob_from_shortcuts": float(values["linear_r2_prob_from_shortcuts"]),
++        "shortcut_only_label_auc_audit_only": float(values["shortcut_only_label_auc_audit_only"]),
++    }
++    passed = (
++        evidence["max_abs_spearman"] < 0.20
++        and evidence["linear_r2_prob_from_shortcuts"] < 0.10
++        and evidence["shortcut_only_label_auc_audit_only"] < 0.65
++    )
++    return passed, evidence
++
++
++def pilot_gate(
++    c16_metrics: pd.DataFrame,
++    c16_epochs: pd.DataFrame,
++    c13_metrics: pd.DataFrame,
++    c16_pairwise: pd.DataFrame,
++    c13_pairwise: pd.DataFrame,
++    prototype: pd.DataFrame,
++    shared: pd.DataFrame,
++    specific: pd.DataFrame,
++    shortcut: pd.DataFrame,
++) -> pd.DataFrame:
++    c16 = c16_metrics[(c16_metrics["seed"] == 0) & (c16_metrics["split"] == "val")].iloc[0]
++    c13 = c13_metrics[(c13_metrics["seed"] == 0) & (c13_metrics["split"] == "val")].iloc[0]
++    c16_inversions = int(c16_pairwise[c16_pairwise["seed"] == 0].iloc[0]["inversion_count"])
++    c13_inversions = int(c13_pairwise[c13_pairwise["seed"] == 0].iloc[0]["inversion_count"])
++    health_pass, health_evidence = health_gate(0, c16_metrics, c16_epochs, prototype, shared, specific)
++    shortcut_pass, shortcut_evidence = shortcut_gate(0, shortcut)
++    checks = [
++        ("val_auc_not_below_c13", float(c16["AUC"]) >= float(c13["AUC"]), f"{c16['AUC']} vs {c13['AUC']}"),
++        ("preferred_auc_gain", float(c16["AUC"]) - float(c13["AUC"]) >= 0.005, float(c16["AUC"]) - float(c13["AUC"])),
++        ("auprc_preserved", float(c16["AUPRC"]) >= float(c13["AUPRC"]) - 0.005, f"{c16['AUPRC']} vs {c13['AUPRC']}"),
++        ("positive_negative_gap_preserved", float(c16["pos_neg_gap"]) >= float(c13["pos_neg_gap"]) - 0.02, f"{c16['pos_neg_gap']} vs {c13['pos_neg_gap']}"),
++        ("sensitivity_floor", float(c16["Sensitivity"]) >= 0.55, c16["Sensitivity"]),
++        ("specificity_floor", float(c16["Specificity"]) >= 0.75, c16["Specificity"]),
++        ("inversions_not_increased", c16_inversions <= c13_inversions, f"{c16_inversions} vs {c13_inversions}"),
++        ("alignment_health", health_pass, json.dumps(health_evidence, sort_keys=True)),
++        ("shortcut_safety", shortcut_pass, json.dumps(shortcut_evidence, sort_keys=True)),
++    ]
++    return pd.DataFrame(
++        [{"check": name, "status": "PASS" if passed else "FAIL", "evidence": evidence} for name, passed, evidence in checks]
++    )
++
++
++def formal_gate(
++    metrics: pd.DataFrame,
++    epochs: pd.DataFrame,
++    c13_metrics: pd.DataFrame,
++    pairwise: pd.DataFrame,
++    c13_pairwise: pd.DataFrame,
++    prototype: pd.DataFrame,
++    shared: pd.DataFrame,
++    specific: pd.DataFrame,
++    shortcut: pd.DataFrame,
++) -> tuple[pd.DataFrame, str]:
++    validation = metrics[metrics["split"] == "val"].copy().sort_values("seed")
++    c13_validation = c13_metrics[c13_metrics["split"] == "val"].copy().sort_values("seed")
++    auc = pd.to_numeric(validation["AUC"]).to_numpy(dtype=float)
++    auprc = pd.to_numeric(validation["AUPRC"]).to_numpy(dtype=float)
++    gap = pd.to_numeric(validation["pos_neg_gap"]).to_numpy(dtype=float)
++    c13_gap = pd.to_numeric(c13_validation["pos_neg_gap"]).to_numpy(dtype=float)
++    inversion_compare = pairwise[["seed", "inversion_count"]].merge(
++        c13_pairwise[["seed", "inversion_count"]], on="seed", suffixes=("_c16", "_c13")
++    )
++    inversion_improved = int((inversion_compare["inversion_count_c16"] < inversion_compare["inversion_count_c13"]).sum())
++    health_rows = [health_gate(seed, metrics, epochs, prototype, shared, specific)[0] for seed in FORMAL_SEEDS]
++    shortcut_rows = [shortcut_gate(seed, shortcut)[0] for seed in FORMAL_SEEDS]
++    checks = [
++        ("formal_seeds_complete", set(validation["seed"].astype(int)) == set(FORMAL_SEEDS), validation["seed"].tolist()),
++        ("mean_auc_above_c13", float(auc.mean()) > C13_AUC_MEAN, float(auc.mean())),
++        ("meaningful_auc_gain", float(auc.mean()) - C13_AUC_MEAN >= 0.01, float(auc.mean()) - C13_AUC_MEAN),
++        ("minimum_seed_auc", float(auc.min()) >= 0.85, float(auc.min())),
++        ("auc_std", float(auc.std(ddof=1)) <= 0.02, float(auc.std(ddof=1))),
++        ("mean_auprc", float(auprc.mean()) >= C13_AUPRC_MEAN, float(auprc.mean())),
++        ("inversions_improved_two_seeds", inversion_improved >= 2, inversion_compare.to_dict("records")),
++        ("positive_negative_gap", float(gap.mean()) >= float(c13_gap.mean()) - 0.02, f"{gap.mean()} vs {c13_gap.mean()}"),
++        ("sensitivity_no_collapse", float(pd.to_numeric(validation["Sensitivity"]).min()) >= 0.50, pd.to_numeric(validation["Sensitivity"]).tolist()),
++        ("specificity_no_collapse", float(pd.to_numeric(validation["Specificity"]).min()) >= 0.70, pd.to_numeric(validation["Specificity"]).tolist()),
++        ("alignment_health_all_seeds", all(health_rows), health_rows),
++        ("shortcut_safety_all_seeds", all(shortcut_rows), shortcut_rows),
++    ]
++    gate = pd.DataFrame(
++        [{"check": name, "status": "PASS" if passed else "FAIL", "evidence": evidence} for name, passed, evidence in checks]
++    )
++    health_failed = not all(health_rows)
++    if bool((gate["status"] == "PASS").all()):
++        decision = "PROMOTE_C16_DSSA"
++    elif health_failed:
++        decision = "C16_DSSA_ALIGNMENT_HEALTH_FAIL"
++    elif float(auc.mean()) > C13_AUC_MEAN:
++        decision = "C16_DSSA_PARTIAL_IMPROVEMENT_NOT_STABLE"
++    else:
++        decision = "C16_DSSA_FORMAL_FAIL_KEEP_C13"
++    return gate, decision
++
++
++def write_reports(
++    output_dir: Path,
++    metrics: pd.DataFrame,
++    summary: pd.DataFrame,
++    comparison: pd.DataFrame,
++    preservation_summary: pd.DataFrame,
++    prototype: pd.DataFrame,
++    shared: pd.DataFrame,
++    specific: pd.DataFrame,
++    shortcut: pd.DataFrame,
++    pilot: pd.DataFrame,
++    formal: pd.DataFrame,
++    state: str,
++    decision: str | None,
++    environment: Dict[str, Any],
++    synthetic: Dict[str, Any],
++) -> None:
++    validation = metrics[metrics["split"] == "val"].sort_values("seed")
++    testing = metrics[metrics["split"] == "test"].sort_values("seed")
++    validation_summary = summary[summary["split"] == "val"]
++    mean_validation_auc = float(validation_summary.iloc[0]["AUC_mean"]) if not validation_summary.empty else float("nan")
++    formal_complete = set(validation["seed"].astype(int)) == set(FORMAL_SEEDS)
++    current_strict_best = "C16 DSSA" if decision == "PROMOTE_C16_DSSA" else "C13 temporal-focus DMEA-HT"
++    lines = [
++        "# C16 DSSA Model Comparison",
++        "",
++        "C13 remains the frozen fallback unless the full three-seed promotion gate passes.",
++        "",
++        "## Seed-Wise C13 Comparison",
++        "",
++        frame_to_markdown(comparison),
++        "",
++        "## C16 Aggregate",
++        "",
++        frame_to_markdown(summary),
++        "",
++        "## Pilot Gate",
++        "",
++        frame_to_markdown(pilot),
++    ]
++    if not formal.empty:
++        lines.extend(["", "## Formal Gate", "", frame_to_markdown(formal)])
++    (output_dir / "c16_model_comparison_report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
++
++    stability = validation[[column for column in ("seed", "AUC", "AUPRC", "Sensitivity", "Specificity", "prototype_cosine", "mean_shared_attention_img", "mean_shared_attention_txt", "mean_shared_attention_bio", "mean_specific_gate_img", "mean_specific_gate_txt", "mean_specific_gate_bio") if column in validation.columns]]
++    (output_dir / "c16_seed_stability_report.md").write_text(
++        "# C16 Seed Stability\n\n" + frame_to_markdown(stability) + "\n\n" + frame_to_markdown(summary) + "\n",
++        encoding="utf-8",
++    )
++
++    final_lines = [
++        "# Phase C16 Final Report",
++        "",
++        f"Status: `{state}`.",
++        f"Final decision label: `{decision}`." if decision else "Final decision label: not assigned while the serial gate is incomplete.",
++        "",
++        f"- Current strict best: `{current_strict_best}`.",
++        f"- Stress seeds completed: `{formal_complete}`.",
++        "- Checkpoints are selected by validation AUC only; test is reporting-only.",
++        "- Labels, patient split, C13 temporal-focus manifest, and report construction remain unchanged.",
++        "- Shortcut fields are audit-only and are not model or loss inputs.",
++        f"- Mean validation AUC: `{mean_validation_auc}`.",
++        f"- Mean validation AUC reached 0.90: `{bool(math.isfinite(mean_validation_auc) and mean_validation_auc >= 0.90)}`.",
++        "",
++        "## Commit, Worktree, And Server Environment",
++        "",
++        frame_to_markdown(pd.DataFrame([{"field": key, "value": value} for key, value in environment.items()])),
++        "",
++        "## Legacy Compatibility And Synthetic Gate",
++        "",
++        f"Synthetic/config contract status: `{synthetic.get('status', 'missing')}`.",
++        "",
++        frame_to_markdown(pd.DataFrame(synthetic.get("checks", []))),
++        "",
++        "## Seed-0 Pilot Gate",
++        "",
++        frame_to_markdown(pilot),
++        "",
++        "## Seed-Wise Validation Metrics",
++        "",
++        frame_to_markdown(validation),
++        "",
++        "## Mean And Standard Deviation",
++        "",
++        frame_to_markdown(summary),
++        "",
++        "## Test Metrics, Reporting Only",
++        "",
++        "These metrics were computed only after validation-AUC checkpoint selection and do not affect any gate.",
++        "",
++        frame_to_markdown(testing),
++        "",
++        "## C13 Performance And Inversion Comparison",
++        "",
++        frame_to_markdown(comparison),
++        "",
++        "## Prototype Health",
++        "",
++        frame_to_markdown(prototype[prototype["split"] == "val"]),
++        "",
++        "## Shared Alignment Health",
++        "",
++        frame_to_markdown(shared[shared["split"] == "val"]),
++        "",
++        "## Specific Branch Health",
++        "",
++        frame_to_markdown(specific[specific["split"] == "val"]),
++        "",
++        "## Positive Preservation And FN/TP Changes",
++        "",
++        frame_to_markdown(preservation_summary),
++        "",
++        "## Shortcut Safety",
++        "",
++        frame_to_markdown(shortcut[shortcut["split"] == "val"]),
++        "",
++        "## Active Gate",
++        "",
++        frame_to_markdown(formal if not formal.empty else pilot),
++    ]
++    (output_dir / "phase_c16_final_report.md").write_text("\n".join(final_lines) + "\n", encoding="utf-8")
++
++
++def main() -> None:
++    args = parse_args()
++    output_dir = Path(args.output_dir)
++    output_dir.mkdir(parents=True, exist_ok=True)
++    smoke_path = Path(args.synthetic_smoke)
++    synthetic = json.loads(smoke_path.read_text(encoding="utf-8")) if smoke_path.is_file() else {}
++    if synthetic.get("status") != "PASS":
++        raise RuntimeError("C16 synthetic smoke must pass before report collection")
++
++    metrics, epochs, predictions, configs = load_run_data(args.c16_runs)
++    c13_metrics, c13_predictions = load_c13(Path(args.c13_run_dir))
++    prototype, shared, specific = load_health(output_dir)
++    pairwise = build_pairwise_summary(predictions)
++    c13_pairwise = build_pairwise_summary(c13_predictions)
++    preservation = positive_preservation(predictions, c13_predictions)
++    preservation_summary = positive_preservation_summary(preservation)
++    comparison = model_comparison(metrics, c13_metrics, pairwise, c13_pairwise)
++    shortcut = shortcut_audit(Path(args.manifest), predictions)
++    summary = summarize(metrics)
++    environment = collect_environment()
++
++    metrics.to_csv(output_dir / "c16_metrics_by_seed.csv", index=False)
++    summary.to_csv(output_dir / "c16_metrics_summary.csv", index=False)
++    epochs.to_csv(output_dir / "c16_metrics_by_epoch.csv", index=False)
++    preservation.to_csv(output_dir / "c16_positive_preservation_audit.csv", index=False)
++    preservation_summary.to_csv(output_dir / "c16_positive_preservation_summary.csv", index=False)
++    comparison.to_csv(output_dir / "c16_model_comparison_by_seed.csv", index=False)
++    shortcut.to_csv(output_dir / "c16_shortcut_residual_audit.csv", index=False)
++    (output_dir / "c16_server_environment.json").write_text(json.dumps(environment, indent=2), encoding="utf-8")
++
++    pilot = pilot_gate(metrics, epochs, c13_metrics, pairwise, c13_pairwise, prototype, shared, specific, shortcut)
++    pilot.to_csv(output_dir / "c16_pilot_gate.csv", index=False)
++    pilot_pass = bool((pilot["status"] == "PASS").all())
++    validation_seeds = set(metrics[metrics["split"] == "val"]["seed"].astype(int))
++    formal = pd.DataFrame()
++    decision: str | None = None
++    if validation_seeds == set(FORMAL_SEEDS):
++        formal, decision = formal_gate(metrics, epochs, c13_metrics, pairwise, c13_pairwise, prototype, shared, specific, shortcut)
++        state = "FORMAL_COMPLETE"
++    elif validation_seeds == {0} and pilot_pass:
++        state = "PILOT_PASS_STRESS_AUTHORIZED"
++    elif validation_seeds == {0}:
++        seed0_model_id = str(metrics[(metrics["seed"] == 0) & (metrics["split"] == "val")].iloc[0]["model_id"])
++        rank_weight = float(configs[seed0_model_id].get("loss", {}).get("lambda_rank", 0.0))
++        if rank_weight > 0.0:
++            state = "PILOT_FAIL_ONLY_RANK0_FALLBACK_AUTHORIZED"
++        else:
++            state = "PILOT_AND_FALLBACK_FAIL"
++            decision = "C16_DSSA_PILOT_FAIL_KEEP_C13"
++    else:
++        state = "C16_TRAINING_INVALID"
++        decision = "C16_TRAINING_INVALID"
++
++    if not formal.empty:
++        formal.to_csv(output_dir / "c16_formal_gate.csv", index=False)
++    write_reports(
++        output_dir,
++        metrics,
++        summary,
++        comparison,
++        preservation_summary,
++        prototype,
++        shared,
++        specific,
++        shortcut,
++        pilot,
++        formal,
++        state,
++        decision,
++        environment,
++        synthetic,
++    )
++    result = {
++        "state": state,
++        "decision": decision,
++        "validation_seeds": sorted(validation_seeds),
++        "pilot_pass": pilot_pass,
++        "mean_validation_auc": float(summary[summary["split"] == "val"].iloc[0]["AUC_mean"]),
++        "auc_0_90_reached": bool(float(summary[summary["split"] == "val"].iloc[0]["AUC_mean"]) >= 0.90),
++    }
++    (output_dir / "c16_gate_result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
++    print(json.dumps(result))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/train.py b/train.py
+index c30736f..2afe571 100644
+--- a/train.py
++++ b/train.py
+@@ -1,6 +1,7 @@
+ from __future__ import annotations
+ 
+ import argparse
++from collections import defaultdict
+ import json
+ import random
+ from pathlib import Path
+@@ -9,16 +10,62 @@ from typing import Any, Dict, List
+ import numpy as np
+ import pandas as pd
+ import torch
++import torch.nn.functional as F
+ from torch.utils.data import DataLoader
+ from tqdm import tqdm
+ 
+ from dmea_ht.config import load_config
++from dmea_ht.alignment import MODALITIES
+ from dmea_ht.data import PatientHTDataset, collate_patient_batch, patient_split, read_manifest
+ from dmea_ht.evidence_losses import confidence_weighted_bce_with_logits
+ from dmea_ht.metrics import compute_binary_metrics, summarize_metrics
+ from dmea_ht.models import DMEAHTModel
+ 
+ 
++DSSA_LOSS_WEIGHTS = {
++    "proto_classification_loss": "proto",
++    "shared_consistency_loss": "shared",
++    "shared_specific_orth_loss": "orth",
++    "specific_variance_loss": "var",
++    "prototype_separation_loss": "sep",
++    "pairwise_ranking_loss": "rank",
++}
++
++DSSA_PREDICTION_KEYS = (
++    "prototype_similarity_non_ht",
++    "prototype_similarity_ht",
++    "disease_margin",
++    "patient_shared_norm",
++    "specific_residual_norm",
++    "specific_residual_shared_ratio",
++    "soft_disease_anchor_norm",
++    "shared_attention_img",
++    "shared_attention_txt",
++    "shared_attention_bio",
++    "specific_gate_img",
++    "specific_gate_txt",
++    "specific_gate_bio",
++    "shared_img_norm",
++    "shared_txt_norm",
++    "shared_bio_norm",
++    "specific_img_norm",
++    "specific_txt_norm",
++    "specific_bio_norm",
++    "shared_specific_cosine_img",
++    "shared_specific_cosine_txt",
++    "shared_specific_cosine_bio",
++    "shared_cosine_img_txt",
++    "shared_cosine_img_bio",
++    "shared_cosine_txt_bio",
++    "shared_pair_available_img_txt",
++    "shared_pair_available_img_bio",
++    "shared_pair_available_txt_bio",
++    "modality_available_img",
++    "modality_available_txt",
++    "modality_available_bio",
++)
++
++
+ def set_seed(seed: int) -> None:
+     random.seed(seed)
+     np.random.seed(seed)
+@@ -104,6 +151,73 @@ def add_evidence_metrics(
+         metrics[f"{prefix}_acc"] = 0.0
+ 
+ 
++def pairwise_ranking_loss(logits: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
++    positive_logits = logits[labels > 0.5]
++    negative_logits = logits[labels <= 0.5]
++    if positive_logits.numel() == 0 or negative_logits.numel() == 0:
++        return logits.sum() * 0.0
++    margins = positive_logits.unsqueeze(1) - negative_logits.unsqueeze(0)
++    return F.softplus(-margins).mean()
++
++
++def dssa_loss_terms(
++    outputs: Dict[str, torch.Tensor],
++    labels: torch.Tensor,
++    include_ranking: bool,
++) -> Dict[str, torch.Tensor]:
++    if "dssa_prototype_logits" not in outputs:
++        return {}
++    logits = outputs["dssa_prototype_logits"]
++    available = outputs["dssa_available_mask"].bool()
++    targets = labels.long().unsqueeze(1).expand(-1, logits.shape[1])
++    if bool(available.any().item()):
++        prototype_loss = F.cross_entropy(logits[available], targets[available])
++    else:
++        prototype_loss = logits.sum() * 0.0
++    zero = outputs["logit"].sum() * 0.0
++    return {
++        "proto_classification_loss": prototype_loss,
++        "shared_consistency_loss": outputs["dssa_shared_consistency_loss"],
++        "shared_specific_orth_loss": outputs["dssa_shared_specific_orth_loss"],
++        "specific_variance_loss": outputs["dssa_specific_variance_loss"],
++        "prototype_separation_loss": outputs["dssa_prototype_separation_loss"],
++        "pairwise_ranking_loss": pairwise_ranking_loss(outputs["logit"], labels) if include_ranking else zero,
++    }
++
++
++def effective_dssa_weight(loss_cfg: Dict[str, Any], short_name: str) -> float:
++    return float(loss_cfg.get(f"effective_lambda_{short_name}", loss_cfg.get(f"lambda_{short_name}", 0.0)))
++
++
++def add_representation_health_metrics(
++    metrics: Dict[str, Any],
++    shared_batches: List[torch.Tensor],
++    specific_batches: List[torch.Tensor],
++    availability_batches: List[torch.Tensor],
++) -> None:
++    if not shared_batches or not specific_batches or not availability_batches:
++        return
++    shared = torch.cat(shared_batches, dim=0)
++    specific = torch.cat(specific_batches, dim=0)
++    available = torch.cat(availability_batches, dim=0).bool()
++    for index, modality in enumerate(MODALITIES):
++        for prefix, representations in (("shared", shared), ("specific", specific)):
++            selected = representations[available[:, index], index]
++            metrics[f"{prefix}_{modality}_sample_count"] = int(selected.shape[0])
++            if selected.shape[0] < 2:
++                metrics[f"{prefix}_{modality}_feature_std_mean"] = 0.0
++                metrics[f"{prefix}_{modality}_offdiag_cosine_mean"] = 0.0
++                continue
++            metrics[f"{prefix}_{modality}_feature_std_mean"] = float(
++                selected.std(dim=0, unbiased=False).mean()
++            )
++            normalized = F.normalize(selected, dim=-1, eps=1e-8)
++            cosine_matrix = normalized @ normalized.transpose(0, 1)
++            offdiag_sum = cosine_matrix.sum() - cosine_matrix.diag().sum()
++            denominator = selected.shape[0] * (selected.shape[0] - 1)
++            metrics[f"{prefix}_{modality}_offdiag_cosine_mean"] = float(offdiag_sum / denominator)
++
++
+ def run_epoch(
+     model: DMEAHTModel,
+     loader: DataLoader,
+@@ -115,6 +229,7 @@ def run_epoch(
+     model.train(is_train)
+     labels: List[int] = []
+     probs: List[float] = []
++    logits: List[float] = []
+     losses: List[float] = []
+     cls_losses: List[float] = []
+     text_morphology_labels: List[int] = []
+@@ -125,6 +240,12 @@ def run_epoch(
+     image_morphology_probs: List[float] = []
+     image_morphology_confidences: List[float] = []
+     image_morphology_losses: List[float] = []
++    dssa_loss_values: Dict[str, List[float]] = defaultdict(list)
++    dssa_diagnostics: Dict[str, List[float]] = defaultdict(list)
++    dssa_shared_batches: List[torch.Tensor] = []
++    dssa_specific_batches: List[torch.Tensor] = []
++    dssa_availability_batches: List[torch.Tensor] = []
++    dssa_enabled = False
+     predictions: List[Dict[str, Any]] = []
+     criterion = torch.nn.BCEWithLogitsLoss(reduction="none")
+     cls_weight = float(loss_cfg.get("cls_weight", 1.0))
+@@ -147,6 +268,10 @@ def run_epoch(
+                 image_morphology_losses.append(float(evidence_terms["image_morphology_loss"].detach().cpu()))
+             if "role_alignment_loss" in outputs:
+                 loss = loss + outputs["role_alignment_loss"] * 0.0
++            dssa_terms = dssa_loss_terms(outputs, batch["label"], include_ranking=is_train)
++            for term_name, term in dssa_terms.items():
++                short_name = DSSA_LOSS_WEIGHTS[term_name]
++                loss = loss + effective_dssa_weight(loss_cfg, short_name) * term
+             if is_train:
+                 optimizer.zero_grad(set_to_none=True)
+                 loss.backward()
+@@ -155,9 +280,52 @@ def run_epoch(
+         losses.append(float(loss.detach().cpu()))
+         cls_losses.append(float(cls_loss.detach().cpu()))
+         batch_probs = outputs["prob"].detach().cpu().numpy().tolist()
++        batch_logits = outputs["logit"].detach().cpu().numpy().tolist()
+         batch_labels = batch["label"].detach().cpu().numpy().astype(int).tolist()
+         labels.extend(batch_labels)
+         probs.extend(batch_probs)
++        logits.extend(batch_logits)
++
++        if dssa_terms:
++            dssa_enabled = True
++            for term_name, term in dssa_terms.items():
++                dssa_loss_values[term_name].append(float(term.detach().cpu()))
++            for key in (
++                "prototype_cosine",
++                "prototype_distance",
++                "prototype_similarity_non_ht",
++                "prototype_similarity_ht",
++                "disease_margin",
++                "patient_shared_norm",
++                "specific_residual_norm",
++                "specific_residual_shared_ratio",
++                "soft_disease_anchor_norm",
++                "shared_attention_img",
++                "shared_attention_txt",
++                "shared_attention_bio",
++                "specific_gate_img",
++                "specific_gate_txt",
++                "specific_gate_bio",
++                "shared_specific_cosine_img",
++                "shared_specific_cosine_txt",
++                "shared_specific_cosine_bio",
++                "shared_cosine_img_txt",
++                "shared_cosine_img_bio",
++                "shared_cosine_txt_bio",
++                "shared_pair_available_img_txt",
++                "shared_pair_available_img_bio",
++                "shared_pair_available_txt_bio",
++                "modality_available_img",
++                "modality_available_txt",
++                "modality_available_bio",
++            ):
++                if key not in outputs:
++                    continue
++                values = outputs[key].detach().cpu().reshape(-1).numpy().tolist()
++                dssa_diagnostics[key].extend(float(value) for value in values)
++            dssa_shared_batches.append(outputs["dssa_shared_representations"].detach().cpu())
++            dssa_specific_batches.append(outputs["dssa_specific_representations"].detach().cpu())
++            dssa_availability_batches.append(outputs["dssa_available_mask"].detach().cpu())
+ 
+         if "text_morphology_logit" in outputs:
+             valid = (batch["txt_morphology_label"] != -1) & (batch["txt_morphology_confidence"] > 0)
+@@ -195,6 +363,9 @@ def run_epoch(
+                 anchor = outputs["text_morphology_anchor"].detach().cpu()[i]
+                 row["text_morphology_anchor_norm"] = float(anchor.norm())
+                 row["text_morphology_anchor_mean"] = float(anchor.mean())
++            for key in DSSA_PREDICTION_KEYS:
++                if key in outputs:
++                    row[key] = float(outputs[key].detach().cpu()[i])
+             row.update(batch["shortcuts"][i])
+             predictions.append(row)
+ 
+@@ -226,6 +397,76 @@ def run_epoch(
+         image_morphology_confidences,
+         image_morphology_losses,
+     )
++    if dssa_enabled:
++        metrics["classification_loss"] = metrics["cls_loss"]
++        for term_name, values in dssa_loss_values.items():
++            metrics[term_name] = float(np.mean(values)) if values else 0.0
++        for short_name in DSSA_LOSS_WEIGHTS.values():
++            metrics[f"effective_lambda_{short_name}"] = effective_dssa_weight(loss_cfg, short_name)
++
++        logits_np = np.asarray(logits, dtype=float)
++        positive_logits = logits_np[labels_np == 1]
++        negative_logits = logits_np[labels_np == 0]
++        if positive_logits.size and negative_logits.size:
++            pair_margins = positive_logits[:, None] - negative_logits[None, :]
++            metrics["pairwise_pair_count"] = int(pair_margins.size)
++            metrics["pairwise_inversion_count"] = int((pair_margins <= 0.0).sum())
++        else:
++            metrics["pairwise_pair_count"] = 0
++            metrics["pairwise_inversion_count"] = 0
++
++        for key in ("prototype_cosine", "prototype_distance"):
++            values = dssa_diagnostics.get(key, [])
++            metrics[key] = float(np.mean(values)) if values else 0.0
++        disease_margins = np.asarray(dssa_diagnostics.get("disease_margin", []), dtype=float)
++        if disease_margins.size == labels_np.size:
++            metrics["mean_disease_margin_positive"] = float(disease_margins[labels_np == 1].mean()) if bool((labels_np == 1).any()) else 0.0
++            metrics["mean_disease_margin_negative"] = float(disease_margins[labels_np == 0].mean()) if bool((labels_np == 0).any()) else 0.0
++            metrics["prototype_assignment_accuracy"] = float(((disease_margins >= 0).astype(int) == labels_np).mean())
++        else:
++            metrics["mean_disease_margin_positive"] = 0.0
++            metrics["mean_disease_margin_negative"] = 0.0
++            metrics["prototype_assignment_accuracy"] = 0.0
++
++        for modality in MODALITIES:
++            available = np.asarray(dssa_diagnostics.get(f"modality_available_{modality}", []), dtype=float) > 0.5
++            for source, output_name in (
++                (f"shared_attention_{modality}", f"mean_shared_attention_{modality}"),
++                (f"specific_gate_{modality}", f"mean_specific_gate_{modality}"),
++                (f"shared_specific_cosine_{modality}", f"mean_shared_specific_cosine_{modality}"),
++            ):
++                values = np.asarray(dssa_diagnostics.get(source, []), dtype=float)
++                metrics[output_name] = float(values[available].mean()) if values.size == available.size and bool(available.any()) else 0.0
++        for left, right in (("img", "txt"), ("img", "bio"), ("txt", "bio")):
++            values = np.asarray(dssa_diagnostics.get(f"shared_cosine_{left}_{right}", []), dtype=float)
++            available = np.asarray(
++                dssa_diagnostics.get(f"shared_pair_available_{left}_{right}", []), dtype=float
++            ) > 0.5
++            metrics[f"mean_shared_cosine_{left}_{right}"] = (
++                float(values[available].mean())
++                if values.size == available.size and bool(available.any())
++                else 0.0
++            )
++        for source, output_name in (
++            ("patient_shared_norm", "mean_shared_norm"),
++            ("specific_residual_norm", "mean_specific_residual_norm"),
++            ("specific_residual_shared_ratio", "specific_residual_shared_ratio"),
++            ("soft_disease_anchor_norm", "mean_soft_disease_anchor_norm"),
++        ):
++            values = dssa_diagnostics.get(source, [])
++            metrics[output_name] = float(np.mean(values)) if values else 0.0
++        add_representation_health_metrics(
++            metrics,
++            dssa_shared_batches,
++            dssa_specific_batches,
++            dssa_availability_batches,
++        )
++        attention_means = [metrics[f"mean_shared_attention_{modality}"] for modality in MODALITIES]
++        gate_means = [metrics[f"mean_specific_gate_{modality}"] for modality in MODALITIES]
++        metrics["prototype_collapse_flag"] = int(metrics["prototype_cosine"] >= 0.95)
++        metrics["global_attention_collapse_flag"] = int(max(attention_means) >= 0.95)
++        metrics["global_gate_saturation_flag"] = int(any(value <= 0.01 or value >= 0.99 for value in gate_means))
++        metrics["specific_dominates_shared_flag"] = int(metrics["specific_residual_shared_ratio"] >= 1.0)
+     return {"metrics": metrics, "predictions": predictions}
+ 
+ 
+@@ -237,11 +478,20 @@ def loss_config_for_epoch(loss_cfg: Dict[str, Any], epoch: int) -> Dict[str, Any
+         active_cfg["text_morphology_active"] = False
+     else:
+         active_cfg["text_morphology_active"] = float(loss_cfg.get("text_morphology_weight", 0.0)) > 0
++    warmup_epochs = int(loss_cfg.get("dssa_warmup_epochs", 3))
++    ramp_epochs = max(int(loss_cfg.get("dssa_ramp_epochs", 5)), 1)
++    if epoch <= warmup_epochs:
++        dssa_scale = 0.0
++    else:
++        dssa_scale = min(max((epoch - warmup_epochs) / ramp_epochs, 0.0), 1.0)
++    active_cfg["dssa_weight_scale"] = dssa_scale
++    for short_name in DSSA_LOSS_WEIGHTS.values():
++        active_cfg[f"effective_lambda_{short_name}"] = float(loss_cfg.get(f"lambda_{short_name}", 0.0)) * dssa_scale
+     return active_cfg
+ 
+ 
+ def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metrics: Dict[str, Any]) -> Dict[str, Any]:
+-    return {
++    row = {
+         "seed": int(seed),
+         "epoch": int(epoch),
+         "split": "train_val",
+@@ -265,6 +515,39 @@ def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metr
+         "val_pred_prob_std": val_metrics.get("pred_prob_std", 0.0),
+         "selected_by_val_auc": False,
+     }
++    if "proto_classification_loss" in train_metrics:
++        row.update(
++            {
++                "train_classification_loss": train_metrics.get("classification_loss", 0.0),
++                "train_proto_classification_loss": train_metrics.get("proto_classification_loss", 0.0),
++                "train_shared_consistency_loss": train_metrics.get("shared_consistency_loss", 0.0),
++                "train_shared_specific_orth_loss": train_metrics.get("shared_specific_orth_loss", 0.0),
++                "train_specific_variance_loss": train_metrics.get("specific_variance_loss", 0.0),
++                "train_prototype_separation_loss": train_metrics.get("prototype_separation_loss", 0.0),
++                "train_pairwise_ranking_loss": train_metrics.get("pairwise_ranking_loss", 0.0),
++                "effective_lambda_proto": train_metrics.get("effective_lambda_proto", 0.0),
++                "effective_lambda_shared": train_metrics.get("effective_lambda_shared", 0.0),
++                "effective_lambda_orth": train_metrics.get("effective_lambda_orth", 0.0),
++                "effective_lambda_var": train_metrics.get("effective_lambda_var", 0.0),
++                "effective_lambda_sep": train_metrics.get("effective_lambda_sep", 0.0),
++                "effective_lambda_rank": train_metrics.get("effective_lambda_rank", 0.0),
++                "prototype_cosine": val_metrics.get("prototype_cosine", 0.0),
++                "prototype_distance": val_metrics.get("prototype_distance", 0.0),
++                "mean_disease_margin_positive": val_metrics.get("mean_disease_margin_positive", 0.0),
++                "mean_disease_margin_negative": val_metrics.get("mean_disease_margin_negative", 0.0),
++                "mean_shared_attention_img": val_metrics.get("mean_shared_attention_img", 0.0),
++                "mean_shared_attention_txt": val_metrics.get("mean_shared_attention_txt", 0.0),
++                "mean_shared_attention_bio": val_metrics.get("mean_shared_attention_bio", 0.0),
++                "mean_specific_gate_img": val_metrics.get("mean_specific_gate_img", 0.0),
++                "mean_specific_gate_txt": val_metrics.get("mean_specific_gate_txt", 0.0),
++                "mean_specific_gate_bio": val_metrics.get("mean_specific_gate_bio", 0.0),
++                "mean_shared_norm": val_metrics.get("mean_shared_norm", 0.0),
++                "mean_specific_residual_norm": val_metrics.get("mean_specific_residual_norm", 0.0),
++                "specific_residual_shared_ratio": val_metrics.get("specific_residual_shared_ratio", 0.0),
++                "val_pairwise_inversion_count": val_metrics.get("pairwise_inversion_count", 0),
++            }
++        )
++    return row
+ 
+ 
+ def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, out_dir: Path) -> Dict[str, Any]:
+@@ -308,12 +591,19 @@ def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, ou
+     if best_state is not None:
+         model.load_state_dict(best_state)
+ 
+-    val_result = run_epoch(model, loaders["val"], None, device, config.get("loss", {}))
+-    test_result = run_epoch(model, loaders["test"], None, device, config.get("loss", {}))
++    final_loss_cfg = dict(config.get("loss", {}))
++    for short_name in DSSA_LOSS_WEIGHTS.values():
++        final_loss_cfg[f"effective_lambda_{short_name}"] = float(final_loss_cfg.get(f"lambda_{short_name}", 0.0))
++    val_result = run_epoch(model, loaders["val"], None, device, final_loss_cfg)
++    test_result = run_epoch(model, loaders["test"], None, device, final_loss_cfg)
++    train_result = run_epoch(model, loaders["train"], None, device, final_loss_cfg) if model.dssa is not None else None
+     checkpoints = out_dir / "checkpoints"
+     checkpoints.mkdir(parents=True, exist_ok=True)
+     torch.save({"model": model.state_dict(), "config": config, "seed": seed, "best_epoch": best_epoch}, checkpoints / f"seed_{seed}_best.pt")
+-    return {"seed": seed, "best_epoch": best_epoch, "epoch_history": epoch_history, "val": val_result, "test": test_result}
++    result = {"seed": seed, "best_epoch": best_epoch, "epoch_history": epoch_history, "val": val_result, "test": test_result}
++    if train_result is not None:
++        result["train"] = train_result
++    return result
+ 
+ 
+ def main() -> None:
+@@ -340,7 +630,8 @@ def main() -> None:
+     for seed in config["training"].get("seeds", [0, 42, 3407]):
+         result = train_seed(config, rows, int(seed), out_dir)
+         epoch_rows.extend(result.get("epoch_history", []))
+-        for split in ("val", "test"):
++        output_splits = ("train", "val", "test") if "train" in result else ("val", "test")
++        for split in output_splits:
+             pred_df = pd.DataFrame(result[split]["predictions"])
+             pred_df.insert(3, "split", split)
+             pred_df.insert(4, "seed", int(seed))
+@@ -378,6 +669,20 @@ def main() -> None:
+                     "image_morphology_acc",
+                     "valid_image_morphology_count",
+                     "mean_image_morphology_confidence",
++                    "pos_neg_gap",
++                    "pairwise_inversion_count",
++                    "prototype_cosine",
++                    "prototype_distance",
++                    "prototype_assignment_accuracy",
++                    "mean_disease_margin_positive",
++                    "mean_disease_margin_negative",
++                    "mean_shared_attention_img",
++                    "mean_shared_attention_txt",
++                    "mean_shared_attention_bio",
++                    "mean_specific_gate_img",
++                    "mean_specific_gate_txt",
++                    "mean_specific_gate_bio",
++                    "specific_residual_shared_ratio",
+                 ],
+             )
+         )
