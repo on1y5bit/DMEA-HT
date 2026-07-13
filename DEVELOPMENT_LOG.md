@@ -2019,3 +2019,10 @@
 - Created a clean detached server worktree at `/home/linruixin/chen/project/DMEA-HT-c16` from commit `282c95f`. Server `py_compile` and CLI import/help checks passed there.
 - Expanded the C16 collector to record commit/worktree/server environment, validation and reporting-only test metrics, seed-wise C13 deltas, inversion deltas, positive-preservation and all-seed FN/TP/FP changes, prototype/shared/specific health, shortcut safety, target-AUC status, final decision label, and the current strict best.
 - Strengthened the health gate with disease-margin direction, prototype assignment, selected-epoch shared-consistency improvement, gate/attention distributions, and explicit collapse/duplication/dominance flags.
+
+### GPU Blocked Audit
+
+- A third consecutive goal turn found the same external process (`PID 89376`) using `12072 MiB` on the only visible RTX 5090.
+- The clean C16 worktree remained unchanged at `282c95f`; no smoke, pilot, fallback, or stress training process was started.
+- Static/config/synthetic work is complete (`28/28 PASS`), but the required real 2-epoch smoke cannot be replaced by a narrower CPU or synthetic result.
+- Phase C16 is formally blocked at the real-smoke gate until the GPU becomes available. The goal must be resumed from the smoke step; seed-0 pilot remains unauthorized until smoke and health checks pass.
