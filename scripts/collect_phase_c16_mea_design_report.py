@@ -117,6 +117,16 @@ def write_feasibility(audit_dir: Path, summary: Dict[str, Any]) -> str:
         if bio_grouping_valid
         else "Use one neutral `bio_observed_evidence` node. Immune/function grouping is blocked until field names and order are repaired."
     )
+    immune_rows = bio[bio["semantic_group"] == "immune_observed"].copy()
+    immune_coverage = ", ".join(
+        f"{row.field_name}={float(row.manifest_observed_fraction):.4f}" for row in immune_rows.itertuples()
+    )
+    sparse_immune = bool(not immune_rows.empty and (immune_rows["manifest_observed_fraction"] < 0.10).any())
+    if sparse_immune:
+        bio_path += (
+            f" Immune-field coverage is sparse ({immune_coverage}). An immune node may participate only for observed values;"
+            " missing fields or whether an antibody test was ordered must not become support, opposition, reliability, or gate evidence."
+        )
     temporal_path = (
         "Build character-position masks from explicit C13 latest/history/full-report markers, and use learned fallback pooling when a section or role mask is absent."
         if latest_rate > 0 and full_rate > 0

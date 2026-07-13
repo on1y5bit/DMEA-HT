@@ -357,15 +357,20 @@ def audit_bio_fields(
         observed_values: List[float] = []
         abnormal_ones = 0
         flag_values = 0
+        subgroup_total: Counter[str] = Counter()
+        subgroup_observed: Counter[str] = Counter()
         for row in rows:
             values = parse_maybe_list(row.get("bio_values"))
             missing = parse_maybe_list(row.get("bio_missing_mask"))
             flags = parse_maybe_list(row.get("bio_abnormal_flags"))
+            subgroup = f"{str(row.get('split', '')).lower()}_label{int(float(row.get('label', 0)))}"
+            subgroup_total[subgroup] += 1
             is_missing_value = index >= len(missing) or missing_flag(missing[index]) == 1
             if index < len(values) and not is_missing_value:
                 numeric = numeric_or_nan(values[index])
                 if np.isfinite(numeric):
                     observed_values.append(numeric)
+                    subgroup_observed[subgroup] += 1
             if index < len(flags):
                 flag = numeric_or_nan(flags[index])
                 if np.isfinite(flag):
@@ -380,8 +385,7 @@ def audit_bio_fields(
             source_observed = int(source_series.notna().sum())
             source_dtype = str(source_series.dtype)
         group = semantic_group(field)
-        records.append(
-            {
+        record = {
                 "bio_index": index,
                 "field_name": field,
                 "semantic_group": group,
@@ -403,8 +407,12 @@ def audit_bio_fields(
                 "allowed_c16_mea_semantics": f"{group}_continuous_values_with_validity_mask",
                 "allowed_rule_direction": "latent_only; no rule-based abnormal/support direction",
                 "prohibited_use": "untrusted abnormal flags, invented reference ranges, or missingness count as evidence",
-            }
-        )
+        }
+        for subgroup in ("train_label0", "train_label1", "val_label0", "val_label1", "test_label0", "test_label1"):
+            record[f"{subgroup}_observed_fraction"] = (
+                subgroup_observed[subgroup] / subgroup_total[subgroup] if subgroup_total[subgroup] else np.nan
+            )
+        records.append(record)
     fields = pd.DataFrame(records)
     grouping_rows: List[Dict[str, Any]] = []
     for group, frame in fields.groupby("semantic_group", sort=False):
