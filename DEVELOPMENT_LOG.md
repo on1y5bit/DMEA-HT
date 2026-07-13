@@ -2162,3 +2162,22 @@
 - The validation-only route collector did not read test and returned exactly `C16_MEA_PILOT_FAIL_KEEP_C13` for both routes. Core and Rank failed the fixed pilot gate because AUPRC decreased by more than `0.005`, sensitivity fell below `0.55`, the positive-negative gap materially decreased, and positive probabilities showed global suppression.
 - C16-MEA therefore did not enter formal multi-seed evaluation. C13 temporal-focus remains the current strict-best and fallback; no additional C16 tuning or rescue run is authorized in this phase.
 - The server route decision artifacts are under `analysis_reports/phase_c16_mea/`; test remains ungenerated and reporting-only.
+
+## 2026-07-13 Phase C17 DEMA-HT Residual Refinement
+
+### Pre-Edit Contract
+
+- Official model and research name: `DEMA-HT` (`Disease-Mechanism and Evidence-Aware Multimodal Alignment for Hashimoto's Thyroiditis Prediction`). Historical repository/package identifiers `DMEA-HT` and `dmea_ht` remain unchanged for reproducibility.
+- A terminology correction is recorded after C16-MEA. The alignment axis is HT pathological mechanism; image, report-text, and biochemical evidence are the aligned objects; HT/non-HT is only the final binary prediction target. The correct description is: "align multimodal clinical evidence through HT pathological-mechanism relations and aggregate the mechanism evidence for HT risk prediction." This does not invalidate C16 automatically; the computation graph remains the basis for assessment.
+- Freeze the verified C13 temporal-focus checkpoint, manifest, labels, patient-level split, history cutoff, report construction, image paths, bio values, encoder family, optimizer family, epochs, and validation-AUC checkpoint selection. Do not use saved predictions as training inputs. Test remains reporting-only and is disabled for smoke and seed-0 pilots.
+- C17 is `DEMA-HT Pathological-Mechanism Evidence Residual Refinement and Positive-Evidence Preservation`. Reuse the completed DEMA evidence projectors, mechanism relation layer, conflict aggregator, and mechanism aggregation head. Do not add projectors, graph nodes, modality branches, shared/private decomposition, generic alignment, ranking loss, or shortcut variables.
+- Add only a bounded residual correction: `raw_delta = MLP(h_mechanism_correction)`, `delta_logit = 0.50 * tanh(raw_delta)`, and `final_logit = base_logit + delta_logit`. The residual output layer is zero-initialized, so pretraining equivalence must satisfy `max_abs_logit_difference <= 1e-8`.
+- Run two fixed variants: DEMA-R BCE with `0.001 * mean(delta_logit^2)`, and DEMA-RP with the additional positive-preservation penalty `0.02 * relu(-delta_positive - 0.05)`. All C16 auxiliary and ranking weights are zero. The all-negative positive-preservation term must remain graph-connected zero.
+- Only C17 validation AUC is allowed for checkpoint selection, route comparison, promotion, rejection, and formal authorization. C17 reports, tables, gates, and final decision files must not contain the forbidden secondary ranking metric. Sensitivity, specificity, balanced accuracy, positive-negative gap, inversion count, residual diagnostics, mechanism diagnostics, and shortcut audits are safety diagnostics only.
+- Seed-0 pilot authorization requires the server static/synthetic gate and both smoke health gates. Formal seeds `[0, 42, 3407]` are authorized only after a seed-0 route passes the fixed residual gate. If no route passes, retain C13 and record `DEMA_C17_PILOT_FAIL_KEEP_C13`.
+
+### Planned C17 Gates
+
+- Required server-only checks: legacy checkpoint compatibility, C16 head rename logit equivalence, zero-residual equivalence, frozen C13 gradients, residual bound, finite losses, positive-preservation one-class behavior, mechanism residual non-collapse, and shortcut exclusion.
+- Seed-0 validation-only gate: AUC at least C13 seed-0 `0.8655500226`, preferred gain `+0.005`, sensitivity at least `0.55`, specificity at least `0.75`, no material balanced-accuracy decrease, positive-negative gap decrease no more than `0.02`, inversions no worse than C13, mean positive residual at least `-0.02`, no more than `25%` of positive residuals below `-0.10`, nonzero residual variance, no saturation, and shortcut audit pass.
+- No formal C17 run is permitted before the seed-0 decision artifact explicitly authorizes it. All runtime evidence must be generated under `/home/linruixin/chen/conda/envs/ma` on the server against `/data/csb/DMEA-HT/HT_2025.12_25`.

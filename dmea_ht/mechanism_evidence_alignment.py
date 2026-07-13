@@ -537,7 +537,7 @@ class EvidenceConflictAggregator(nn.Module):
         }
 
 
-class DiseaseStateAlignmentHead(nn.Module):
+class MechanismEvidenceAggregationHead(nn.Module):
     def __init__(self, hidden_dim: int, dropout: float) -> None:
         super().__init__()
         self.support_score = nn.Linear(hidden_dim, 1)
@@ -574,6 +574,9 @@ class DiseaseStateAlignmentHead(nn.Module):
         }
 
 
+DiseaseStateAlignmentHead = MechanismEvidenceAggregationHead
+
+
 class MechanismEvidenceAlignment(nn.Module):
     """Disease-mechanism and evidence-aware alignment over C13 encoder tokens."""
 
@@ -585,7 +588,7 @@ class MechanismEvidenceAlignment(nn.Module):
         self.role_scorer = EvidenceRoleScorer(hidden_dim, dropout)
         self.mechanisms = HTMechanismRelationLayer(hidden_dim, dropout, num_heads=num_heads)
         self.aggregator = EvidenceConflictAggregator(hidden_dim, dropout)
-        self.head = DiseaseStateAlignmentHead(hidden_dim, dropout)
+        self.head = MechanismEvidenceAggregationHead(hidden_dim, dropout)
 
     @staticmethod
     def _modality_role_mean(role_probs: torch.Tensor, valid: torch.Tensor, item: slice) -> torch.Tensor:
@@ -650,6 +653,13 @@ class MechanismEvidenceAlignment(nn.Module):
 
         return {
             **head,
+            "mea_mechanism_state": mechanisms["disease_state"],
+            "mea_mechanism_nodes": mechanisms["states"],
+            "mea_mechanism_valid": mechanisms["valid"],
+            "mea_support_state": aggregate["support"],
+            "mea_opposition_state": aggregate["opposition"],
+            "mea_uncertainty_state": aggregate["uncertainty"],
+            "mea_conflict_state": aggregate["conflict"],
             "mea_mechanism_alignment_loss": mechanism_alignment_loss,
             "mea_role_separation_loss": role_separation_loss,
             "patient_support_strength": head["q_support"],

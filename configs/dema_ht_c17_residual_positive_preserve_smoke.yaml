@@ -1,0 +1,47 @@
+phase: c17
+
+project:
+  name: dema_ht_c17_residual_positive_preserve_smoke
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl
+  output_dir: runs/dema_ht_c17_residual_positive_preserve_smoke
+
+model:
+  name: dmea_ht
+  variant: dmea
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_patient: 28
+  image_size: 224
+  dropout: 0.15
+  mea_num_heads: 4
+
+c17:
+  base_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_0_best.pt
+  init_mea_checkpoint: /home/linruixin/chen/project/DMEA-HT-c16-mea-impl/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt
+  delta_max: 0.50
+
+training:
+  seeds: [0]
+  batch_size: 4
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 2
+  patience: 2
+  primary_metric: val_AUC
+  num_workers: 2
+  evaluate_test: false
+
+loss:
+  c17: true
+  cls_weight: 1.0
+  lambda_residual: 0.001
+  lambda_positive_preserve: 0.02
+  allowed_negative_delta: 0.05
+  delta_max: 0.50
+  state_margin_weight: 0.0
+  mechanism_alignment_weight: 0.0
+  role_separation_weight: 0.0
+  pairwise_ranking_weight: 0.0

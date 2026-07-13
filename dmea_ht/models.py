@@ -265,12 +265,34 @@ class DMEAHTModel(nn.Module):
             outputs["image_morphology_logit"] = self.image_morphology_head(image_global).squeeze(-1)
         return outputs
 
-    def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def encode_modalities(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         image_tokens, image_global = self.image_encoder(batch["images"], batch["image_mask"])
         text_tokens, text_global = self.text_encoder(batch["report_input_ids"], batch["report_attention_mask"])
         bio_tokens, bio_global, bio_medical, _bio_observation = self.bio_encoder(
             batch["bio_values"], batch["bio_missing_mask"], batch["bio_abnormal_flags"]
         )
+        return {
+            "image_tokens": image_tokens,
+            "image_global": image_global,
+            "text_tokens": text_tokens,
+            "text_global": text_global,
+            "bio_tokens": bio_tokens,
+            "bio_global": bio_global,
+            "bio_medical": bio_medical,
+        }
+
+    def forward_from_encoded(
+        self,
+        batch: Dict[str, torch.Tensor],
+        encoded: Dict[str, torch.Tensor],
+    ) -> Dict[str, torch.Tensor]:
+        image_tokens = encoded["image_tokens"]
+        image_global = encoded["image_global"]
+        text_tokens = encoded["text_tokens"]
+        text_global = encoded["text_global"]
+        bio_tokens = encoded["bio_tokens"]
+        bio_global = encoded["bio_global"]
+        bio_medical = encoded["bio_medical"]
         aux_outputs = self._auxiliary_outputs(image_global, text_global, text_tokens, batch["report_attention_mask"])
 
         if self.mechanism_evidence_alignment is not None:
@@ -313,3 +335,6 @@ class DMEAHTModel(nn.Module):
         for key, value in discordance.items():
             outputs[key] = value.norm(dim=-1)
         return outputs
+
+    def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+        return self.forward_from_encoded(batch, self.encode_modalities(batch))

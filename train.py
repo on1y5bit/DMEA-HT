@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -17,6 +18,7 @@ from dmea_ht.data import PatientHTDataset, collate_patient_batch, patient_split,
 from dmea_ht.evidence_losses import confidence_weighted_bce_with_logits
 from dmea_ht.metrics import compute_binary_metrics, summarize_metrics
 from dmea_ht.mea_losses import mea_loss_weights_for_epoch, pairwise_ranking_loss, state_margin_loss
+from dmea_ht.c17_residual import C17ResidualModel
 from dmea_ht.models import DMEAHTModel
 
 
@@ -130,6 +132,10 @@ def evidence_loss_terms(outputs: Dict[str, torch.Tensor], batch: Dict[str, Any],
     return terms
 
 
+def is_c17_config(config: Dict[str, Any]) -> bool:
+    return bool(config.get("c17")) or str(config.get("phase", "")).lower() == "c17"
+
+
 def add_evidence_metrics(
     metrics: Dict[str, Any],
     prefix: str,
@@ -151,13 +157,14 @@ def add_evidence_metrics(
 
 
 def run_epoch(
-    model: DMEAHTModel,
+    model: torch.nn.Module,
     loader: DataLoader,
     optimizer: torch.optim.Optimizer | None,
     device: torch.device,
     loss_cfg: Dict[str, Any],
 ) -> Dict[str, Any]:
     is_train = optimizer is not None
+    is_c17 = bool(loss_cfg.get("c17", False))
     model.train(is_train)
     labels: List[int] = []
     probs: List[float] = []
@@ -178,6 +185,11 @@ def run_epoch(
     image_morphology_probs: List[float] = []
     image_morphology_confidences: List[float] = []
     image_morphology_losses: List[float] = []
+    residual_regularization_losses: List[float] = []
+    positive_preservation_losses: List[float] = []
+    delta_values: List[float] = []
+    positive_delta_values: List[float] = []
+    negative_delta_values: List[float] = []
     predictions: List[Dict[str, Any]] = []
     criterion = torch.nn.BCEWithLogitsLoss(reduction="none")
     cls_weight = float(loss_cfg.get("cls_weight", 1.0))
@@ -187,6 +199,9 @@ def run_epoch(
     lambda_mech = float(loss_cfg.get("effective_lambda_mech", 0.0))
     lambda_role = float(loss_cfg.get("effective_lambda_role", 0.0))
     lambda_rank = float(loss_cfg.get("effective_lambda_rank", 0.0))
+    lambda_residual = float(loss_cfg.get("lambda_residual", 0.0))
+    lambda_positive_preserve = float(loss_cfg.get("lambda_positive_preserve", 0.0))
+    allowed_negative_delta = float(loss_cfg.get("allowed_negative_delta", 0.05))
 
     for batch in tqdm(loader, leave=False):
         batch = move_batch(batch, device)
@@ -195,34 +210,46 @@ def run_epoch(
             raw_loss = criterion(outputs["logit"], batch["label"])
             cls_loss = cls_weight * (raw_loss * batch["sample_weight"]).mean()
             loss = cls_loss
-            evidence_terms = evidence_loss_terms(outputs, batch, loss_cfg)
-            if "text_morphology_loss" in evidence_terms:
-                loss = loss + text_weight * evidence_terms["text_morphology_loss"]
-                text_morphology_losses.append(float(evidence_terms["text_morphology_loss"].detach().cpu()))
-            if "image_morphology_loss" in evidence_terms:
-                loss = loss + image_weight * evidence_terms["image_morphology_loss"]
-                image_morphology_losses.append(float(evidence_terms["image_morphology_loss"].detach().cpu()))
-            if "role_alignment_loss" in outputs:
-                loss = loss + outputs["role_alignment_loss"] * 0.0
-            if "state_margin" in outputs:
-                state_loss = state_margin_loss(outputs["state_margin"], batch["label"])
-                mechanism_loss = outputs["mea_mechanism_alignment_loss"]
-                role_loss = outputs["mea_role_separation_loss"]
-                rank_loss = pairwise_ranking_loss(outputs["logit"], batch["label"]) if is_train else outputs["logit"].sum() * 0.0
-                loss = (
-                    loss
-                    + lambda_state * state_loss
-                    + lambda_mech * mechanism_loss
-                    + lambda_role * role_loss
-                    + lambda_rank * rank_loss
-                )
-                for key, value in (
-                    ("state_margin_loss", state_loss),
-                    ("mechanism_alignment_loss", mechanism_loss),
-                    ("role_separation_loss", role_loss),
-                    ("pairwise_ranking_loss", rank_loss),
-                ):
-                    mea_loss_values[key].append(float(value.detach().cpu()))
+            if is_c17:
+                delta = outputs["delta_logit"]
+                residual_loss = delta.square().mean()
+                positive_mask = batch["label"] > 0.5
+                if bool(positive_mask.any().item()):
+                    positive_loss = F.relu(-delta[positive_mask] - allowed_negative_delta).mean()
+                else:
+                    positive_loss = delta.sum() * 0.0
+                loss = loss + lambda_residual * residual_loss + lambda_positive_preserve * positive_loss
+                residual_regularization_losses.append(float(residual_loss.detach().cpu()))
+                positive_preservation_losses.append(float(positive_loss.detach().cpu()))
+            else:
+                evidence_terms = evidence_loss_terms(outputs, batch, loss_cfg)
+                if "text_morphology_loss" in evidence_terms:
+                    loss = loss + text_weight * evidence_terms["text_morphology_loss"]
+                    text_morphology_losses.append(float(evidence_terms["text_morphology_loss"].detach().cpu()))
+                if "image_morphology_loss" in evidence_terms:
+                    loss = loss + image_weight * evidence_terms["image_morphology_loss"]
+                    image_morphology_losses.append(float(evidence_terms["image_morphology_loss"].detach().cpu()))
+                if "role_alignment_loss" in outputs:
+                    loss = loss + outputs["role_alignment_loss"] * 0.0
+                if "state_margin" in outputs:
+                    state_loss = state_margin_loss(outputs["state_margin"], batch["label"])
+                    mechanism_loss = outputs["mea_mechanism_alignment_loss"]
+                    role_loss = outputs["mea_role_separation_loss"]
+                    rank_loss = pairwise_ranking_loss(outputs["logit"], batch["label"]) if is_train else outputs["logit"].sum() * 0.0
+                    loss = (
+                        loss
+                        + lambda_state * state_loss
+                        + lambda_mech * mechanism_loss
+                        + lambda_role * role_loss
+                        + lambda_rank * rank_loss
+                    )
+                    for key, value in (
+                        ("state_margin_loss", state_loss),
+                        ("mechanism_alignment_loss", mechanism_loss),
+                        ("role_separation_loss", role_loss),
+                        ("pairwise_ranking_loss", rank_loss),
+                    ):
+                        mea_loss_values[key].append(float(value.detach().cpu()))
             if is_train:
                 optimizer.zero_grad(set_to_none=True)
                 loss.backward()
@@ -234,6 +261,13 @@ def run_epoch(
         batch_labels = batch["label"].detach().cpu().numpy().astype(int).tolist()
         labels.extend(batch_labels)
         probs.extend(batch_probs)
+
+        if is_c17:
+            batch_delta = outputs["delta_logit"].detach().float().cpu().numpy()
+            delta_values.extend(float(value) for value in batch_delta)
+            batch_labels_np = np.asarray(batch_labels, dtype=int)
+            positive_delta_values.extend(float(value) for value in batch_delta[batch_labels_np == 1])
+            negative_delta_values.extend(float(value) for value in batch_delta[batch_labels_np == 0])
 
         for key in MEA_PATIENT_DIAGNOSTIC_KEYS:
             if key in outputs:
@@ -264,6 +298,16 @@ def run_epoch(
                 "txt_morphology_confidence": float(batch["txt_morphology_confidence"].detach().cpu()[i]),
                 "matched_morphology_terms": "|".join(str(term) for term in batch["matched_morphology_terms"][i]),
             }
+            if is_c17:
+                row.update(
+                    {
+                        "base_logit": float(outputs["base_logit"].detach().cpu()[i]),
+                        "base_prob": float(outputs["base_prob"].detach().cpu()[i]),
+                        "delta_logit": float(outputs["delta_logit"].detach().cpu()[i]),
+                        "final_logit": float(outputs["logit"].detach().cpu()[i]),
+                        "final_prob": float(outputs["prob"].detach().cpu()[i]),
+                    }
+                )
             for key in ("e_img", "e_text", "e_bio", "e_synergy", "e_negative", "d_img_txt", "d_img_bio", "d_txt_bio"):
                 if key in outputs:
                     row[key] = float(outputs[key].detach().cpu()[i])
@@ -320,6 +364,26 @@ def run_epoch(
         image_morphology_confidences,
         image_morphology_losses,
     )
+    if is_c17:
+        delta_np = np.asarray(delta_values, dtype=float)
+        positive_delta_np = np.asarray(positive_delta_values, dtype=float)
+        negative_delta_np = np.asarray(negative_delta_values, dtype=float)
+        delta_max = float(loss_cfg.get("delta_max", 0.50))
+        metrics.update(
+            {
+                "residual_regularization_loss": float(np.mean(residual_regularization_losses)) if residual_regularization_losses else 0.0,
+                "positive_preservation_loss": float(np.mean(positive_preservation_losses)) if positive_preservation_losses else 0.0,
+                "mean_delta_logit": float(delta_np.mean()) if delta_np.size else 0.0,
+                "mean_positive_delta_logit": float(positive_delta_np.mean()) if positive_delta_np.size else 0.0,
+                "mean_negative_delta_logit": float(negative_delta_np.mean()) if negative_delta_np.size else 0.0,
+                "std_delta_logit": float(delta_np.std(ddof=1)) if delta_np.size > 1 else 0.0,
+                "fraction_delta_at_lower_bound": float((delta_np <= -delta_max + 1e-5).mean()) if delta_np.size else 0.0,
+                "fraction_delta_at_upper_bound": float((delta_np >= delta_max - 1e-5).mean()) if delta_np.size else 0.0,
+                "fraction_positive_delta_below_minus_0_10": float((positive_delta_np < -0.10).mean()) if positive_delta_np.size else 0.0,
+                "_c17_route": True,
+            }
+        )
+        metrics.pop("AUPRC", None)
     return {"metrics": metrics, "predictions": predictions}
 
 
@@ -331,11 +395,41 @@ def loss_config_for_epoch(loss_cfg: Dict[str, Any], epoch: int) -> Dict[str, Any
         active_cfg["text_morphology_active"] = False
     else:
         active_cfg["text_morphology_active"] = float(loss_cfg.get("text_morphology_weight", 0.0)) > 0
-    active_cfg.update(mea_loss_weights_for_epoch(loss_cfg, epoch))
+    if not bool(loss_cfg.get("c17", False)):
+        active_cfg.update(mea_loss_weights_for_epoch(loss_cfg, epoch))
     return active_cfg
 
 
 def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    if bool(train_metrics.get("_c17_route", False) or val_metrics.get("_c17_route", False)):
+        return {
+            "seed": int(seed),
+            "epoch": int(epoch),
+            "split": "train_val",
+            "train_total_loss": train_metrics.get("loss", 0.0),
+            "train_classification_loss": train_metrics.get("cls_loss", 0.0),
+            "train_residual_regularization_loss": train_metrics.get("residual_regularization_loss", 0.0),
+            "train_positive_preservation_loss": train_metrics.get("positive_preservation_loss", 0.0),
+            "val_auc": val_metrics.get("AUC", 0.0),
+            "val_sensitivity": val_metrics.get("Sensitivity", 0.0),
+            "val_specificity": val_metrics.get("Specificity", 0.0),
+            "val_balanced_accuracy": val_metrics.get("Balanced_ACC", 0.0),
+            "val_positive_probability_mean": val_metrics.get("positive_prob_mean", 0.0),
+            "val_negative_probability_mean": val_metrics.get("negative_prob_mean", 0.0),
+            "val_positive_negative_gap": val_metrics.get("pos_neg_gap", 0.0),
+            "mean_delta_logit": val_metrics.get("mean_delta_logit", 0.0),
+            "mean_positive_delta_logit": val_metrics.get("mean_positive_delta_logit", 0.0),
+            "mean_negative_delta_logit": val_metrics.get("mean_negative_delta_logit", 0.0),
+            "std_delta_logit": val_metrics.get("std_delta_logit", 0.0),
+            "fraction_delta_at_lower_bound": val_metrics.get("fraction_delta_at_lower_bound", 0.0),
+            "fraction_delta_at_upper_bound": val_metrics.get("fraction_delta_at_upper_bound", 0.0),
+            "fraction_positive_delta_below_minus_0_10": val_metrics.get("fraction_positive_delta_below_minus_0_10", 0.0),
+            "support_strength": val_metrics.get("mean_patient_support_strength", 0.0),
+            "opposition_strength": val_metrics.get("mean_patient_opposition_strength", 0.0),
+            "uncertainty_strength": val_metrics.get("mean_patient_uncertainty_strength", 0.0),
+            "conflict_score": val_metrics.get("mean_patient_conflict_score", 0.0),
+            "selected_by_val_auc": False,
+        }
     return {
         "seed": int(seed),
         "epoch": int(epoch),
@@ -381,13 +475,22 @@ def epoch_log_row(seed: int, epoch: int, train_metrics: Dict[str, Any], val_metr
     }
 
 
+def build_model(config: Dict[str, Any], seed: int) -> torch.nn.Module:
+    if is_c17_config(config):
+        return C17ResidualModel(config, seed)
+    return DMEAHTModel(config)
+
+
 def train_seed(config: Dict[str, Any], rows: List[Dict[str, Any]], seed: int, out_dir: Path) -> Dict[str, Any]:
     set_seed(seed)
     loaders = make_loaders(config, [dict(row) for row in rows])
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = DMEAHTModel(config).to(device)
+    model = build_model(config, seed).to(device)
+    trainable_parameters = [parameter for parameter in model.parameters() if parameter.requires_grad]
+    if not trainable_parameters:
+        raise RuntimeError("No trainable parameters found for the selected route.")
     optimizer = torch.optim.AdamW(
-        model.parameters(),
+        trainable_parameters,
         lr=float(config["training"].get("lr", 1e-4)),
         weight_decay=float(config["training"].get("weight_decay", 1e-4)),
     )
@@ -446,6 +549,7 @@ def main() -> None:
     parser.add_argument("--output-dir")
     args = parser.parse_args()
     config = load_config(args.config)
+    c17_route = is_c17_config(config)
     if args.data_root:
         config["project"]["data_root"] = args.data_root
     if args.manifest:
@@ -470,43 +574,51 @@ def main() -> None:
             pred_df.insert(4, "seed", int(seed))
             pred_df.to_csv(out_dir / "predictions" / f"{split}_predictions_seed_{seed}.csv", index=False)
             metric_row = {"seed": int(seed), "split": split, "best_epoch": result["best_epoch"]}
-            metric_row.update(result[split]["metrics"])
+            metric_row.update(
+                {
+                    key: value
+                    for key, value in result[split]["metrics"].items()
+                    if not str(key).startswith("_") and (not c17_route or key != "AUPRC")
+                }
+            )
             metrics_rows.append(metric_row)
 
     metrics_df = pd.DataFrame(metrics_rows)
+    if c17_route and "AUPRC" in metrics_df.columns:
+        metrics_df = metrics_df.drop(columns=["AUPRC"])
     metrics_df.to_csv(out_dir / "reports" / "metrics_by_seed.csv", index=False)
     if epoch_rows:
-        pd.DataFrame(epoch_rows).to_csv(out_dir / "reports" / "metrics_by_epoch.csv", index=False)
+        epoch_df = pd.DataFrame(epoch_rows)
+        if c17_route and "AUPRC" in epoch_df.columns:
+            epoch_df = epoch_df.drop(columns=["AUPRC"])
+        epoch_df.to_csv(out_dir / "reports" / "metrics_by_epoch.csv", index=False)
     summary_rows = []
     for split in ("val", "test"):
         split_rows = [row for row in metrics_rows if row["split"] == split]
         if not split_rows:
             continue
         summary = {"split": split}
-        summary.update(
-            summarize_metrics(
-                split_rows,
-                [
-                    "AUC",
-                    "AUPRC",
-                    "ACC",
-                    "F1",
-                    "Sensitivity",
-                    "Specificity",
-                    "Precision",
-                    "Recall",
-                    "Balanced_ACC",
-                    "text_morphology_auc",
-                    "text_morphology_acc",
-                    "valid_text_morphology_count",
-                    "mean_text_morphology_confidence",
-                    "image_morphology_auc",
-                    "image_morphology_acc",
-                    "valid_image_morphology_count",
-                    "mean_image_morphology_confidence",
-                ],
-            )
-        )
+        summary_keys = [
+            "AUC",
+            "ACC",
+            "F1",
+            "Sensitivity",
+            "Specificity",
+            "Precision",
+            "Recall",
+            "Balanced_ACC",
+            "text_morphology_auc",
+            "text_morphology_acc",
+            "valid_text_morphology_count",
+            "mean_text_morphology_confidence",
+            "image_morphology_auc",
+            "image_morphology_acc",
+            "valid_image_morphology_count",
+            "mean_image_morphology_confidence",
+        ]
+        if not c17_route:
+            summary_keys.insert(1, "AUPRC")
+        summary.update(summarize_metrics(split_rows, summary_keys))
         summary_rows.append(summary)
     pd.DataFrame(summary_rows).to_csv(out_dir / "reports" / "metrics_summary.csv", index=False)
     cm_cols = ["seed", "split", "TN", "FP", "FN", "TP"]
