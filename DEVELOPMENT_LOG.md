@@ -2234,4 +2234,21 @@
 - C18-D uses BCE plus `0.001 * mean(effective_support_delta^2 + effective_opposition_delta^2)` plus `0.02 * positive_preservation`.
 - C18-DH uses the identical objective plus `0.01 * hard_pair_ranking_loss` only for training-batch positive-negative pairs whose frozen-base margin is below `0.50`; single-class and no-pair cases are graph-connected zero.
 - Both formal configs use seeds `[0, 42, 3407]`, validation AUC checkpoint selection, and reporting-only test evaluation. No C18 smoke or seed-0-only pilot is authorized or planned.
-- Static and synthetic checks must pass in `/home/linruixin/chen/conda/envs/ma` before direct formal launch. Formal C18 results and the final decision label will be appended after both routes finish.
+- Static and synthetic checks passed in `/home/linruixin/chen/conda/envs/ma` with `33/33 PASS` and authorized `DIRECT_MULTI_SEED_AUTHORIZED` before direct formal launch.
+
+### C18 Direct Multi-Seed Completion And Decision
+
+- C18 formal training ran server-only in `/home/linruixin/chen/conda/envs/ma` against `/data/csb/DMEA-HT/HT_2025.12_25` on `NVIDIA GeForce RTX 5090`, from `2026-07-13T21:40:39+08:00` to `2026-07-13T22:06:42+08:00`.
+- The canonical run directories were `runs/dema_ht_c18_directional_multiseed/` and `runs/dema_ht_c18_directional_hardrank_multiseed/`. Both routes used the fixed seeds `[0, 42, 3407]`, validation AUC-only checkpoint selection, and reporting-only test evaluation.
+- No C18 smoke run and no seed-0-only pilot were run. The formal driver ran C18-D followed sequentially by C18-DH after the static/synthetic gate.
+- C18-D per-seed validation AUC was `0.8727931191`, `0.8850158443`, and `0.8646446356` for seeds `0`, `42`, and `3407`; mean/std was `0.8741511996 +/- 0.0102532835`.
+- C18-DH per-seed validation AUC was `0.8750565867`, `0.8768673608`, and `0.8632865550` for seeds `0`, `42`, and `3407`; mean/std was `0.8717368342 +/- 0.0073739500`.
+- Both C18 routes exceeded the C17 reference mean validation AUC `0.8696242644`, had validation-AUC standard deviation at most `0.02`, improved validation inversion count in all three seeds, and passed training validity, sensitivity, specificity, branch/gate health, shortcut, and test-reporting-only checks.
+- C18-D reduced aggregate validation inversions from `885` to `834`, with `111` repaired and `60` introduced; C18-DH reduced them from `885` to `850`, with `81` repaired and `46` introduced. These reductions did not override the evidence-safety failures.
+- Positive-preservation failed for both routes. C18-D seed `42` had mean positive directional delta `-0.0279701053` and `40.4255%` of positive deltas below `-0.10`; C18-DH seed `42` had mean positive directional delta `-0.0593720828` and the same `40.4255%` fraction. C18-D had `1` `TP -> FN`; C18-DH had `0` `TP -> FN`, but its positive residual suppression check still failed.
+- Negative-inflation failed for both routes. The largest mean negative directional delta was `0.3605688866` for C18-D and `0.4102178146` for C18-DH; the largest negative probability increase was `0.0533094004` and `0.0667331754`, respectively.
+- Directional branches remained finite and nonzero with unsaturated residual variation, and the maximum shortcut-only label AUC was `0.5088275238`. These are safety diagnostics only and do not rescue the failed evidence gates.
+- Reporting-only test AUC means were `0.8433484505` for C18-D and `0.8450491308` for C18-DH. Test values were not used for checkpoint selection, route comparison, or promotion.
+- The formal collector decision is `DEMA_C18_NEGATIVE_INFLATION`, with the additional failure label `DEMA_C18_POSITIVE_SUPPRESSION`. Selected route remains `C17`; current strict best remains `DEMA-HT C17 Positive Preservation`. C18 did not reach validation AUC `0.90` and neither route is promoted.
+- C18 formal reports are under `analysis_reports/phase_c18_dema/`, including root-level merged route audits with a `route` column, route-specific audit subdirectories, metrics, transition analysis, gate JSON, and final report. The report-only collector layout fix was committed as `e3e85e1` and pulled by the canonical server before regeneration.
+- Final C18 status: retain C17, do not alter the frozen C17 route based on C18 test or raw AUC, and do not start another C18 tuning run without a new evidence-gated plan.
