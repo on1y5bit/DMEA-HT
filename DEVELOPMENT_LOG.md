@@ -2290,3 +2290,37 @@
 - When every explicitly defined static, synthetic, evidence, and safety gate passes, launch the authorized formal multi-seed training automatically with seeds [0, 42, 3407].
 - Do not wait for an additional user confirmation after a passing gate.
 - When any required gate fails, do not launch training or bypass the gate; record the failure and retain the current strict-best route.
+
+## 2026-07-14 Phase C20 Mechanism Evidence Identifiability Audit
+
+### C20 Contract And Implementation
+
+- Official model and research name remains DEMA-HT. The canonical project remains `/home/linruixin/chen/project/DMEA-HT` on `main`; no new branch, worktree, or DMEA-HT-c20 directory was created.
+- C19 remained blocked by `C19_POLARITY_BASE_INVALID`. C20 did not lower, bypass, or reinterpret that gate.
+- C20 is analysis-only. It evaluates the three C17 validation-selected checkpoints with `eval()` and `torch.no_grad()`, without an optimizer, backward pass, new prediction module, training config, smoke run, seed-0 pilot, or formal training.
+- C20 reads train and validation data only. Test data and test prediction files were not read. Saved C17 validation predictions were used only for patient/label/probability reproduction, never as training inputs.
+- Cross-seed comparison uses patient-aligned linear CKA, patient-distance Spearman, kNN overlap, train-fit orthogonal Procrustes generalization, and scalar rank/sign consistency. Coordinate-wise cosine or raw coordinate correlation is not used as the identifiability criterion.
+- Fixed diagnostic probes use train-fit standardization and L2 logistic regression with `C=1.0`; validation is evaluation-only. Random-label sanity uses fixed seed `20260714`. Shortcut fields and patient IDs are audit/alignment-only and excluded from all probes.
+- Local implementation commits were `e6cdc14`, `85fe7f9`, `92cdb8e`, and `0ef6615`; all were pushed to `origin/main`. The server initially exported the NPZ at `92cdb8e`, then fast-forwarded to `0ef6615` for the final analysis. GitHub HTTPS pulls from the server timed out, so the already-pushed commits were transferred as a verified Git bundle and fast-forwarded without server-side source edits.
+
+### C20 Runtime And Reproduction
+
+- Runtime was server-only under `/home/linruixin/chen/conda/envs/ma` on `NVIDIA GeForce RTX 5090`, against `/data/csb/DMEA-HT/HT_2025.12_25` and manifest `manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl`.
+- C17 checkpoint train/validation counts were `602/94` for each seed. Server-only NPZ artifacts are under `analysis_reports/phase_c20_dema/`; train SHA256 is `bede4e0b2ad4833942337b85782898299b839535dcb667bcfadef3a34e6ef062`, validation SHA256 is `d27ae718df583f7b80a1bf54169e4e2e19802bd347e474ad2352fd2a7cbc6edf`.
+- C17 validation reproduction passed for all seeds: seed `0` max/mean absolute probability difference `1.11022302463e-16/2.08535907218e-17`; seed `42` `1.11022302463e-16/2.21823150864e-17`; seed `3407` `1.11022302463e-16/2.04475916105e-17`. Patient IDs and labels matched exactly.
+
+### C20 Identifiability Results
+
+- Stage means (linear CKA, distance Spearman, kNN Jaccard, fixed-probe validation AUC) were: raw modality encoders `0.9527, 0.9535, 0.6628, 0.6888`; evidence-role pooling `0.7924, 0.7828, 0.5815, 0.6743`; mechanism propagation `0.6618, 0.6483, 0.5307, 0.6967`; role scoring `0.4557, 0.5045, 0.2227, 0.8083`; mechanism aggregation `0.3951, 0.3490, 0.2415, 0.7479`; scalar compression `0.1675, 0.1023, 0.0760, 0.6563`.
+- The first material instability is `mechanism_propagation`: its stage mean CKA `0.6618` is below `0.70` (stage distance Spearman is `0.6483`), while individual mechanism-layer/minimum checks also fail; mechanism morphology had CKA `0.6651`, and mechanism final representation had CKA `0.3871`, distance Spearman `0.4952`, and kNN Jaccard `0.3249`.
+- The strongest internal probe was evidence-role logits/probabilities at mean validation AUC `0.8093`, with only one of three seeds at or above `0.83`; no internal candidate reached the required mean probe AUC `0.8396` and two-of-three seed condition. The final predictor probe reached `0.8696242644` but is not an intermediate mechanism candidate and cannot authorize C21.
+- Hard-patient overlap did not improve over non-hard patients at the mechanism final layer: mean kNN Jaccard was approximately `0.3124` versus `0.3296`. C18-repaired patients numbered `12` and introduced patients `2`; their low mechanism-layer overlaps remain audit-only and do not support a new route.
+- Shortcut audit found a strong raw `raw_n_visits` label association (orientation-invariant AUC about `0.9769`), but it was not used as a model feature, representation, or probe input. This remains a data shortcut warning, not evidence for C20 route promotion.
+
+### C20 Gate And Decision
+
+- Static gate, C17 export, reproduction, cross-seed analysis, probe, and transition analysis all completed successfully. No stable internal evidence/mechanism layer passed the simultaneous CKA, distance, kNN, probe, subgroup, and random-label conditions.
+- C20 decision: `C20_INSTABILITY_FROM_MECHANISM_PROPAGATION`.
+- C21 decision: `C21_NOT_AUTHORIZED`.
+- Final action: `KEEP_DEMA_C17_STRICT_BEST` / `DEMA_C17_POSITIVE_PRESERVATION`, with mean validation AUC `0.8696242644 +/- 0.0074797246`. Do not start C21 training, residual polarity expansion, or scalar-compression rescue from this C20 result without a new evidence-gated plan.
+- Reports: `analysis_reports/phase_c20_dema/c20_route_decision.md` and `analysis_reports/phase_c20_dema/phase_c20_dema_final_report.md`.
