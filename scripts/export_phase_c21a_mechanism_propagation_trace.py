@@ -279,6 +279,8 @@ def main() -> None:
                 name: np.concatenate(values, axis=0).astype(np.float32, copy=False)
                 for name, values in batches.items()
             }
+            for name, value in split_tensors.items():
+                observed.setdefault(name, {})[f"shape_{split}"] = list(value.shape)
             split_payload: Dict[str, np.ndarray] = {
                 f"seed_{seed}__patient_id": np.asarray(ids, dtype="<U256"),
                 f"seed_{seed}__labels": split_labels,
