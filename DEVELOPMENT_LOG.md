@@ -2181,3 +2181,8 @@
 - Required server-only checks: legacy checkpoint compatibility, C16 head rename logit equivalence, zero-residual equivalence, frozen C13 gradients, residual bound, finite losses, positive-preservation one-class behavior, mechanism residual non-collapse, and shortcut exclusion.
 - Seed-0 validation-only gate: AUC at least C13 seed-0 `0.8655500226`, preferred gain `+0.005`, sensitivity at least `0.55`, specificity at least `0.75`, no material balanced-accuracy decrease, positive-negative gap decrease no more than `0.02`, inversions no worse than C13, mean positive residual at least `-0.02`, no more than `25%` of positive residuals below `-0.10`, nonzero residual variance, no saturation, and shortcut audit pass.
 - No formal C17 run is permitted before the seed-0 decision artifact explicitly authorizes it. All runtime evidence must be generated under `/home/linruixin/chen/conda/envs/ma` on the server against `/data/csb/DMEA-HT/HT_2025.12_25`.
+
+### Operational Rollout Instruction
+
+- From the user's instruction on `2026-07-13` onward, do not repeat two-epoch smoke runs for subsequent phases. After the required server static/synthetic gate passes, launch the formal multi-seed training directly with seeds `[0, 42, 3407]`.
+- This rollout preference does not interrupt the already-running C17 seed-0 pilot and does not retroactively change its evidence contract. The current C17 formal run remains conditional on the completed seed-0 validation-only decision artifact; once authorized, it uses the fixed multi-seed configuration without another smoke stage.
