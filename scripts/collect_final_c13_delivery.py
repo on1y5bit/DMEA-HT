@@ -43,7 +43,7 @@ def frame_to_markdown(frame: pd.DataFrame) -> str:
         return "_No rows._"
     columns = [str(column) for column in frame.columns]
     lines = ["| " + " | ".join(columns) + " |", "| " + " | ".join("---" for _ in columns) + " |"]
-    for _, row in frame.iterrows():
+    for row in frame.to_dict(orient="records"):
         values: List[str] = []
         for column in frame.columns:
             value = row[column]
