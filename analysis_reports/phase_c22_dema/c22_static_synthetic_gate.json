@@ -1,0 +1,75 @@
+{
+  "phase": "C22",
+  "gate": "STATIC_SYNTHETIC",
+  "pass": true,
+  "training_authorized_after_server_gate": true,
+  "checks": [
+    {
+      "name": "phase_is_c22",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "formal_seeds_are_0_42_3407",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "primary_metric_is_validation_auc",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "fixed_loss_contract",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "forward_bypasses_propagation_and_aggregation",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "shortcut_fields_absent_from_model",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "zero_initialized_residual",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "residual_bound",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "valid_mask_pool_permutation_invariant",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "invalid_nodes_excluded",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "all_negative_positive_term_is_graph_connected_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "loss_components_are_finite",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "contract": {
+    "frozen_reference": "C13 base plus C17 evidence projector state",
+    "trainable_scope": "residual_head_only",
+    "pooling": "valid_mask_mean over 14 real pre-propagation projector nodes",
+    "selection": "validation AUC only",
+    "test_role": "reporting only"
+  }
+}

@@ -2355,3 +2355,25 @@
 - `localized_reproducible = False`; `C22_DESIGN_AUTHORIZED = False`; `training_authorized = False`.
 - Retain `DEMA_C17_POSITIVE_PRESERVATION` as the strict-best route. Do not start C22 design or any new training from this audit result.
 - Final server report and artifacts are under `analysis_reports/phase_c21a_dema/`, including `phase_c21a_dema_final_report.md`, reproduction checks, tensor inventory, node/edge stability tables, ablation summaries, responsibility scores, shortcut exclusion audit, and command log.
+
+## 2026-07-14 Phase C22 Stable Evidence Pooling Direct Multi-Seed
+
+### Pre-Edit Contract
+
+- Official project and research name remain `DEMA-HT`; repository and Python package identifiers remain `DMEA-HT` and `dmea_ht`.
+- C21-A found diffuse, non-localizable mechanism-propagation instability. The user-authorized C22 experiment is a whole-stage bypass falsification, not a claim that any individual clinical mechanism node has been identified.
+- The canonical server worktree remains `/home/linruixin/chen/project/DMEA-HT` on `main`; the authoritative data root is `/data/csb/DMEA-HT/HT_2025.12_25`; runtime is `/home/linruixin/chen/conda/envs/ma`.
+- No branch, worktree, project copy, smoke run, or seed-0 pilot is permitted. After the static/synthetic gate passes, launch formal seeds `[0, 42, 3407]` directly.
+- C13 labels, patient-level splits, history cutoff, manifest, task definition, and validation-AUC checkpoint selection remain frozen. Test remains reporting-only.
+- C22 freezes the C13 base predictor and the C17 evidence projector state, pools only the 14 real pre-propagation image/text/bio projector nodes by valid-mask mean, and bypasses mechanism propagation, downstream role scoring, conflict aggregation, and the final mechanism head.
+- Only the new stable-evidence residual head is trainable. It uses hidden size `256`, the C17 activation/dropout pattern, zero-initialized output, `delta = 0.50 * tanh(raw_delta)`, and `final_logit = base_logit + delta`.
+- The fixed loss is `BCEWithLogits + 0.001 * mean(delta^2) + 0.02 * positive_preserve`, where `positive_preserve = mean_positive(relu(-delta - 0.05))`; the all-negative case remains graph-connected zero.
+- Validation AUC is the sole selection, route-comparison, promotion, and rejection metric. No AUPRC field is generated for C22 formal reports. Sensitivity, specificity, balanced accuracy, positive preservation, inversion counts, residual health, and shortcut audits are safety diagnostics only.
+- Promotion requires C22 mean validation AUC above C17, at least two of three seeds above C17, no seed drop greater than `0.005`, standard deviation at most `0.02`, positive-preservation and inversion guards, residual health, and selected-structure shortcut-only AUC at most `0.55`.
+
+### Implementation
+
+- Added `dmea_ht/c22_stable_pooling.py`, `configs/dema_ht_c22_stable_evidence_pooling_multiseed.yaml`, `scripts/gate_phase_c22_stable_pooling.py`, `scripts/train_phase_c22.py`, and `scripts/collect_phase_c22_formal_report.py`.
+- The C22 training entry point is isolated from `train.py`; existing C17, C18, and C19 training branches are unchanged.
+- Required formal artifacts are written under `runs/dema_ht_c22_stable_evidence_pooling_multiseed/` and `analysis_reports/phase_c22_dema/`, including epoch/seed/summary metrics, patient diagnostics, positive-preservation audit, pairwise ranking/inversion tables, residual health, shortcut residual audit, C13/C17 comparison, necessity report, seed-stability report, and final decision report.
+- Local verification is limited to syntax/static/synthetic checks; no data or model training is run on the local machine.
