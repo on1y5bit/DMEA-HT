@@ -2113,3 +2113,13 @@
 - Local coding checks parsed all `31` YAML configs, compiled the target Python files, and found no whitespace errors. These are coding-only checks and are not accepted as runtime evidence.
 - A local CPU synthetic preflight was mistakenly invoked despite the server-only execution contract. No training was started, its generated report was deleted, and its result is invalid for authorization, comparison, or reporting.
 - All synthetic and runtime checks must be rerun in `/home/linruixin/chen/conda/envs/ma` on the server. Neither predefined seed-0 smoke is authorized until that server gate passes.
+
+### Server Static And Synthetic Gate
+
+- GitHub fetch from the server failed with `GnuTLS recv error (-110)`. The already pushed branch was transferred as a Git bundle without changing commit identity, and a new detached implementation worktree was created at `/home/linruixin/chen/project/DMEA-HT-c16-mea-impl`.
+- The original design-audit worktree and its untracked generated reports were left untouched. The implementation worktree is pinned to commit `1154dec8208fa273680676f109c77564ffc16bae`.
+- Ran all static and synthetic checks with `/home/linruixin/chen/conda/envs/ma/bin/python` and `CUDA_VISIBLE_DEVICES` empty. Server result: `21/21 PASS`.
+- Legacy absent-versus-explicit-false MEA state dictionaries matched across `65` keys and logits matched exactly (`max_abs_difference=0.0`). MEA output shape, `14 x 3` role probabilities, finite values, empty-mask fallback, missing bio groups, all-missing mechanism graph, probability normalization, and warmup/ramp checks passed.
+- Mixed-batch ranking was finite; all-positive ranking returned a graph-connected zero. Nonzero gradients reached image, text, bio, role scorer, mechanism relation, conflict aggregator, and disease-state head modules.
+- Model-source checks found none of the prohibited shortcut inputs or DSSA/shared-specific terms. Server evidence is stored as `analysis_reports/phase_c16_mea/c16_mea_synthetic_gate_server.json`.
+- Server static/synthetic status: `PASS`. The two predefined seed-0 smoke runs are now authorized; seed-0 full pilots remain blocked until both smoke health gates pass.

@@ -188,7 +188,7 @@ def main() -> None:
     one_class_logits = torch.tensor([0.2, 0.3], requires_grad=True)
     one_class_rank = pairwise_ranking_loss(one_class_logits, torch.ones(2))
     one_class_rank.backward()
-    check("mixed_pairwise_rank_finite", bool(torch.isfinite(mixed_rank)), float(mixed_rank))
+    check("mixed_pairwise_rank_finite", bool(torch.isfinite(mixed_rank)), float(mixed_rank.detach()))
     check("single_class_rank_graph_zero", float(one_class_rank) == 0.0 and one_class_logits.grad is not None, one_class_logits.grad.tolist())
 
     model.train()

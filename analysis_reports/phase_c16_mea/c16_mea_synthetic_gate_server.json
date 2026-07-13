@@ -1,0 +1,112 @@
+{
+  "status": "PASS",
+  "passed": 21,
+  "total": 21,
+  "checks": [
+    {
+      "check": "all_previous_and_c16_configs_parse",
+      "pass": true,
+      "detail": "31"
+    },
+    {
+      "check": "all_five_c16_configs_present",
+      "pass": true,
+      "detail": "['dmea_ht_v2_c16_mea_core_seed0.yaml', 'dmea_ht_v2_c16_mea_core_smoke.yaml', 'dmea_ht_v2_c16_mea_formal_multiseed.yaml', 'dmea_ht_v2_c16_mea_rank_seed0.yaml', 'dmea_ht_v2_c16_mea_rank_smoke.yaml']"
+    },
+    {
+      "check": "core_and_rank_only_differ_by_route_identity_and_rank_weight",
+      "pass": true,
+      "detail": "normalized configs"
+    },
+    {
+      "check": "fixed_c16_loss_targets",
+      "pass": true,
+      "detail": "fixed targets"
+    },
+    {
+      "check": "formal_seed_contract",
+      "pass": true,
+      "detail": "formal seeds"
+    },
+    {
+      "check": "legacy_absent_false_state_dict_identical",
+      "pass": true,
+      "detail": "65"
+    },
+    {
+      "check": "legacy_absent_false_logits_identical",
+      "pass": true,
+      "detail": "0.0"
+    },
+    {
+      "check": "mea_output_shape",
+      "pass": true,
+      "detail": "(4,)"
+    },
+    {
+      "check": "evidence_role_shape",
+      "pass": true,
+      "detail": "(4, 14, 3)"
+    },
+    {
+      "check": "all_mea_outputs_finite",
+      "pass": true,
+      "detail": "50"
+    },
+    {
+      "check": "role_probabilities_sum_to_one",
+      "pass": true,
+      "detail": "1.1920928955078125e-07"
+    },
+    {
+      "check": "conflict_score_finite",
+      "pass": true,
+      "detail": "[0.33409231901168823, 0.44297274947166443, 0.33288687467575073, 0.49219319224357605]"
+    },
+    {
+      "check": "empty_text_masks_use_fallback",
+      "pass": true,
+      "detail": "[[True, True, True, True, True, True], [True, True, True, True, True, True]]"
+    },
+    {
+      "check": "unavailable_bio_group_skipped",
+      "pass": true,
+      "detail": "[[True, False, True], [True, True, True]]"
+    },
+    {
+      "check": "mechanism_graph_handles_all_missing_nodes",
+      "pass": true,
+      "detail": "[-0.03230845928192139, -0.03230845928192139, -0.03230845928192139, -0.03230845928192139]"
+    },
+    {
+      "check": "mixed_pairwise_rank_finite",
+      "pass": true,
+      "detail": "0.16417065262794495"
+    },
+    {
+      "check": "single_class_rank_graph_zero",
+      "pass": true,
+      "detail": "[0.0, 0.0]"
+    },
+    {
+      "check": "gradients_reach_all_new_modules",
+      "pass": true,
+      "detail": "{'image_projector': 27.683681012131274, 'text_projector': 60.655893839895725, 'bio_projector': 9.915043160319328, 'role_scorer': 1.6643473447766155, 'mechanism_layer': 48.55864302441478, 'conflict_aggregator': 40.780549719696864, 'disease_state_head': 112.83234069449827}"
+    },
+    {
+      "check": "warmup_and_ramp_contract",
+      "pass": true,
+      "detail": "{1: 0.0, 3: 0.0, 4: 0.2, 8: 1.0, 9: 1.0}"
+    },
+    {
+      "check": "shortcut_fields_absent_from_model_source",
+      "pass": true,
+      "detail": "('n_images', 'n_visits', 'selected_n_visits', 'used_images', 'image_padding_count', 'raw_n_images', 'raw_n_visits', 'has_bio', 'bio_missing_count', 'report_length', 'source_folder')"
+    },
+    {
+      "check": "dssa_and_shared_specific_absent",
+      "pass": true,
+      "detail": "('dssa', 'shared_specific', 'shared-specific', 'private representation', 'modality-invariant')"
+    }
+  ]
+}
