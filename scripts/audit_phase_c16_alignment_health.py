@@ -151,7 +151,7 @@ def run_synthetic_smoke(c13_config_path: Path, c16_config_path: Path, output_dir
     available = outputs["dssa_available_mask"].bool()
     attention = torch.stack([outputs[f"shared_attention_{name}"] for name in ("img", "txt", "bio")], dim=1)
     expected_attention_sum = available.any(dim=1).to(attention.dtype)
-    max_attention_error = float((attention.sum(dim=1) - expected_attention_sum).abs().max())
+    max_attention_error = float((attention.sum(dim=1) - expected_attention_sum).abs().max().detach())
     check("shared_attention_masked_sum", max_attention_error <= 1e-6, max_attention_error)
     check("missing_modalities_masked", bool((attention[~available] == 0).all().item()), attention.detach().tolist())
 
