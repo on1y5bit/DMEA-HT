@@ -2137,3 +2137,12 @@
 - Started the server-only sequential smoke driver at `2026-07-13T17:22:46+08:00` with PID `361001` from implementation commit `a973bedb3d3c340dfd905fc3f985f9ad905fc88d`.
 - Driver order is fixed: Core smoke -> Core validation health gate -> Rank smoke -> Rank validation health gate. Rank cannot start if Core health fails. The two routes never run concurrently.
 - Launch status was `RUNNING`. No polling process was created; completion must be checked only on a later explicit status request or completion notification.
+
+### Server Smoke Completion
+
+- The sequential smoke driver completed with `status=PASS` at `2026-07-13T17:24:28+08:00`; its process exited normally after both routes finished.
+- Core smoke and Core health gate passed with validation AUC `0.8506111363`, AUPRC `0.7966925771`, sensitivity `0.8297872340`, specificity `0.7234042553`, and `94` validation prediction rows.
+- Rank smoke and Rank health gate passed with validation AUC `0.8506111363`, AUPRC `0.7966925771`, sensitivity `0.8297872340`, specificity `0.7234042553`, and `94` validation prediction rows.
+- Both health reports passed `15/15`; all prediction diagnostics were finite, prediction standard deviation was `0.1282`, role probabilities were normalized, conflict was not saturated, modality weights were not saturated, mechanism norms were bounded, and evidence roles did not collapse.
+- Smoke configs generated no test predictions. Rank weight remained effectively zero during the two-epoch warmup, so identical Core/Rank smoke metrics are expected and are not a route selection result.
+- Both predefined seed-0 full pilots are now authorized. No architecture or loss tuning is permitted between them, and test remains disabled until formal route selection.
