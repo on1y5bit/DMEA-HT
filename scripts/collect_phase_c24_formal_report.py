@@ -13,10 +13,12 @@ import numpy as np
 import pandas as pd
 
 SEEDS = (0, 42, 3407)
-SHORTCUT_FIELDS = (
+SELECTED_SHORTCUT_FIELDS = (
     "selected_n_visits", "used_images", "image_padding_count", "has_bio",
-    "bio_missing_count", "report_length", "raw_n_visits", "raw_n_images",
+    "bio_missing_count", "report_length",
 )
+RAW_SHORTCUT_FIELDS = ("raw_n_visits", "raw_n_images")
+SHORTCUT_FIELDS = SELECTED_SHORTCUT_FIELDS + RAW_SHORTCUT_FIELDS
 
 
 def parse_args() -> argparse.Namespace:
@@ -222,7 +224,15 @@ def main() -> None:
             "nonzero_safe_bound_fraction": float((frame["safe_local_bound"].astype(float) > 0).mean()),
             "has_both_delta_directions": bool((delta > 1e-6).any() and (delta < -1e-6).any()),
         })
-        shortcut_row: Dict[str, Any] = {"seed": seed, "selected_structure_shortcut_auc": shortcut_auc(frame, SHORTCUT_FIELDS)}
+        shortcut_row: Dict[str, Any] = {
+            "seed": seed,
+            "selected_structure_shortcut_auc": shortcut_auc(frame, SELECTED_SHORTCUT_FIELDS),
+        }
+        for field in RAW_SHORTCUT_FIELDS:
+            if field in frame:
+                raw = pd.DataFrame({"label": frame["label"], "value": pd.to_numeric(frame[field], errors="coerce")}).dropna()
+                raw_auc = auc(raw["label"], raw["value"]) if raw["label"].nunique() > 1 else 0.5
+                shortcut_row[f"{field}_orientation_invariant_label_auc"] = max(raw_auc, 1.0 - raw_auc)
         for field in SHORTCUT_FIELDS:
             if field in frame:
                 shortcut_row[f"delta_spearman_{field}"] = frame["delta_c24"].corr(pd.to_numeric(frame[field], errors="coerce"), method="spearman")
