@@ -225,11 +225,21 @@ def attribute(
     p2_minus_p1 = float(table.loc[P2, "validation_AUC_mean"] - table.loc[P1, "validation_AUC_mean"])
     p1_supported = all(p1_checks.values()) and p2_minus_p1 < 0.003
     p2_supported = all(p2_checks.values()) and p2_minus_p1 >= 0.005
-    probe_risk = any(
-        not bool(table.loc[probe, "generalization_pass"])
-        or not bool(table.loc[probe, "random_label_pass"])
+    random_label_failure = any(
+        not bool(table.loc[probe, "random_label_pass"]) for probe in CANDIDATES
+    )
+    generalization_warning = any(
+        not bool(table.loc[probe, "generalization_pass"]) for probe in CANDIDATES
+    )
+    unsafe_apparent_signal = any(
+        table.loc[probe, "mean_AUC_gain_vs_official"] >= MATERIAL_MEAN_AUC_GAIN
+        and table.loc[probe, "material_improvement_seed_count"] >= 2
+        and not bool(table.loc[probe, "generalization_pass"])
         for probe in CANDIDATES
     )
+    # A gap warning cannot supersede a direct all-seed validation failure. It becomes
+    # the primary risk label only when an apparent authorizing signal depends on it.
+    probe_risk = random_label_failure or unsafe_apparent_signal
 
     off_classifier = classifier_swaps[~as_bool(classifier_swaps["diagonal"])].copy()
     off_head = head_swaps[~as_bool(head_swaps["diagonal"])].copy()
@@ -294,6 +304,9 @@ def attribute(
         "coordinate_mismatch_rule": coordinate_mismatch,
         "visit_limitation_rule": visit_limitation,
         "probe_risk": probe_risk,
+        "random_label_failure": random_label_failure,
+        "generalization_warning": generalization_warning,
+        "unsafe_apparent_signal": unsafe_apparent_signal,
     }
     return primary, authorization, evidence
 
@@ -440,6 +453,9 @@ def write_decision_reports(
         f"- coordinate-mismatch rule: `{evidence['coordinate_mismatch_rule']}`",
         f"- visit-representation-limitation rule: `{evidence['visit_limitation_rule']}`",
         f"- probe leakage/overfit risk: `{evidence['probe_risk']}`",
+        f"- train-validation generalization warning present: `{evidence['generalization_warning']}`",
+        f"- random-label failure present: `{evidence['random_label_failure']}`",
+        f"- apparent authorizing signal dependent on an unsafe gap: `{evidence['unsafe_apparent_signal']}`",
         "",
         "P4 conflict-only and P5 C17-reference probes are excluded from authorization by construction. Cross-seed swaps and classifier geometry are diagnostic and are not clinical causal evidence.",
     ]
