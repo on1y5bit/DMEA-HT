@@ -150,12 +150,28 @@ def reproduce_and_compare(
             c30_logits: List[float] = []
             max_initial_error = 0.0
             direct_reference_checked = False
+            missing_case_checked = False
             for batch in loaders[split]:
                 batch = move_batch(batch, device)
                 with torch.inference_mode():
                     direct = model(batch, use_vtca=False)
                     adapted = model(batch, use_vtca=True)
                     reference = model.c27(batch) if not direct_reference_checked else None
+                    missing_output = None
+                    if not missing_case_checked:
+                        missing_batch = {
+                            key: value.clone() if torch.is_tensor(value) else value
+                            for key, value in batch.items()
+                        }
+                        missing_batch["images"].zero_()
+                        missing_batch["image_mask"].zero_()
+                        missing_batch["bio_values"].zero_()
+                        missing_batch["bio_missing_mask"].fill_(1.0)
+                        missing_batch["bio_abnormal_flags"].zero_()
+                        missing_batch["fallback_bio_values"].zero_()
+                        missing_batch["fallback_bio_missing_mask"].fill_(1.0)
+                        missing_batch["fallback_bio_valid"].zero_()
+                        missing_output = model(missing_batch, use_vtca=True)
                 if not _all_finite(direct) or not _all_finite(adapted):
                     raise RuntimeError(f"Non-finite C30 gate output for seed {seed} {split}")
                 difference = (adapted["logit"] - direct["logit"]).abs()
@@ -166,6 +182,9 @@ def reproduce_and_compare(
                         float((direct["logit"] - reference["logit"]).abs().max().cpu()),
                     )
                     direct_reference_checked = True
+                if missing_output is not None:
+                    seed_audit["missing_image_or_bio_finite"] = _all_finite(missing_output)
+                    missing_case_checked = True
                 ids.extend(str(value) for value in batch["patient_id"])
                 labels.extend(batch["label"].detach().cpu().numpy().astype(int).tolist())
                 c27_logits.extend(direct["logit"].detach().cpu().numpy().tolist())
@@ -177,10 +196,6 @@ def reproduce_and_compare(
                     seed_audit["single_visit_finite"] = True
                 if bool(((visit_counts > 1) & finite_by_patient).any()):
                     seed_audit["multi_visit_finite"] = True
-                no_image = batch["image_mask"].sum(dim=(1, 2)) == 0
-                no_dated_bio = batch["bio_missing_mask"].bool().all(dim=(1, 2))
-                if bool(((no_image | no_dated_bio) & finite_by_patient).any()):
-                    seed_audit["missing_image_or_bio_finite"] = True
             record: Dict[str, Any] = {
                 "seed": seed,
                 "split": split,
