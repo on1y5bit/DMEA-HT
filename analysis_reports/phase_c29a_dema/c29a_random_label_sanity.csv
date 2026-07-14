@@ -1,0 +1,16 @@
+seed,probe,permutation_seed,random_label_validation_AUC,maximum_allowed_AUC,pass,authorization_candidate
+0,P1_patient_state,20260714,0.4744228157537347,0.65,True,True
+0,P2_pre_projection,20260714,0.4821186057039385,0.65,True,True
+0,P3_temporal_mechanisms,20260714,0.4925305568130376,0.65,True,True
+0,P4_conflicts_negative_control,20260714,0.419194205522861,0.65,True,False
+0,P5_C17_mechanism_reference,20260714,0.5165233137166139,0.65,True,False
+42,P1_patient_state,20260714,0.5065640561339972,0.65,True,True
+42,P2_pre_projection,20260714,0.5418741511996378,0.65,True,True
+42,P3_temporal_mechanisms,20260714,0.5382526029877772,0.65,True,True
+42,P4_conflicts_negative_control,20260714,0.46174739701222267,0.65,True,False
+42,P5_C17_mechanism_reference,20260714,0.4395654142145767,0.65,True,False
+3407,P1_patient_state,20260714,0.45948392937980986,0.65,True,True
+3407,P2_pre_projection,20260714,0.5400633770937076,0.65,True,True
+3407,P3_temporal_mechanisms,20260714,0.526935264825713,0.65,True,True
+3407,P4_conflicts_negative_control,20260714,0.41964689904934355,0.65,True,False
+3407,P5_C17_mechanism_reference,20260714,0.4812132186509733,0.65,True,False

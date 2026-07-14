@@ -1,0 +1,43 @@
+seed,split,stage,shape,patient_count,feature_shape,available,description
+0,train,S0_temporal_mechanisms,"[602, 5, 256]",602,"[5, 256]",True,five official temporal mechanism states
+0,train,S1_conflicts,"[602, 5]",602,[5],True,five fixed latest-history conflict scalars
+0,train,S2_pre_projection,"[602, 1541]",602,[1541],True,"S0 flattened, then S1, then frozen fallback bio context"
+0,train,S3_projection_linear,"[602, 256]",602,[256],True,patient projection Linear output before GELU
+0,train,S3_projection_post_gelu,"[602, 256]",602,[256],True,patient projection post-GELU before LayerNorm
+0,train,S4_patient_state,"[602, 256]",602,[256],True,official LayerNorm output and classifier input
+0,train,S5_classifier_dot,"[602, 1]",602,[1],True,classifier weight dot official patient state
+0,val,S0_temporal_mechanisms,"[94, 5, 256]",94,"[5, 256]",True,five official temporal mechanism states
+0,val,S1_conflicts,"[94, 5]",94,[5],True,five fixed latest-history conflict scalars
+0,val,S2_pre_projection,"[94, 1541]",94,[1541],True,"S0 flattened, then S1, then frozen fallback bio context"
+0,val,S3_projection_linear,"[94, 256]",94,[256],True,patient projection Linear output before GELU
+0,val,S3_projection_post_gelu,"[94, 256]",94,[256],True,patient projection post-GELU before LayerNorm
+0,val,S4_patient_state,"[94, 256]",94,[256],True,official LayerNorm output and classifier input
+0,val,S5_classifier_dot,"[94, 1]",94,[1],True,classifier weight dot official patient state
+42,train,S0_temporal_mechanisms,"[602, 5, 256]",602,"[5, 256]",True,five official temporal mechanism states
+42,train,S1_conflicts,"[602, 5]",602,[5],True,five fixed latest-history conflict scalars
+42,train,S2_pre_projection,"[602, 1541]",602,[1541],True,"S0 flattened, then S1, then frozen fallback bio context"
+42,train,S3_projection_linear,"[602, 256]",602,[256],True,patient projection Linear output before GELU
+42,train,S3_projection_post_gelu,"[602, 256]",602,[256],True,patient projection post-GELU before LayerNorm
+42,train,S4_patient_state,"[602, 256]",602,[256],True,official LayerNorm output and classifier input
+42,train,S5_classifier_dot,"[602, 1]",602,[1],True,classifier weight dot official patient state
+42,val,S0_temporal_mechanisms,"[94, 5, 256]",94,"[5, 256]",True,five official temporal mechanism states
+42,val,S1_conflicts,"[94, 5]",94,[5],True,five fixed latest-history conflict scalars
+42,val,S2_pre_projection,"[94, 1541]",94,[1541],True,"S0 flattened, then S1, then frozen fallback bio context"
+42,val,S3_projection_linear,"[94, 256]",94,[256],True,patient projection Linear output before GELU
+42,val,S3_projection_post_gelu,"[94, 256]",94,[256],True,patient projection post-GELU before LayerNorm
+42,val,S4_patient_state,"[94, 256]",94,[256],True,official LayerNorm output and classifier input
+42,val,S5_classifier_dot,"[94, 1]",94,[1],True,classifier weight dot official patient state
+3407,train,S0_temporal_mechanisms,"[602, 5, 256]",602,"[5, 256]",True,five official temporal mechanism states
+3407,train,S1_conflicts,"[602, 5]",602,[5],True,five fixed latest-history conflict scalars
+3407,train,S2_pre_projection,"[602, 1541]",602,[1541],True,"S0 flattened, then S1, then frozen fallback bio context"
+3407,train,S3_projection_linear,"[602, 256]",602,[256],True,patient projection Linear output before GELU
+3407,train,S3_projection_post_gelu,"[602, 256]",602,[256],True,patient projection post-GELU before LayerNorm
+3407,train,S4_patient_state,"[602, 256]",602,[256],True,official LayerNorm output and classifier input
+3407,train,S5_classifier_dot,"[602, 1]",602,[1],True,classifier weight dot official patient state
+3407,val,S0_temporal_mechanisms,"[94, 5, 256]",94,"[5, 256]",True,five official temporal mechanism states
+3407,val,S1_conflicts,"[94, 5]",94,[5],True,five fixed latest-history conflict scalars
+3407,val,S2_pre_projection,"[94, 1541]",94,[1541],True,"S0 flattened, then S1, then frozen fallback bio context"
+3407,val,S3_projection_linear,"[94, 256]",94,[256],True,patient projection Linear output before GELU
+3407,val,S3_projection_post_gelu,"[94, 256]",94,[256],True,patient projection post-GELU before LayerNorm
+3407,val,S4_patient_state,"[94, 256]",94,[256],True,official LayerNorm output and classifier input
+3407,val,S5_classifier_dot,"[94, 1]",94,[1],True,classifier weight dot official patient state

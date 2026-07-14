@@ -1,0 +1,152 @@
+{
+  "phase": "C29-A",
+  "status": "C29A_ANALYSIS_AUTHORIZED",
+  "pass": true,
+  "passed_checks": 35,
+  "total_checks": 35,
+  "checks": [
+    {
+      "name": "active_branch_main",
+      "pass": true
+    },
+    {
+      "name": "canonical_worktree_only",
+      "pass": true
+    },
+    {
+      "name": "no_c29_model_config",
+      "pass": true
+    },
+    {
+      "name": "no_neural_optimizer",
+      "pass": true
+    },
+    {
+      "name": "no_backward_through_c27",
+      "pass": true
+    },
+    {
+      "name": "no_checkpoint_writer",
+      "pass": true
+    },
+    {
+      "name": "no_test_loader",
+      "pass": true
+    },
+    {
+      "name": "auc_only_route_metric",
+      "pass": true
+    },
+    {
+      "name": "no_ensemble",
+      "pass": true
+    },
+    {
+      "name": "three_c27_checkpoints_exist",
+      "pass": true
+    },
+    {
+      "name": "checkpoint_seed_metadata_correct",
+      "pass": true
+    },
+    {
+      "name": "train_validation_ids_labels_aligned",
+      "pass": true
+    },
+    {
+      "name": "official_logits_probabilities_reproduced",
+      "pass": true
+    },
+    {
+      "name": "official_temporal_weights_reproduced",
+      "pass": true
+    },
+    {
+      "name": "s0_s5_real_tensors_available",
+      "pass": true
+    },
+    {
+      "name": "logit_decomposition_exact",
+      "pass": true
+    },
+    {
+      "name": "c27_checkpoint_state_unchanged",
+      "pass": true
+    },
+    {
+      "name": "probe_fit_train_only",
+      "pass": true
+    },
+    {
+      "name": "validation_not_used_for_fit",
+      "pass": true
+    },
+    {
+      "name": "standard_scaler_fit_train_only",
+      "pass": true
+    },
+    {
+      "name": "logistic_parameters_fixed",
+      "pass": true
+    },
+    {
+      "name": "no_probe_sweep",
+      "pass": true
+    },
+    {
+      "name": "random_label_sanity_ran",
+      "pass": true
+    },
+    {
+      "name": "shortcut_fields_excluded_from_probes",
+      "pass": true
+    },
+    {
+      "name": "p4_never_authorizes",
+      "pass": true
+    },
+    {
+      "name": "p5_never_authorizes",
+      "pass": true
+    },
+    {
+      "name": "classifier_swap_diagonal_reproduced",
+      "pass": true
+    },
+    {
+      "name": "head_swap_diagonal_reproduced",
+      "pass": true
+    },
+    {
+      "name": "all_scores_finite",
+      "pass": true
+    },
+    {
+      "name": "every_formal_object_has_2209_pairs",
+      "pass": true
+    },
+    {
+      "name": "small_seed_variation_policy_fixed",
+      "pass": true
+    },
+    {
+      "name": "c29b_not_auto_started",
+      "pass": true
+    },
+    {
+      "name": "test_not_read",
+      "pass": true
+    },
+    {
+      "name": "no_new_model_checkpoint",
+      "pass": true
+    },
+    {
+      "name": "single_model_deployment_contract",
+      "pass": true
+    }
+  ],
+  "data_scope": "train_fit_validation_decision_only",
+  "neural_parameter_updates": false,
+  "new_checkpoint_created": false
+}
