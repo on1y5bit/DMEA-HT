@@ -397,6 +397,7 @@ def run_inference(
         "checkpoint_state_unchanged": True,
         "shortcut_fields_excluded": True,
         "pair_count_contract": True,
+        "normalization_max_abs_sum_error": {variant: 0.0 for variant in VARIANTS},
     }
 
     for seed in SEEDS:
@@ -499,9 +500,13 @@ def run_inference(
                     )
                     eligible = history_available if variant == "V5_history_mean_only" else torch.ones_like(history_available)
                     sums = weights.sum(dim=1)
-                    normalized = torch.isfinite(weights).all() and torch.allclose(
-                        sums[eligible], torch.ones_like(sums[eligible]), atol=1e-7, rtol=0.0
+                    sum_error = (
+                        float((sums[eligible] - 1.0).abs().max().cpu()) if bool(eligible.any()) else 0.0
                     )
+                    runtime["normalization_max_abs_sum_error"][variant] = max(
+                        float(runtime["normalization_max_abs_sum_error"][variant]), sum_error
+                    )
+                    normalized = bool(torch.isfinite(weights).all()) and sum_error <= 1e-6
                     padded_zero = bool((weights * (~valid).to(weights.dtype)).abs().max().cpu() <= 1e-8)
                     key = {
                         "V1_uniform": "uniform_normalized",
@@ -754,7 +759,22 @@ def gate_payload(runtime: Mapping[str, Any]) -> Dict[str, Any]:
         "shortcut_fields_excluded",
         "pair_count_contract",
     )
-    checks.extend({"name": name, "pass": bool(runtime[name])} for name in runtime_names)
+    normalization_variants = {
+        "uniform_normalized": "V1_uniform",
+        "recency_only_normalized": "V2_recency_only",
+        "content_only_normalized": "V3_content_only",
+        "latest_only_normalized": "V4_latest_only",
+    }
+    for name in runtime_names:
+        item: Dict[str, Any] = {"name": name, "pass": bool(runtime[name])}
+        if name in normalization_variants:
+            variant = normalization_variants[name]
+            item["detail"] = {
+                "variant": variant,
+                "max_abs_weight_sum_error": runtime["normalization_max_abs_sum_error"][variant],
+                "float32_tolerance": 1e-6,
+            }
+        checks.append(item)
     if len(checks) != 30:
         raise RuntimeError(f"C28A gate definition must contain exactly 30 checks, found {len(checks)}")
     passed = all(bool(item["pass"]) for item in checks)
