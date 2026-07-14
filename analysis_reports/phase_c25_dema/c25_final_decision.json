@@ -1,0 +1,18 @@
+{
+  "phase": "C25",
+  "decision": "DEMA_C25_RANK_BATCH_COVERAGE_INVALID",
+  "c17_mean_auc": 0.8696242643730194,
+  "c17_std_auc": 0.007479724600207513,
+  "c25_mean_auc": 0.8703787535838238,
+  "c25_std_auc": 0.007360041284597697,
+  "coverage_pass": false,
+  "positive_preservation_pass": false,
+  "negative_preservation_pass": false,
+  "global_shift_pass": true,
+  "inversion_pass": true,
+  "residual_health_pass": true,
+  "shortcut_pass": true,
+  "test_used_for_decision": false,
+  "stop_further_residual_refinement": true,
+  "keep_dema_c17_strict_best": true
+}

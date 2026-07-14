@@ -1,0 +1,4 @@
+case,positive_count,negative_count,pair_count,loss,requires_grad,gradient_l1
+mixed,2,2,4,0.3274683356285095,True,0.5507334470748901
+positive_only,2,0,0,0.0,True,0.0
+negative_only,0,2,0,0.0,True,0.0

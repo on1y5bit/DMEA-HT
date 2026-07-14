@@ -1,0 +1,374 @@
+{
+  "phase": "C25",
+  "gate": "FULL_SERVER",
+  "pass": true,
+  "checks": [
+    {
+      "name": "phase_is_c25",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "formal_seeds_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "default_shuffle_batch4",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "selection_is_validation_auc_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "test_is_post_selection_reporting_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "c17_formal_checkpoint_source",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "representation_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "temperature_and_bound_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "loss_weights_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "all_positive_negative_pairs_used",
+      "pass": true,
+      "detail": {
+        "pairs": 4,
+        "loss": 0.3274683356285095
+      }
+    },
+    {
+      "name": "rank_gradient_finite_nonzero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_class_negative_graph_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_class_positive_graph_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "correct_preserve_uses_only_frozen_correct_cases",
+      "pass": true,
+      "detail": 0.25
+    },
+    {
+      "name": "empty_correct_mask_graph_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "confidence_gate_monotonic",
+      "pass": true,
+      "detail": [
+        1.0,
+        0.6065306663513184,
+        0.3678794503211975,
+        0.1353352814912796,
+        0.049787066876888275
+      ]
+    },
+    {
+      "name": "zero_initialized_head",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "new_head_gradient_finite_nonzero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "shortcut_fields_absent_from_model",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_final_logit_is_base",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_mechanism_state_is_only_representation",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_pointwise_bce",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_custom_sampler",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "validation_has_no_loss",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "disabled_metric_absent",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_formal_c25_config_only",
+      "pass": true,
+      "detail": [
+        "dema_ht_c25_pairwise_ranking_residual_multiseed.yaml"
+      ]
+    },
+    {
+      "name": "existing_configs_parse",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "canonical_branch_is_main",
+      "pass": true,
+      "detail": "main"
+    },
+    {
+      "name": "only_canonical_worktree",
+      "pass": true,
+      "detail": [
+        "/home/linruixin/chen/project/DMEA-HT"
+      ]
+    },
+    {
+      "name": "no_c25_project_copy",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "all_required_paths_resolve",
+      "pass": true,
+      "detail": [
+        {
+          "seed": 0,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_0.csv",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_42_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_42_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_42.csv",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_3407_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_3407_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_3407.csv",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "manifest",
+          "absolute_path": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c17_config",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/configs/dema_ht_c17_formal_multiseed.yaml",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c25_run_root",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c25_pairwise_ranking_residual_multiseed",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c25_report_root",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c25_dema",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "name": "manifest_split_label_counts_match",
+      "pass": true,
+      "detail": {
+        "train_0": 301,
+        "train_1": 301,
+        "val_0": 47,
+        "val_1": 47,
+        "test_0": 42,
+        "test_1": 42
+      }
+    },
+    {
+      "name": "patient_ids_unique",
+      "pass": true,
+      "detail": {
+        "rows": 780,
+        "unique": 780
+      }
+    },
+    {
+      "name": "seed_0_checkpoint_metadata",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "name": "seed_0_only_residual_head_trainable",
+      "pass": true,
+      "detail": [
+        "residual_head.mlp.0.weight",
+        "residual_head.mlp.0.bias",
+        "residual_head.mlp.1.weight",
+        "residual_head.mlp.1.bias",
+        "residual_head.mlp.4.weight",
+        "residual_head.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "seed_42_checkpoint_metadata",
+      "pass": true,
+      "detail": 42
+    },
+    {
+      "name": "seed_42_only_residual_head_trainable",
+      "pass": true,
+      "detail": [
+        "residual_head.mlp.0.weight",
+        "residual_head.mlp.0.bias",
+        "residual_head.mlp.1.weight",
+        "residual_head.mlp.1.bias",
+        "residual_head.mlp.4.weight",
+        "residual_head.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "seed_3407_checkpoint_metadata",
+      "pass": true,
+      "detail": 3407
+    },
+    {
+      "name": "seed_3407_only_residual_head_trainable",
+      "pass": true,
+      "detail": [
+        "residual_head.mlp.0.weight",
+        "residual_head.mlp.0.bias",
+        "residual_head.mlp.1.weight",
+        "residual_head.mlp.1.bias",
+        "residual_head.mlp.4.weight",
+        "residual_head.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "validation_ids_and_labels_match_c17",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "c17_validation_logits_reproduce",
+      "pass": true,
+      "detail": 2.384185791015625e-07
+    },
+    {
+      "name": "initial_c25_equals_frozen_c17",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "real_outputs_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "mixed_batch_head_gradient_finite_nonzero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_c17_gradients_absent",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "decision": "C25_DIRECT_MULTI_SEED_AUTHORIZED"
+}
