@@ -36,7 +36,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data-root")
     parser.add_argument("--manifest")
     parser.add_argument("--output-dir")
-    parser.add_argument("--stage", choices=("validation", "reporting-test"), default="validation")
+    parser.add_argument(
+        "--stage",
+        choices=("validation", "validation-seed", "validation-finalize", "reporting-test"),
+        default="validation",
+    )
+    parser.add_argument("--seed", type=int)
     return parser.parse_args()
 
 
@@ -261,6 +266,45 @@ def train_seed(
     }
 
 
+def save_validation_seed(result: Dict[str, Any], out_dir: Path) -> Dict[str, Any]:
+    seed = int(result["seed"])
+    split_result = result["val"]
+    frame = pd.DataFrame(split_result["predictions"]).sort_values("patient_id").reset_index(drop=True)
+    frame.insert(0, "split", "val")
+    frame.insert(0, "seed", seed)
+    frame.to_csv(out_dir / "predictions" / f"val_predictions_seed_{seed}.csv", index=False)
+    order = np.argsort(np.asarray([str(row["patient_id"]) for row in split_result["predictions"]]))
+    np.savez_compressed(
+        out_dir / "representations" / f"val_mechanism_state_seed_{seed}.npz",
+        patient_id=frame["patient_id"].astype(str).to_numpy(),
+        label=frame["label"].to_numpy(dtype=np.int64),
+        mechanism_state=split_result["representations"][order].astype(np.float32),
+    )
+    metrics_row = {
+        "seed": seed,
+        "split": "val",
+        "best_epoch": int(result["best_epoch"]),
+        **split_result["metrics"],
+    }
+    pd.DataFrame([metrics_row]).to_csv(out_dir / "reports" / f"metrics_seed_{seed}.csv", index=False)
+    pd.DataFrame(result["epoch_history"]).to_csv(
+        out_dir / "reports" / f"metrics_by_epoch_seed_{seed}.csv", index=False
+    )
+    return metrics_row
+
+
+def write_metrics_summary(metrics: pd.DataFrame, out_dir: Path) -> None:
+    summary_rows = []
+    for split, split_frame in metrics.groupby("split"):
+        row: Dict[str, Any] = {"split": split}
+        for key in ("AUC", "Sensitivity", "Specificity", "Balanced_ACC", "mean_delta_c26sm", "std_delta_c26sm"):
+            values = split_frame[key].to_numpy(dtype=float)
+            row[f"{key}_mean"] = float(values.mean())
+            row[f"{key}_std"] = float(values.std(ddof=1)) if values.size > 1 else 0.0
+        summary_rows.append(row)
+    pd.DataFrame(summary_rows).to_csv(out_dir / "reports" / "metrics_summary.csv", index=False)
+
+
 def main() -> None:
     args = parse_args()
     config = load_config(resolve_path(args.config))
@@ -279,7 +323,112 @@ def main() -> None:
         (out_dir / child).mkdir(parents=True, exist_ok=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     seeds = [int(seed) for seed in config["training"]["seeds"]]
+    if args.stage == "validation-seed":
+        if args.seed not in seeds:
+            raise RuntimeError(f"--seed must be one of the formal C26-SM seeds: {seeds}")
+        seed = int(args.seed)
+        started = timestamp()
+        shard_status_path = out_dir / "reports" / f"run_status_seed_{seed}.json"
+        shard_status = {
+            "phase": "C26-SM",
+            "stage": "validation-seed",
+            "status": "RUNNING",
+            "seed": seed,
+            "started_at": started,
+            "device": str(device),
+            "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
+            "deployment_contract": "one_checkpoint_one_model_one_forward",
+        }
+        shard_status_path.write_text(json.dumps(shard_status, indent=2) + "\n", encoding="utf-8")
+        result = train_seed(config, rows, seed, out_dir, device)
+        save_validation_seed(result, out_dir)
+        shard_runtime = {
+            "seed": seed,
+            "trainable_parameter_names": result["trainable_parameter_names"],
+            "capacity": result["capacity"],
+            "best_epoch": int(result["best_epoch"]),
+        }
+        (out_dir / "reports" / f"run_config_seed_{seed}.json").write_text(
+            json.dumps(shard_runtime, indent=2) + "\n", encoding="utf-8"
+        )
+        shard_status.update({"status": "COMPLETE", "validation_finished_at": timestamp()})
+        shard_status_path.write_text(json.dumps(shard_status, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps({"status": "VALIDATION_SEED_COMPLETE", "seed": seed}))
+        return
+
+    if args.stage == "validation-finalize":
+        if args.seed is not None:
+            raise RuntimeError("validation-finalize does not accept --seed")
+        metrics_parts = []
+        epoch_parts = []
+        shard_statuses: List[Dict[str, Any]] = []
+        trainable_by_seed: Dict[str, List[str]] = {}
+        capacity_by_seed: Dict[str, Dict[str, Any]] = {}
+        for seed in seeds:
+            shard_status_path = out_dir / "reports" / f"run_status_seed_{seed}.json"
+            shard_metrics_path = out_dir / "reports" / f"metrics_seed_{seed}.csv"
+            shard_epoch_path = out_dir / "reports" / f"metrics_by_epoch_seed_{seed}.csv"
+            shard_runtime_path = out_dir / "reports" / f"run_config_seed_{seed}.json"
+            required = (shard_status_path, shard_metrics_path, shard_epoch_path, shard_runtime_path)
+            if not all(path.exists() for path in required):
+                raise RuntimeError(f"C26-SM validation shard is incomplete for seed {seed}")
+            shard_status = json.loads(shard_status_path.read_text(encoding="utf-8"))
+            if shard_status.get("status") != "COMPLETE" or int(shard_status.get("seed", -1)) != seed:
+                raise RuntimeError(f"C26-SM validation shard did not complete for seed {seed}")
+            shard_metrics = pd.read_csv(shard_metrics_path)
+            if len(shard_metrics) != 1 or int(shard_metrics.iloc[0]["seed"]) != seed or shard_metrics.iloc[0]["split"] != "val":
+                raise RuntimeError(f"C26-SM validation metrics shard contract failed for seed {seed}")
+            shard_runtime = json.loads(shard_runtime_path.read_text(encoding="utf-8"))
+            metrics_parts.append(shard_metrics)
+            epoch_parts.append(pd.read_csv(shard_epoch_path))
+            shard_statuses.append(shard_status)
+            trainable_by_seed[str(seed)] = shard_runtime["trainable_parameter_names"]
+            capacity_by_seed[str(seed)] = shard_runtime["capacity"]
+        metrics = pd.concat(metrics_parts, ignore_index=True).sort_values("seed").reset_index(drop=True)
+        metrics.to_csv(out_dir / "reports" / "metrics_by_seed.csv", index=False)
+        pd.concat(epoch_parts, ignore_index=True).sort_values(["seed", "epoch"]).to_csv(
+            out_dir / "reports" / "metrics_by_epoch.csv", index=False
+        )
+        write_metrics_summary(metrics, out_dir)
+        finished = timestamp()
+        status = {
+            "phase": "C26-SM",
+            "status": "VALIDATION_COMPLETE",
+            "started_at": min(str(item["started_at"]) for item in shard_statuses),
+            "validation_finished_at": finished,
+            "completed_seeds": seeds,
+            "seeds": seeds,
+            "parallel_seed_training": True,
+            "device": str(device),
+            "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
+            "deployment_contract": "one_checkpoint_one_model_one_forward",
+        }
+        (out_dir / "reports" / "run_status.json").write_text(
+            json.dumps(status, indent=2) + "\n", encoding="utf-8"
+        )
+        runtime = {
+            "config": config,
+            "started_at": status["started_at"],
+            "validation_finished_at": finished,
+            "device": str(device),
+            "gpu": status["gpu"],
+            "seeds": seeds,
+            "parallel_seed_training": True,
+            "trainable_parameter_names_by_seed": trainable_by_seed,
+            "capacity_by_seed": capacity_by_seed,
+            "selection_metric": "validation_AUC_only",
+            "test_role": "reporting_only_after_validation_selection",
+            "deployment_contract": "one_checkpoint_one_model_one_forward",
+        }
+        (out_dir / "reports" / "run_config.json").write_text(
+            json.dumps(runtime, indent=2) + "\n", encoding="utf-8"
+        )
+        print(json.dumps({"status": "VALIDATION_COMPLETE", "output_dir": str(out_dir), "seeds": seeds}))
+        return
+
     if args.stage == "reporting-test":
+        if args.seed is not None:
+            raise RuntimeError("reporting-test does not accept --seed")
         decision_path = resolve_path(config["project"]["report_dir"]) / "c26sm_final_decision.json"
         if not decision_path.exists():
             raise RuntimeError("C26-SM validation decision must be frozen before reporting-only test")
@@ -319,15 +468,7 @@ def main() -> None:
                 pd.DataFrame([{"seed": seed, "split": "test", "best_epoch": int(payload["best_epoch"]), **result["metrics"]}]),
             ], ignore_index=True)
         metrics.to_csv(metrics_path, index=False)
-        summary_rows = []
-        for split, split_frame in metrics.groupby("split"):
-            row: Dict[str, Any] = {"split": split}
-            for key in ("AUC", "Sensitivity", "Specificity", "Balanced_ACC", "mean_delta_c26sm", "std_delta_c26sm"):
-                values = split_frame[key].to_numpy(dtype=float)
-                row[f"{key}_mean"] = float(values.mean())
-                row[f"{key}_std"] = float(values.std(ddof=1)) if values.size > 1 else 0.0
-            summary_rows.append(row)
-        pd.DataFrame(summary_rows).to_csv(out_dir / "reports" / "metrics_summary.csv", index=False)
+        write_metrics_summary(metrics, out_dir)
         status_path = out_dir / "reports" / "run_status.json"
         status = json.loads(status_path.read_text(encoding="utf-8"))
         status.update({"status": "COMPLETE", "test_started_after_validation_decision": True, "finished_at": timestamp()})
@@ -335,6 +476,8 @@ def main() -> None:
         print(json.dumps({"status": "REPORTING_TEST_COMPLETE", "seeds": seeds}))
         return
 
+    if args.seed is not None:
+        raise RuntimeError("validation does not accept --seed; use validation-seed")
     started = timestamp()
     status: Dict[str, Any] = {
         "phase": "C26-SM", "status": "RUNNING", "started_at": started,

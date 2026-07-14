@@ -72,6 +72,17 @@ def static_checks(config: Mapping[str, Any], output_dir: Path) -> List[Dict[str,
     train_source = (REPO_ROOT / "scripts" / "train_phase_c26sm.py").read_text(encoding="utf-8")
     collect_source = (REPO_ROOT / "scripts" / "collect_phase_c26sm_formal_report.py").read_text(encoding="utf-8")
     model_calls, train_calls = call_names(model_source), call_names(train_source)
+    read_csv_inputs = []
+    for node in ast.walk(ast.parse(train_source)):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "pd"
+            and node.func.attr == "read_csv"
+            and node.args
+        ):
+            read_csv_inputs.append(ast.unparse(node.args[0]))
     checks.append(item("phase_is_c26sm", str(config.get("phase", "")).lower() == "c26sm"))
     checks.append(item("formal_seeds_fixed", config["training"]["seeds"] == list(SEEDS)))
     checks.append(item("validation_auc_only", config["training"]["primary_metric"] == "val_AUC"))
@@ -96,9 +107,16 @@ def static_checks(config: Mapping[str, Any], output_dir: Path) -> List[Dict[str,
     shortcut_fields = ("selected_n_visits", "used_images", "image_padding_count", "report_length", "raw_n_visits", "raw_n_images")
     checks.append(item("shortcut_fields_absent_from_predictor_and_loss", not any(field in model_source for field in shortcut_fields)))
     checks.append(item("audit_fields_absent_from_predictor", not any(token in model_source for token in ("c14", "c20", "c21", "hard_patient", "inversion_count"))))
-    checks.append(item("saved_prediction_csv_not_training_input", train_source.count("pd.read_csv(") == 1 and "pd.read_csv(metrics_path)" in train_source))
+    allowed_training_csv_inputs = {"metrics_path", "shard_metrics_path", "shard_epoch_path"}
+    checks.append(item("saved_prediction_csv_not_training_input", bool(read_csv_inputs) and set(read_csv_inputs) <= allowed_training_csv_inputs, read_csv_inputs))
     checks.append(item("optimizer_only_in_training_entry", "Optimizer" in train_source and "Optimizer" not in model_source))
-    checks.append(item("validation_decision_precedes_test_stage", "validation decision must be frozen before reporting-only test" in train_source))
+    checks.append(item(
+        "validation_decision_precedes_test_stage",
+        "validation decision must be frozen before reporting-only test" in train_source
+        and "validation-seed" in train_source
+        and "validation-finalize" in train_source
+        and "C26-SM validation shard did not complete" in train_source,
+    ))
     disabled_metric = "AUP" + "RC"
     checks.append(item("disabled_metric_absent", disabled_metric not in model_source + train_source + collect_source))
 
