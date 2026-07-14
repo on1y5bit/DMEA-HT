@@ -2377,3 +2377,16 @@
 - The C22 training entry point is isolated from `train.py`; existing C17, C18, and C19 training branches are unchanged.
 - Required formal artifacts are written under `runs/dema_ht_c22_stable_evidence_pooling_multiseed/` and `analysis_reports/phase_c22_dema/`, including epoch/seed/summary metrics, patient diagnostics, positive-preservation audit, pairwise ranking/inversion tables, residual health, shortcut residual audit, C13/C17 comparison, necessity report, seed-stability report, and final decision report.
 - Local verification is limited to syntax/static/synthetic checks; no data or model training is run on the local machine.
+
+### Runtime And Final Decision
+
+- The first two launch attempts stopped before training because the C22 config contained two historical path spelling errors: `dema_ht_v2_c13...` was corrected to the canonical `dmea_ht_v2_c13...`, and `dema_ht_c16...` was corrected to `dmea_ht_v2_c16...`. No training data, labels, split, or model code was changed for these path-only repairs.
+- The server static/synthetic gate passed `12/12` under `/home/linruixin/chen/conda/envs/ma`. No smoke or seed-0 pilot was run after the gate.
+- Formal C22 training ran server-only on `NVIDIA GeForce RTX 5090` from `2026-07-14T03:53:42+08:00` to `2026-07-14T04:05:36+08:00`, against `/data/csb/DMEA-HT/HT_2025.12_25`, with seeds `[0, 42, 3407]`. The training implementation commit was `dc6eba1`; the final audit collector fix was `bdb718f`.
+- Validation AUC by seed was `0.8700769579` (seed 0), `0.8755092802` (seed 42), and `0.8578542327` (seed 3407). C22 mean/std was `0.8678134903 +/- 0.0090425461`, compared with C17 `0.8696242644 +/- 0.0074797246` and C13 `0.8664554097 +/- 0.0077356304`. All three C22 seeds were below the corresponding C17 AUC; the largest seed drop was `-0.0040742417`.
+- Reporting-only test AUC was `0.8429705215 +/- 0.0020439633`. Test was evaluated only after validation-AUC checkpoint selection and was not used for any route decision.
+- Positive preservation failed. Mean positive residuals were `+0.4738359217`, `-0.1796204704`, and `+0.2554593719` for seeds `0`, `42`, and `3407`. Seed 42 had `87.23404255%` of positive residuals below `-0.10`, with `2` C13 `TP -> FN` transitions and `4` C17 `TP -> FN` transitions.
+- Pairwise inversion non-worsening failed: C17 to C22 inversion counts were `287 -> 287`, `272 -> 275`, and `305 -> 314` for seeds `0`, `42`, and `3407`. The corrected audit recorded repaired/introduced pairs of `10/10`, `6/9`, and `2/11` respectively.
+- Residual health passed: all seeds had nonzero residual variance and no bound saturation. The selected-structure shortcut-only label AUC was `0.4762084402`, below the `0.55` audit threshold; shortcut fields remained audit-only.
+- Final C22 decision: `DEMA_C22_POSITIVE_SUPPRESSION`. C22 is not promoted. The strict-best route remains `DEMA_C17_POSITIVE_PRESERVATION`; C22 does not support a claim that a particular mechanism node is clinically necessary.
+- Final server artifacts are under `analysis_reports/phase_c22_dema/` and the formal run is under `runs/dema_ht_c22_stable_evidence_pooling_multiseed/`.
