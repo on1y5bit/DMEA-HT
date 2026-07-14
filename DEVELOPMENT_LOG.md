@@ -2414,6 +2414,6 @@
 
 ### Server Runtime And Final Decision
 
-- Implementation commit: pending.
+- Implementation commit: `4777bef` (`Implement C23 confidence-gated residual`).
 - Server gate commit and resolved path inventory: pending.
 - Training start time, GPU, completion time, per-seed validation AUC, preservation gates, inversion audit, shortcut audit, and final decision: pending formal server execution.
