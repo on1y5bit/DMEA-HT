@@ -1,0 +1,4 @@
+seed,positive_side_to_negative_side,negative_side_to_positive_side,tp_to_fn,fn_to_tp,tn_to_fp,fp_to_tn,predicted_classes_equal
+0,0,0,0,0,0,0,True
+42,0,0,0,0,0,0,True
+3407,0,0,0,0,0,0,True

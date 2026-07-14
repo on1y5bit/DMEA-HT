@@ -1,0 +1,7 @@
+seed,active_bound_type,patient_count,mean_abs_delta,repaired_inversions_involving_group,introduced_inversions_involving_group
+0,boundary_limited,7,0.009194097614714028,0,0
+0,confidence_limited,87,0.007131931177961279,0,1
+42,boundary_limited,4,0.0148818130837753,0,0
+42,confidence_limited,90,0.014457739919533955,0,0
+3407,boundary_limited,6,0.0034478223872913666,0,0
+3407,confidence_limited,88,0.003917949091291154,2,0

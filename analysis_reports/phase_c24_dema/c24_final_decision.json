@@ -1,0 +1,17 @@
+{
+  "phase": "C24",
+  "decision": "DEMA_C24_POSITIVE_SUPPRESSION",
+  "c17_mean_auc": 0.8696242643730194,
+  "c17_std_auc": 0.007479724600207513,
+  "c24_mean_auc": 0.8697751622151803,
+  "c24_std_auc": 0.007017966473054794,
+  "positive_preservation_pass": false,
+  "negative_preservation_pass": true,
+  "high_confidence_pass": true,
+  "inversion_pass": false,
+  "decision_side_pass": true,
+  "decision_side_violation_count": 0,
+  "residual_health_pass": false,
+  "shortcut_pass": true,
+  "test_used_for_decision": false
+}

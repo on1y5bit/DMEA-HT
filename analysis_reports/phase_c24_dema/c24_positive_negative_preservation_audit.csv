@@ -1,0 +1,4 @@
+seed,mean_positive_delta_c24,fraction_positive_delta_below_minus_0_05,c17_tp_to_fn,c17_fn_to_tp,mean_negative_delta_c24,fraction_negative_delta_above_plus_0_05,c17_tn_to_fp,c17_fp_to_tn
+0,0.009599902803955073,0.0,0,0,0.004869491326934714,0.0,0,0
+42,-0.014695720623576701,0.0,0,0,-0.01425585054861813,0.0,0,0
+3407,-0.0007198072098037082,0.0,0,0,0.0011950405970948597,0.0,0,0
