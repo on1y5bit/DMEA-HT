@@ -1,6 +1,6 @@
 {
   "phase": "C23",
-  "gate": "STATIC_ONLY",
+  "gate": "FULL_SERVER",
   "pass": true,
   "checks": [
     {
@@ -132,7 +132,187 @@
       "name": "existing_configs_still_parse",
       "pass": true,
       "detail": []
+    },
+    {
+      "name": "canonical_branch_is_main",
+      "pass": true,
+      "detail": "main"
+    },
+    {
+      "name": "all_required_paths_resolve",
+      "pass": true,
+      "detail": [
+        {
+          "seed": 0,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_42_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_42_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_3407_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_3407_best.pt",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "manifest",
+          "absolute_path": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "run_root_parent",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_0.csv",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_42.csv",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_3407.csv",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "name": "seed_0_only_c23_head_trainable",
+      "pass": true,
+      "detail": [
+        "residual_head.mlp.0.weight",
+        "residual_head.mlp.0.bias",
+        "residual_head.mlp.1.weight",
+        "residual_head.mlp.1.bias",
+        "residual_head.mlp.4.weight",
+        "residual_head.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "seed_0_all_validation_rows_reproduced",
+      "pass": true,
+      "detail": {
+        "seen": 94,
+        "expected": 94
+      }
+    },
+    {
+      "name": "seed_42_only_c23_head_trainable",
+      "pass": true,
+      "detail": [
+        "residual_head.mlp.0.weight",
+        "residual_head.mlp.0.bias",
+        "residual_head.mlp.1.weight",
+        "residual_head.mlp.1.bias",
+        "residual_head.mlp.4.weight",
+        "residual_head.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "seed_42_all_validation_rows_reproduced",
+      "pass": true,
+      "detail": {
+        "seen": 94,
+        "expected": 94
+      }
+    },
+    {
+      "name": "seed_3407_only_c23_head_trainable",
+      "pass": true,
+      "detail": [
+        "residual_head.mlp.0.weight",
+        "residual_head.mlp.0.bias",
+        "residual_head.mlp.1.weight",
+        "residual_head.mlp.1.bias",
+        "residual_head.mlp.4.weight",
+        "residual_head.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "seed_3407_all_validation_rows_reproduced",
+      "pass": true,
+      "detail": {
+        "seen": 94,
+        "expected": 94
+      }
+    },
+    {
+      "name": "c17_validation_logits_reproduce",
+      "pass": true,
+      "detail": 2.384185791015625e-07
+    },
+    {
+      "name": "initial_c23_equals_frozen_c17",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "new_head_gradient_finite_nonzero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_c17_gradients_absent",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "real_validation_missing_modality_path_finite",
+      "pass": true,
+      "detail": 138
     }
   ],
-  "decision": "C23_STATIC_GATE_PASS"
+  "decision": "C23_DIRECT_MULTI_SEED_AUTHORIZED"
 }
