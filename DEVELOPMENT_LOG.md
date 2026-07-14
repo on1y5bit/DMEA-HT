@@ -2596,3 +2596,26 @@
 - Shortcut safety passed. Selected-structure shortcut-only label AUC was `0.2833861476`, and the largest absolute prediction correlation with an allowed audit structure field was `0.1915568467`. Raw visit/image label associations remain separate audit-only warnings and were never predictor or loss inputs.
 - Final decision: `DEMA_C27_POSITIVE_RECALL_DAMAGE`. C27 is not promoted, no representative deployment seed or checkpoint is selected, and `STOP_C27_VTME_TUNING` is binding. The strict-best route remains `DEMA_C17_POSITIVE_PRESERVATION`.
 - Final tracked audit artifacts are under `analysis_reports/phase_c27_dema/`; authoritative checkpoints, predictions, and representations remain server-side under `runs/dema_ht_c27_vtme_multiseed/`.
+
+## 2026-07-14 Phase C28-A Temporal Attribution And Normalization Audit
+
+### Pre-Edit Contract
+
+- Official model name remains `DEMA-HT`. C27-VTME remains not promoted; `DEMA_C17_POSITIVE_PRESERVATION` remains the strict-best route.
+- C27 produced the strongest new-backbone validation signal so far: mean validation AUC `0.8822996831`, with materially improved seeds 0 and 3407, but material positive-recall damage and inversion worsening in seed 42.
+- C28-A is analysis-only, validation-only, and inference-only. It reads all three validation-selected C27 checkpoints for seeds `[0, 42, 3407]`; no parameter is trained, modified, averaged, calibrated, or selected.
+- No branch, new worktree, project copy, smoke, pilot, training config, optimizer, backward pass, checkpoint write, ensemble, checkpoint averaging, threshold tuning, Test access, or AUPRC calculation/display is permitted.
+- Small seed variation is not treated as structural failure: AUC changes below `0.003`, sensitivity changes below `0.03` with fewer than two transitions, and inversion net changes of at most `3` remain minor unless accompanied by material positive damage.
+- The original latest-softmax-weight versus selected-visit-count correlation is not accepted as a shortcut conclusion without subtracting the exact fixed-prior normalization baseline computed from the real official temporal mask.
+- C28-A evaluates official, uniform, recency-only, content-only, latest-only, and history-mean-only temporal aggregation using identical frozen visit states, patient projection, classifier, fallback bio context, and conflict scalars. Single-visit patients are unavailable for history-only aggregation and are excluded from its aggregate metrics.
+- Every counterfactual is diagnostic only. A variant cannot be promoted as a model or checkpoint from C28-A.
+- C28-B may be authorized only when one predefined temporal component is directionally localized in at least two seeds, reaches the fixed material positive-preservation or mean-AUC threshold, does not worsen mean inversions, introduces no material sensitivity loss, and adds no selected-structure shortcut risk.
+- Starting commit: `8e08cff`. Canonical server project is `/home/linruixin/chen/project/DMEA-HT` on `main`; runtime is `/home/linruixin/chen/conda/envs/ma`; data root is `/data/csb/DMEA-HT/HT_2025.12_25`.
+
+### Implementation And Local Verification
+
+- Added `scripts/analyze_phase_c28a_temporal_attribution.py` and `scripts/collect_phase_c28a_report.py`. No C28 config, model module, checkpoint writer, training entry point, or launcher was added.
+- The analyzer uses a temporary forward pre-hook to capture the exact frozen core inputs from the official C27 forward. It independently reconstructs the official temporal weights, computes the exact masked prior-only baseline, and reuses the same visit states, fallback bio context, conflicts, patient projection, and classifier for every counterfactual.
+- The gate contains exactly `30` static/runtime checks covering canonical Git state, frozen checkpoint metadata, 94-patient ID/label alignment, official logit/probability/AUC/threshold reproduction, official temporal-weight reproduction, all counterfactual normalization contracts, finite outputs, no state mutation, shortcut-input exclusion, and all `2,209` positive-negative pairs per seed and variant.
+- The collector fixes all materiality and attribution thresholds before server results are observed. Recency-only has predefined priority over uniform only when both independently support learned-scorer damage, because it preserves the original fixed prior and removes only the learned content scorer.
+- Local `py_compile`, forbidden-operation source scan, `git diff --check`, and synthetic temporal-mask checks passed. The synthetic checks covered one-, two-, and four-visit patients, all six temporal variants, exact weight normalization, and history-only unavailability for single-visit patients. No local project data or checkpoint was read.
