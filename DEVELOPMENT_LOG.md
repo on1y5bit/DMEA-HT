@@ -2679,3 +2679,27 @@
 - Selected-structure shortcut-only label AUC was `0.2833861476`. All P1-P3 candidate objects passed the per-object `0.35` prediction-correlation guard. Across all formal objects, `33/36` passed; the excluded failures were P4 conflict-only for seeds 0 and 42 and classifier swap `r42/c0`. Raw visit/image warnings remained `0.9769126301` and `0.9418288818` and never entered a probe.
 - Final primary label: `C29A_VISIT_REPRESENTATION_LIMITATION_SUPPORTED`. Final authorization: `C29B_NOT_AUTHORIZED`. The current strict best remains `DEMA_C17_POSITIVE_PRESERVATION`; `KEEP_DEMA_C17_STRICT_BEST` and `STOP_VTME_TEMPORAL_TUNING` remain binding.
 - Final tracked reports are under `analysis_reports/phase_c29a_dema/`. No neural training, new checkpoint, model combination, calibration, threshold selection, or deployment artifact was produced.
+
+## 2026-07-14 Phase C30-VTCA Visit-Text Context Adapter Direct Multi-Seed
+
+### Pre-Edit Contract
+
+- Official model name remains `DEMA-HT`. C29-A returned `C29A_VISIT_REPRESENTATION_LIMITATION_SUPPORTED`, did not authorize a classifier- or patient-projection-only C29-B, and left `DEMA_C17_POSITIVE_PRESERVATION` as the strict best.
+- C27 remains the strongest unpromoted new-backbone validation signal. `STOP_VTME_TEMPORAL_TUNING` remains binding; C30 does not alter visit reconstruction, the temporal scorer, fixed recency prior, conflict computation, patient projection, classifier, threshold, or any image/bio path.
+- C30 starts from commit `9b5ba78` in the canonical `main` worktree. The server project is `/home/linruixin/chen/project/DMEA-HT`, runtime is `/home/linruixin/chen/conda/envs/ma`, and data root is `/data/csb/DMEA-HT/HT_2025.12_25`.
+- Each seed `[0, 42, 3407]` loads its corresponding validation-selected C27 checkpoint and freezes the complete C27 model. The only trainable module is one shared zero-initialized `VisitTextContextAdapter` placed between frozen per-visit text tokens and the frozen C27 text-evidence projector.
+- The sole adapter uses trainable input LayerNorm, fixed depthwise kernels `3` and `7`, one pointwise fusion, GELU, inherited dropout, and a zero-initialized final `Linear(D,D)`. Token correction is fixed to `0.10 * tanh(raw_delta)` and is masked before convolution, after convolution, and before residual addition.
+- Adapter inputs are only frozen token states and their validity mask. Visit count, rank, recency, date, patient ID, label, report length, evidence terms, correctness, saved predictions, and shortcut variables are not adapter inputs.
+- The complete C27 model remains in evaluation mode with all parameters frozen while gradients flow through its fixed text projector and downstream C27 path to the adapter. Initial C30 logits must reproduce C27 logits within `1e-8`, or at worst the documented `1e-7` CUDA tolerance.
+- BCE with logits is the only objective. No positive-preservation, ranking, auxiliary, weak-label, distillation, magnitude, entropy, consistency, or residual-logit loss is permitted.
+- No branch, worktree, project copy, smoke, seed-0 pilot, second variant, kernel/width/bound sweep, fallback, ensemble, averaging, stacking, calibration, or threshold tuning is permitted. After all `50/50` static, synthetic, path, reproduction, gradient, capacity, and isolation checks pass, all three formal seeds launch directly without further confirmation.
+- Validation AUC is the only checkpoint-selection and promotion metric. Small seed changes below the fixed materiality thresholds are recorded but are not treated as structural failures. Reporting-only evaluation is blocked until validation checkpoints, validation metrics, and the validation route decision are frozen.
+- If promoted, deployment is the median-validation seed checkpoint, one model, one checkpoint, one forward, and no ensemble. If not promoted, `KEEP_DEMA_C17_STRICT_BEST` and `STOP_C30_VTCA_TUNING` become binding.
+
+### Implementation Before Server Execution
+
+- Added the only formal C30 config, `dmea_ht/c30_vtca.py`, independent gate/training/report collectors, and one fail-closed direct multi-seed driver. No C17-C29 model, config, checkpoint, prediction, or report was modified.
+- `VisitTextContextAdapter` has `200,192` trainable parameters at `D=256`, below both the preferred `600,000` and hard `1,000,000` limits. The complete wrapped C27 remains frozen.
+- Local synthetic checks confirmed unchanged token shape, finite empty/all-padding behavior, exact zero-initialized correction, exact zero padding correction after nonzero synthetic output weights, and the fixed bounded correction. All adapter parameters received present finite gradients in the synthetic gradient test.
+- The full server gate contains exactly `50` named checks and writes path, parameter, and initial-equivalence artifacts before authorizing training. The formal runner launches seeds `0`, `42`, and `3407` concurrently only after `C30_VTCA_DIRECT_MULTI_SEED_AUTHORIZED`.
+- Local verification completed with `py_compile` for all four Python entry points, Python AST parsing, `bash -n` for the direct runner, and `git diff --check`. No model training or data evaluation ran locally.
