@@ -2638,3 +2638,20 @@
 - Reporting-only presentation commit `43650a3` expanded the positive-damage and route reports without changing any metric, threshold, attribution rule, or inference artifact. The final analysis contains `1,692` patient-variant rows and `39,762` pairwise rows, with no training output, new checkpoint, model combination, or forbidden metric field.
 - Primary attribution: `C28A_MIXED_OR_INCONCLUSIVE`. Normalization label: `C28A_CONTENT_SCORER_REMAINS_COUNT_ASSOCIATED`. Final authorization: `C28B_NOT_AUTHORIZED`.
 - Final route: `KEEP_DEMA_C17_STRICT_BEST` and `STOP_VTME_TEMPORAL_TUNING`. C28-A does not authorize a fixed temporal aggregator or content-only C28-B design.
+
+## 2026-07-14 Phase C29-A Frozen Representation And Head Bottleneck Audit
+
+### Pre-Edit Contract
+
+- Official model name remains `DEMA-HT`. C28-A returned `C28A_MIXED_OR_INCONCLUSIVE`, did not authorize C28-B, and `STOP_VTME_TEMPORAL_TUNING` remains binding.
+- C29-A starts from commit `60d090b` in the sole canonical `main` worktree. The canonical server project is `/home/linruixin/chen/project/DMEA-HT`, runtime is `/home/linruixin/chen/conda/envs/ma`, and data root is `/data/csb/DMEA-HT/HT_2025.12_25`.
+- C29-A is analysis-only. It does not modify visit reconstruction, temporal aggregation, the fixed recency prior, conflict computation, patient projection, final classifier, or any C27 checkpoint.
+- All C27 parameters are frozen under evaluation and inference mode. No neural model is trained, no optimizer or backward pass is used, and no model checkpoint or deployment artifact is created.
+- Train is used only to fit prespecified `StandardScaler` plus fixed L2 `LogisticRegression` diagnostic probes independently for seeds `[0, 42, 3407]`. Validation is evaluation-only and is the sole route-decision split. Test and test predictions are not read.
+- The fixed probes are P1 C27 patient state, P2 exact pre-projection patient input, P3 flattened temporal mechanism states, P4 conflict-only negative control, and P5 frozen C17 mechanism-state reference. P4 and P5 can never authorize C29-B.
+- C29-A extracts the real C27 S0-S5 tensors, exact patient-projection order, and exact classifier dot-product plus bias decomposition. Raw images, full token tensors, and report text are never exported.
+- Random-label and train-validation generalization checks guard every fitted diagnostic stage. Shortcut variables remain audit-only and are excluded from scalers, probes, swaps, and predictors.
+- Classifier-only and projection-plus-classifier cross-seed swaps are inference-only diagnostics. They are never averaged, combined, selected, promoted, or interpreted as deployable models.
+- Small seed variations below the predefined AUC, sensitivity/transition, and inversion materiality thresholds are recorded but are not treated as structural failures.
+- C29-B is authorized only if exactly one head-side bottleneck satisfies the prespecified multi-seed AUC, positive-preservation, ranking, generalization, random-label, and shortcut gates. C29-A never launches C29-B automatically.
+- Any future authorized route remains one checkpoint, one model, one forward, and no ensemble. No threshold tuning, calibration, hyperparameter scan, AUPRC calculation/display, branch, worktree, project copy, smoke, or pilot is permitted.
