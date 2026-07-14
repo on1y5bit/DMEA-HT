@@ -807,9 +807,8 @@ def run_reproduction(
 
 
 def clean_status(output: Path) -> bool:
-    output_relative = output.resolve().relative_to(REPO_ROOT.resolve()).as_posix() + "/"
-    lines = [line for line in git_output("status", "--porcelain").splitlines() if line]
-    return all(output_relative in line.replace("\\", "/") for line in lines)
+    del output
+    return not git_output("status", "--porcelain", "--untracked-files=no")
 
 
 def run_gate(args: argparse.Namespace) -> None:
