@@ -2450,5 +2450,5 @@
 
 ### Server Runtime And Final Decision
 
-- Implementation commit: pending.
+- Implementation commit: `6d6d756` (`Implement C24 decision-side residual`).
 - Full server gate, resolved paths, parameter counts, runtime, GPU, start/end times, per-seed AUC, bound behavior, decision-side equivalence, residual/inversion/shortcut audits, and final decision: pending formal server execution.
