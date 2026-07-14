@@ -1,0 +1,46 @@
+{
+  "phase": "C27-VTME",
+  "base_manifest": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl",
+  "base_manifest_sha256": "e1832f1028a807c70975039609c351851c82bdab6ad9c866d8481f335f1273b2",
+  "visit_manifest": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl",
+  "visit_manifest_sha256": "cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b",
+  "patients": 780,
+  "selected_visits": 1932,
+  "base_split_label_counts": {
+    "test_0": 42,
+    "test_1": 42,
+    "train_0": 301,
+    "train_1": 301,
+    "val_0": 47,
+    "val_1": 47
+  },
+  "visit_split_label_counts": {
+    "test_0": 42,
+    "test_1": 42,
+    "train_0": 301,
+    "train_1": 301,
+    "val_0": 47,
+    "val_1": 47
+  },
+  "hard_checks": {
+    "patient_set_and_count": true,
+    "patient_ids_unique": true,
+    "split_label_invariance": true,
+    "original_patient_fields_unchanged": true,
+    "selected_visit_counts_match": true,
+    "visit_order_reproducible": true,
+    "history_cutoff_matches_c13": true,
+    "image_grouping_matches_c13": true,
+    "all_selected_image_paths_exist": true,
+    "cross_patient_image_leakage_zero": true,
+    "visit_reports_match_real_source": true,
+    "missing_reports_not_filled_from_patient_text": true,
+    "dated_bio_matches_exact_source_date": true,
+    "source_patient_dates_unique": true,
+    "test_not_used_for_rule_design": true
+  },
+  "hard_pass": true,
+  "visit_report_coverage": 0.9984472049689441,
+  "multi_visit_validation_two_block_coverage": 1.0,
+  "test_used_for_rule_design": false
+}

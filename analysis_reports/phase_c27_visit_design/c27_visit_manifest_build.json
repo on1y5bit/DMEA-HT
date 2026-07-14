@@ -1,0 +1,10 @@
+{
+  "phase": "C27-VTME",
+  "patients": 780,
+  "base_manifest": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl",
+  "base_manifest_sha256": "e1832f1028a807c70975039609c351851c82bdab6ad9c866d8481f335f1273b2",
+  "visit_manifest": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl",
+  "visit_manifest_sha256": "cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b",
+  "source": "all_patients.xlsx exact patient-date plus C13 selected dates/images",
+  "test_used_for_rule_design": false
+}

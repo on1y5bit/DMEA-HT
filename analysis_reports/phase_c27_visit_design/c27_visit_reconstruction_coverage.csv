@@ -1,0 +1,14 @@
+metric,value,threshold,pass
+patients,780.0,==780,True
+total_selected_visits,1932.0,>0,True
+visits_with_dated_image,1932.0,==1932,True
+visits_with_visit_level_report_text,1929.0,audit,True
+visits_with_both_image_and_text,1929.0,audit,True
+visit_report_reconstruction_coverage,0.9984472049689441,>=0.80,True
+multi_visit_patients,502.0,audit,True
+multi_visit_validation_patients,62.0,audit,True
+multi_visit_validation_patients_with_two_report_blocks,62.0,audit,True
+multi_visit_validation_two_block_coverage,1.0,>=0.70,True
+cross_patient_image_leakage_count,0.0,==0,True
+report_source_mismatch_count,0.0,==0,True
+bio_source_mismatch_count,0.0,==0,True
