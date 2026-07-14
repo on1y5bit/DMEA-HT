@@ -1,0 +1,831 @@
+{
+  "phase": "C27-VTME",
+  "gate": "FULL_SERVER",
+  "pass": true,
+  "passed": 121,
+  "total": 121,
+  "checks": [
+    {
+      "name": "phase_is_c27",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "formal_seeds_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "validation_auc_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "test_reporting_only_enabled",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "bce_only_config",
+      "pass": true,
+      "detail": {
+        "bce_only": true
+      }
+    },
+    {
+      "name": "optimizer_family_adamw",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "effective_batch_size_preserved",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "recency_prior_fixed_log_two",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "text_length_per_visit_fixed_256",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "capacity_limit_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_artificial_max_visits_config",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "dynamic_batch_visit_padding",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "all_manifest_visits_retained",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "oldest_to_latest_manifest_order",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "absolute_date_absent_from_predictor",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "visit_count_scalar_absent_from_predictor",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "image_count_scalar_absent_from_predictor",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "report_length_absent_from_predictor",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "missing_count_absent_from_predictor",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "label_and_patient_id_absent_from_predictor",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "shortcut_fields_absent_from_predictor",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_source_backbone_is_source_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_post_propagation_c17_module_loaded",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "only_pre_propagation_projectors_loaded",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "patient_fallback_bio_concatenated_once",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_source_parameters_disabled",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_source_eval_enforced",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "five_mechanism_slots_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "visit_modalities_encoded_without_cross_visit_mixing",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_empty_token_per_slot",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "shared_temporal_scorer_single_instance",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_visit_specific_parameters",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_mechanism_specific_temporal_network",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_new_attention_recurrent_transformer",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_mechanism_to_mechanism_graph",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "fixed_recency_not_parameter",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "masked_softmax_present",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "conflict_formula_content_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "single_patient_projection",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "single_final_classifier",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_base_plus_correction_formula",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_c17_checkpoint_template",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_checkpoint_or_prediction_combination_calls",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "optimizer_restricted_to_trainable_core",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "bce_is_only_training_loss",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "checkpoint_selected_only_by_val_auc",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "test_loader_created_only_in_reporting_stage",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "validation_decision_precedes_test",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "independent_seed_output_directories",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "representation_ids_are_unicode",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "disabled_metric_absent",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "c26e_not_implemented",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "c26sm_route_unmodified",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "legacy_paths_unchanged_use_vtme_false",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "synthetic_outputs_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_five_slot_shapes",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_temporal_weights_normalized",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_padding_weights_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_single_visit_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_multi_visit_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_recency_exact",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_conflict_finite_range",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_single_visit_conflict_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_all_missing_slot_fallback_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_mixed_and_one_class_bce_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_trainable_gradients_finite_nonzero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_formal_c27_config_only",
+      "pass": true,
+      "detail": [
+        "dema_ht_c27_vtme_multiseed.yaml"
+      ]
+    },
+    {
+      "name": "no_smoke_pilot_fallback_sweep_config",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "legacy_configs_parse",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "single_checkpoint_deployment_contract",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "canonical_branch_main",
+      "pass": true,
+      "detail": "main"
+    },
+    {
+      "name": "only_canonical_worktree",
+      "pass": true,
+      "detail": [
+        "/home/linruixin/chen/project/DMEA-HT"
+      ]
+    },
+    {
+      "name": "no_c27_project_copy",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "all_required_paths_resolve",
+      "pass": true,
+      "detail": [
+        {
+          "seed": 0,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_0.csv",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_42_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_42_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_42.csv",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_3407_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_3407_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_3407.csv",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c13_manifest",
+          "absolute_path": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c27_visit_manifest",
+          "absolute_path": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "visit_invariance",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c27_visit_design/c27_visit_manifest_invariance.json",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "visit_decision",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c27_visit_design/c27_visit_reconstruction_decision.json",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c27_run_root",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c27_report_root",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c27_dema",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "name": "visit_manifest_780_patients",
+      "pass": true,
+      "detail": 780
+    },
+    {
+      "name": "visit_manifest_split_label_counts",
+      "pass": true,
+      "detail": {
+        "train_0": 301,
+        "train_1": 301,
+        "val_0": 47,
+        "val_1": 47,
+        "test_0": 42,
+        "test_1": 42
+      }
+    },
+    {
+      "name": "visit_manifest_patient_ids_unique",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "selected_visit_counts_match_c13",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "image_grouping_matches_c13",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "selected_images_exist",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "cross_patient_image_leakage_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "visit_date_order_reproducible",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "visit_reports_are_real_source",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "missing_reports_not_patient_text",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "dated_bio_exact_source_date",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "patient_bio_fallback_not_copied_to_visits",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "history_cutoff_matches_c13",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "test_not_used_for_reconstruction",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "visit_report_coverage_gate",
+      "pass": true,
+      "detail": 0.9984472049689441
+    },
+    {
+      "name": "multi_visit_two_block_coverage_gate",
+      "pass": true,
+      "detail": 1.0
+    },
+    {
+      "name": "visit_reconstruction_authorized",
+      "pass": true,
+      "detail": {
+        "phase": "C27-VTME",
+        "decision": "C27_VISIT_RECONSTRUCTION_PASS",
+        "patients_reconstructed": 780,
+        "selected_visits_reconstructed": 1932,
+        "visit_report_coverage": 0.998447204968944,
+        "multi_visit_validation_two_block_coverage": 1.0,
+        "cross_patient_image_leakage_count": 0,
+        "split_label_invariance": true,
+        "manifest_sha256": "cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b",
+        "test_used_for_rule_design": false,
+        "training_authorized": true
+      }
+    },
+    {
+      "name": "multi_visit_text_not_globally_duplicated",
+      "pass": true,
+      "detail": 496
+    },
+    {
+      "name": "seed_0_c17_checkpoint_contract",
+      "pass": true,
+      "detail": {
+        "seed": 0,
+        "best_epoch": 9
+      }
+    },
+    {
+      "name": "seed_0_c17_training_hyperparameters_inherited",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "seed_0_trainable_scope",
+      "pass": true,
+      "detail": [
+        "core.empty_slot_tokens",
+        "core.temporal_norm.weight",
+        "core.temporal_norm.bias",
+        "core.temporal_linear.weight",
+        "core.temporal_linear.bias",
+        "core.temporal_output.weight",
+        "core.temporal_output.bias",
+        "core.patient_projection.0.weight",
+        "core.patient_projection.0.bias",
+        "core.patient_projection.2.weight",
+        "core.patient_projection.2.bias",
+        "core.classifier.1.weight",
+        "core.classifier.1.bias"
+      ]
+    },
+    {
+      "name": "seed_0_capacity_contract",
+      "pass": true,
+      "detail": 463362
+    },
+    {
+      "name": "seed_42_c17_checkpoint_contract",
+      "pass": true,
+      "detail": {
+        "seed": 42,
+        "best_epoch": 3
+      }
+    },
+    {
+      "name": "seed_42_c17_training_hyperparameters_inherited",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "seed_42_trainable_scope",
+      "pass": true,
+      "detail": [
+        "core.empty_slot_tokens",
+        "core.temporal_norm.weight",
+        "core.temporal_norm.bias",
+        "core.temporal_linear.weight",
+        "core.temporal_linear.bias",
+        "core.temporal_output.weight",
+        "core.temporal_output.bias",
+        "core.patient_projection.0.weight",
+        "core.patient_projection.0.bias",
+        "core.patient_projection.2.weight",
+        "core.patient_projection.2.bias",
+        "core.classifier.1.weight",
+        "core.classifier.1.bias"
+      ]
+    },
+    {
+      "name": "seed_42_capacity_contract",
+      "pass": true,
+      "detail": 463362
+    },
+    {
+      "name": "seed_3407_c17_checkpoint_contract",
+      "pass": true,
+      "detail": {
+        "seed": 3407,
+        "best_epoch": 6
+      }
+    },
+    {
+      "name": "seed_3407_c17_training_hyperparameters_inherited",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "seed_3407_trainable_scope",
+      "pass": true,
+      "detail": [
+        "core.empty_slot_tokens",
+        "core.temporal_norm.weight",
+        "core.temporal_norm.bias",
+        "core.temporal_linear.weight",
+        "core.temporal_linear.bias",
+        "core.temporal_output.weight",
+        "core.temporal_output.bias",
+        "core.patient_projection.0.weight",
+        "core.patient_projection.0.bias",
+        "core.patient_projection.2.weight",
+        "core.patient_projection.2.bias",
+        "core.classifier.1.weight",
+        "core.classifier.1.bias"
+      ]
+    },
+    {
+      "name": "seed_3407_capacity_contract",
+      "pass": true,
+      "detail": 463362
+    },
+    {
+      "name": "c13_c17_validation_patient_alignment",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "c17_validation_logits_reproduce",
+      "pass": true,
+      "detail": 8.881784197001252e-16
+    },
+    {
+      "name": "c17_validation_probabilities_reproduce",
+      "pass": true,
+      "detail": 1.1102230246251565e-16
+    },
+    {
+      "name": "c13_validation_logits_reproduce",
+      "pass": true,
+      "detail": 8.881784197001252e-16
+    },
+    {
+      "name": "c13_validation_probabilities_reproduce",
+      "pass": true,
+      "detail": 1.1102230246251565e-16
+    },
+    {
+      "name": "real_single_multi_missing_outputs_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "real_empty_visit_text_forward_finite",
+      "pass": true,
+      "detail": "gate batch row 1 visit 0"
+    },
+    {
+      "name": "real_missing_image_visit_forward_finite",
+      "pass": true,
+      "detail": "gate batch row 0 visit 0"
+    },
+    {
+      "name": "real_missing_bio_visit_forward_finite",
+      "pass": true,
+      "detail": "gate batch row 2 visit 0"
+    },
+    {
+      "name": "real_all_missing_slot_forward_finite",
+      "pass": true,
+      "detail": "gate batch row 3 visit 0"
+    },
+    {
+      "name": "real_five_mechanism_slot_shape",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "real_temporal_weights_normalized",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "real_conflicts_finite_range",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "real_trainable_gradients_connected_finite_nonzero_by_module",
+      "pass": true,
+      "detail": {
+        "0": {
+          "missing": [],
+          "nonfinite": [],
+          "module_group_absolute_sums": {
+            "empty_slot_tokens": 68.6262435913086,
+            "temporal_scorer": 13.943291988223791,
+            "patient_projection": 3157.378142595291,
+            "classifier": 51.23795047402382
+          }
+        },
+        "42": {
+          "missing": [],
+          "nonfinite": [],
+          "module_group_absolute_sums": {
+            "empty_slot_tokens": 79.62055969238281,
+            "temporal_scorer": 31.717199709266424,
+            "patient_projection": 3069.9216401576996,
+            "classifier": 46.908229649066925
+          }
+        },
+        "3407": {
+          "missing": [],
+          "nonfinite": [],
+          "module_group_absolute_sums": {
+            "empty_slot_tokens": 43.28236389160156,
+            "temporal_scorer": 67.1063976995647,
+            "patient_projection": 2847.355865240097,
+            "classifier": 46.05761255323887
+          }
+        }
+      }
+    },
+    {
+      "name": "real_frozen_modules_receive_no_gradient",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "real_frozen_modules_remain_eval",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "all_seed_capacity_contracts_pass",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "decision": "C27_VTME_DIRECT_MULTI_SEED_AUTHORIZED"
+}
