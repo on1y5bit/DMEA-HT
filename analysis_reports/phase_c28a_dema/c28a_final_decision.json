@@ -1,0 +1,19 @@
+{
+  "phase": "C28-A",
+  "primary_attribution_label": "C28A_MIXED_OR_INCONCLUSIVE",
+  "normalization_label": "C28A_CONTENT_SCORER_REMAINS_COUNT_ASSOCIATED",
+  "c28b_authorization": "C28B_NOT_AUTHORIZED",
+  "authorized_design": null,
+  "current_strict_best": "DEMA_C17_POSITIVE_PRESERVATION",
+  "validation_only": true,
+  "parameter_updates": false,
+  "threshold_tuning": false,
+  "model_combination": false,
+  "all_seeds_analyzed": [
+    0,
+    42,
+    3407
+  ],
+  "shortcut_pass": true,
+  "mean_material_damage_set_jaccard_across_variants": 0.5298341148332073
+}

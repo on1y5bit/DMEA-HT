@@ -1,0 +1,6 @@
+variant,same_direction_material_improvement_seed_count,mean_auc_gain_vs_matched_official,aggregate_official_c17_tp_to_fn,aggregate_variant_c17_tp_to_fn,positive_damage_reduction_fraction,mean_inversion_change,minimum_sensitivity_change,material_threshold_pass,directional_safety_support,mean_material_damage_set_jaccard_across_variants,primary_attribution_label,c28b_authorization,authorized_variant,authorized_design
+V1_uniform,0,-0.025350837483024025,17,27,-0.5882352941176471,56.0,-0.14893617021276595,False,False,0.5298341148332073,C28A_MIXED_OR_INCONCLUSIVE,C28B_NOT_AUTHORIZED,,
+V2_recency_only,1,-0.01358080579447718,17,18,-0.058823529411764705,30.0,-0.06382978723404253,False,False,0.5298341148332073,C28A_MIXED_OR_INCONCLUSIVE,C28B_NOT_AUTHORIZED,,
+V3_content_only,0,-0.01569337558472909,17,24,-0.4117647058823529,34.666666666666664,-0.08510638297872342,False,False,0.5298341148332073,C28A_MIXED_OR_INCONCLUSIVE,C28B_NOT_AUTHORIZED,,
+V4_latest_only,3,-0.015844273426890026,17,8,0.5294117647058824,35.0,0.04255319148936165,True,False,0.5298341148332073,C28A_MIXED_OR_INCONCLUSIVE,C28B_NOT_AUTHORIZED,,
+V5_history_mean_only,0,-0.19285466527922293,14,59,-3.2142857142857144,185.33333333333334,-0.6129032258064516,False,False,0.5298341148332073,C28A_MIXED_OR_INCONCLUSIVE,C28B_NOT_AUTHORIZED,,

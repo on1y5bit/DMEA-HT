@@ -1,0 +1,163 @@
+{
+  "phase": "C28-A",
+  "status": "C28A_ANALYSIS_AUTHORIZED",
+  "pass": true,
+  "passed_checks": 30,
+  "total_checks": 30,
+  "checks": [
+    {
+      "name": "active_branch_main",
+      "pass": true
+    },
+    {
+      "name": "canonical_worktree_only",
+      "pass": true,
+      "detail": [
+        "/home/linruixin/chen/project/DMEA-HT"
+      ]
+    },
+    {
+      "name": "no_c28_training_config",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "no_optimizer_construction",
+      "pass": true
+    },
+    {
+      "name": "no_backward_call",
+      "pass": true
+    },
+    {
+      "name": "validation_loader_only",
+      "pass": true,
+      "detail": "VisitPatientDataset split is fixed to val"
+    },
+    {
+      "name": "auc_only_metric_contract",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "no_model_combination_call",
+      "pass": true
+    },
+    {
+      "name": "no_checkpoint_write",
+      "pass": true
+    },
+    {
+      "name": "no_training_process_launch",
+      "pass": true,
+      "detail": "the only subprocess call is read-only git check_output"
+    },
+    {
+      "name": "checkpoint_paths_exist",
+      "pass": true
+    },
+    {
+      "name": "checkpoint_seed_metadata",
+      "pass": true
+    },
+    {
+      "name": "patient_label_alignment",
+      "pass": true
+    },
+    {
+      "name": "official_reproduction",
+      "pass": true
+    },
+    {
+      "name": "temporal_weight_reproduction",
+      "pass": true
+    },
+    {
+      "name": "visit_states_reused",
+      "pass": true
+    },
+    {
+      "name": "projection_classifier_reused",
+      "pass": true
+    },
+    {
+      "name": "conflicts_reused",
+      "pass": true
+    },
+    {
+      "name": "only_temporal_weights_change",
+      "pass": true
+    },
+    {
+      "name": "uniform_normalized",
+      "pass": true,
+      "detail": {
+        "variant": "V1_uniform",
+        "max_abs_weight_sum_error": 0.0,
+        "float32_tolerance": 1e-06
+      }
+    },
+    {
+      "name": "recency_only_normalized",
+      "pass": true,
+      "detail": {
+        "variant": "V2_recency_only",
+        "max_abs_weight_sum_error": 0.0,
+        "float32_tolerance": 1e-06
+      }
+    },
+    {
+      "name": "content_only_normalized",
+      "pass": true,
+      "detail": {
+        "variant": "V3_content_only",
+        "max_abs_weight_sum_error": 1.1920928955078125e-07,
+        "float32_tolerance": 1e-06
+      }
+    },
+    {
+      "name": "latest_only_normalized",
+      "pass": true,
+      "detail": {
+        "variant": "V4_latest_only",
+        "max_abs_weight_sum_error": 0.0,
+        "float32_tolerance": 1e-06
+      }
+    },
+    {
+      "name": "history_single_unavailable",
+      "pass": true
+    },
+    {
+      "name": "baseline_real_mask_exact",
+      "pass": true
+    },
+    {
+      "name": "normalization_values_finite",
+      "pass": true
+    },
+    {
+      "name": "variant_outputs_finite",
+      "pass": true
+    },
+    {
+      "name": "checkpoint_state_unchanged",
+      "pass": true
+    },
+    {
+      "name": "shortcut_fields_excluded",
+      "pass": true
+    },
+    {
+      "name": "pair_count_contract",
+      "pass": true
+    }
+  ],
+  "seeds": [
+    0,
+    42,
+    3407
+  ],
+  "data_scope": "validation_only",
+  "parameter_updates": false
+}

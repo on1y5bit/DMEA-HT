@@ -1,0 +1,16 @@
+seed,variant,comparator_patient_count,auc_change_vs_matched_official,sensitivity_change_vs_matched_official,official_to_variant_threshold_transition_count,net_inversion_change_vs_matched_official,official_c17_tp_to_fn,variant_c17_tp_to_fn,c17_tp_to_fn_reduction,minor_variation,materiality_label,directional_material_improvement
+0,V1_uniform,94,-0.04210049796287907,-0.14893617021276595,17,93,5,8,-3,False,material_change,False
+0,V2_recency_only,94,-0.02625622453598908,-0.042553191489361764,11,58,5,4,1,False,material_change,True
+0,V3_content_only,94,-0.02625622453598908,-0.08510638297872342,7,58,5,8,-3,False,material_change,False
+0,V4_latest_only,94,-0.03395201448619278,0.04255319148936165,8,75,5,2,3,False,material_change,True
+0,V5_history_mean_only,62,-0.21748178980228916,-0.5806451612903226,27,209,4,16,-12,False,material_change,False
+42,V1_uniform,94,-0.014033499320959764,-0.06382978723404265,3,31,8,11,-3,False,material_change,False
+42,V2_recency_only,94,0.00045269352648258376,0.0,1,-1,8,8,0,True,minor_variation,False
+42,V3_content_only,94,-0.019013128112267852,-0.042553191489361764,6,42,8,11,-3,False,material_change,False
+42,V4_latest_only,94,-0.002263467632412919,0.12765957446808507,11,5,8,3,5,False,material_change,True
+42,V5_history_mean_only,62,-0.17273673257023925,-0.5161290322580645,23,166,7,23,-16,False,material_change,False
+3407,V1_uniform,94,-0.01991851516523324,-0.10638297872340419,7,44,4,8,-4,False,material_change,False
+3407,V2_recency_only,94,-0.014938886373925042,-0.06382978723404253,4,33,4,6,-2,False,material_change,False
+3407,V3_content_only,94,-0.001810774105930335,-0.02127659574468077,2,4,4,5,-1,False,material_change,False
+3407,V4_latest_only,94,-0.011317338162064372,0.042553191489361764,4,25,4,3,1,False,material_change,True
+3407,V5_history_mean_only,62,-0.1883454734651404,-0.6129032258064516,28,181,3,20,-17,False,material_change,False
