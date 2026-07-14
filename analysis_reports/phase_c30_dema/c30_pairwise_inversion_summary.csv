@@ -1,0 +1,4 @@
+seed,total_pairs,c17_inversions,c27_inversions,c30_inversions,c30_minus_c17_inversions,c30_minus_c27_inversions,c27_to_c30_repaired,c27_to_c30_introduced,c17_to_c30_repaired,c17_to_c30_introduced
+0,2209,287,217,227,-60,10,4,14,186,126
+42,2209,272,284,296,24,12,5,17,113,137
+3407,2209,305,279,283,-22,4,4,8,165,143

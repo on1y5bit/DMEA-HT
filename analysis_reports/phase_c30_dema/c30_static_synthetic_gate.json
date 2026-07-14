@@ -1,0 +1,461 @@
+{
+  "phase": "C30-VTCA",
+  "decision": "C30_VTCA_DIRECT_MULTI_SEED_AUTHORIZED",
+  "pass": true,
+  "checks_passed": 50,
+  "checks_total": 50,
+  "checks": [
+    {
+      "name": "01_active_branch_main",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "02_canonical_worktree_only",
+      "pass": true,
+      "detail": [
+        "/home/linruixin/chen/project/DMEA-HT"
+      ]
+    },
+    {
+      "name": "03_no_c30_project_copy",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "04_no_model_or_prediction_combination",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "05_no_smoke_or_pilot_config",
+      "pass": true,
+      "detail": [
+        "dema_ht_c30_vtca_multiseed.yaml"
+      ]
+    },
+    {
+      "name": "06_exactly_one_formal_c30_config",
+      "pass": true,
+      "detail": [
+        "dema_ht_c30_vtca_multiseed.yaml"
+      ]
+    },
+    {
+      "name": "07_three_c27_checkpoints_exist",
+      "pass": true,
+      "detail": [
+        {
+          "seed": 0,
+          "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_0_best.pt",
+          "exists": true,
+          "metadata_seed": 0
+        },
+        {
+          "seed": 42,
+          "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_42_best.pt",
+          "exists": true,
+          "metadata_seed": 42
+        },
+        {
+          "seed": 3407,
+          "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_3407_best.pt",
+          "exists": true,
+          "metadata_seed": 3407
+        }
+      ]
+    },
+    {
+      "name": "08_c27_checkpoint_seed_metadata",
+      "pass": true,
+      "detail": [
+        {
+          "seed": 0,
+          "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_0_best.pt",
+          "exists": true,
+          "metadata_seed": 0
+        },
+        {
+          "seed": 42,
+          "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_42_best.pt",
+          "exists": true,
+          "metadata_seed": 42
+        },
+        {
+          "seed": 3407,
+          "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_3407_best.pt",
+          "exists": true,
+          "metadata_seed": 3407
+        }
+      ]
+    },
+    {
+      "name": "09_c27_manifest_sha256",
+      "pass": true,
+      "detail": "cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b"
+    },
+    {
+      "name": "10_split_and_label_counts_unchanged",
+      "pass": true,
+      "detail": {
+        "train": {
+          "rows": 602,
+          "labels": {
+            "1": 301,
+            "0": 301
+          }
+        },
+        "val": {
+          "rows": 94,
+          "labels": {
+            "1": 47,
+            "0": 47
+          }
+        },
+        "test": {
+          "rows": 84,
+          "labels": {
+            "1": 42,
+            "0": 42
+          }
+        }
+      }
+    },
+    {
+      "name": "11_exact_602_94_84_split_sizes",
+      "pass": true,
+      "detail": {
+        "train": {
+          "rows": 602,
+          "labels": {
+            "1": 301,
+            "0": 301
+          }
+        },
+        "val": {
+          "rows": 94,
+          "labels": {
+            "1": 47,
+            "0": 47
+          }
+        },
+        "test": {
+          "rows": 84,
+          "labels": {
+            "1": 42,
+            "0": 42
+          }
+        }
+      }
+    },
+    {
+      "name": "12_patient_ids_unique_and_disjoint",
+      "pass": true,
+      "detail": {
+        "rows": 780,
+        "unique": 780,
+        "overlaps": {
+          "train_val": 0,
+          "train_test": 0,
+          "val_test": 0
+        }
+      }
+    },
+    {
+      "name": "13_official_c27_logits_and_probabilities_reproduced",
+      "pass": true,
+      "detail": {
+        "probability_max": 1.1102230246251565e-16,
+        "logit_max": 8.881784197001252e-16
+      }
+    },
+    {
+      "name": "14_official_c27_validation_auc_reproduced",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "15_old_c27_state_dict_loads_strictly",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "16_use_vtca_false_logits_unchanged",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "17_adapter_inserted_before_text_projector",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "18_adapter_not_after_temporal_head_or_logit",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "19_adapter_inputs_only_tokens_and_mask",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "20_adapter_does_not_read_label_id_or_shortcuts",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "21_kernels_exactly_3_and_7",
+      "pass": true,
+      "detail": [
+        3,
+        7
+      ]
+    },
+    {
+      "name": "22_depthwise_groups_equal_hidden_dim",
+      "pass": true,
+      "detail": [
+        256,
+        256
+      ]
+    },
+    {
+      "name": "23_convolution_padding_exact",
+      "pass": true,
+      "detail": [
+        1,
+        3
+      ]
+    },
+    {
+      "name": "24_pointwise_fusion_dimensions_exact",
+      "pass": true,
+      "detail": [
+        512,
+        256
+      ]
+    },
+    {
+      "name": "25_final_adapter_layer_zero_initialized",
+      "pass": true,
+      "detail": {
+        "weight": 0.0,
+        "bias": 0.0
+      }
+    },
+    {
+      "name": "26_initial_train_logits_equal_c27",
+      "pass": true,
+      "detail": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "27_initial_validation_logits_equal_c27",
+      "pass": true,
+      "detail": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "28_padding_token_delta_strict_zero",
+      "pass": true,
+      "detail": {
+        "initial": 0.0,
+        "trained_synthetic": 0.0
+      }
+    },
+    {
+      "name": "29_real_token_delta_bounded_at_0_10",
+      "pass": true,
+      "detail": 0.10000000149011612
+    },
+    {
+      "name": "30_empty_visit_text_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "31_all_padding_defensive_case_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "32_single_visit_patient_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "33_multi_visit_patient_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "34_missing_image_or_bio_case_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "35_adapted_token_shape_unchanged",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "36_frozen_c27_has_no_gradient",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "37_all_adapter_gradients_present_and_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "38_adapter_aggregate_gradient_nonzero",
+      "pass": true,
+      "detail": [
+        52.122623443603516,
+        7.817323207855225,
+        6.3798508644104
+      ]
+    },
+    {
+      "name": "39_trainable_scope_only_adapter",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "40_trainable_parameters_within_one_million",
+      "pass": true,
+      "detail": {
+        "trainable": [
+          200192,
+          200192,
+          200192
+        ],
+        "frozen": [
+          14371459,
+          14371459,
+          14371459
+        ]
+      }
+    },
+    {
+      "name": "41_bce_is_only_training_loss",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "42_no_ranking_auxiliary_or_weak_label_loss",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "43_validation_auc_only_checkpoint_metric",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "44_disabled_metric_absent",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "45_test_loader_blocked_until_validation_decision",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "46_shortcut_fields_absent_from_forward",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "47_raw_visit_and_image_fields_audit_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "48_each_seed_has_independent_checkpoint",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "49_seeds_not_combined",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "50_one_checkpoint_one_model_one_forward_deployment",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 5090",
+  "manifest_sha256": "cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b",
+  "c27_checkpoints": [
+    {
+      "seed": 0,
+      "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_0_best.pt",
+      "exists": true,
+      "metadata_seed": 0
+    },
+    {
+      "seed": 42,
+      "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_42_best.pt",
+      "exists": true,
+      "metadata_seed": 42
+    },
+    {
+      "seed": 3407,
+      "path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_3407_best.pt",
+      "exists": true,
+      "metadata_seed": 3407
+    }
+  ],
+  "initial_equivalence_tolerance": 1e-07,
+  "trainable_parameter_counts": [
+    200192,
+    200192,
+    200192
+  ],
+  "frozen_parameter_counts": [
+    14371459,
+    14371459,
+    14371459
+  ],
+  "synthetic": {
+    "shape_preserved": true,
+    "finite": true,
+    "empty_finite": true,
+    "all_padding_finite": true,
+    "padding_delta_max": 0.0,
+    "real_delta_max": 0.0,
+    "trained_padding_delta_max": 0.0,
+    "trained_real_delta_max": 0.10000000149011612,
+    "final_weight_max": 0.0,
+    "final_bias_max": 0.0,
+    "kernels": [
+      3,
+      7
+    ],
+    "groups": [
+      256,
+      256
+    ],
+    "padding": [
+      1,
+      3
+    ],
+    "pointwise_channels": [
+      512,
+      256
+    ]
+  }
+}
