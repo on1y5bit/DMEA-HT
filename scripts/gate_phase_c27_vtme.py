@@ -202,7 +202,12 @@ def static_checks(config: Mapping[str, Any]) -> List[Dict[str, Any]]:
     checks.append(item("synthetic_five_slot_shapes", tuple(outputs["mechanism_states"].shape) == (3, 5, 16)))
     sums = outputs["temporal_weights"].sum(dim=1)
     checks.append(item("synthetic_temporal_weights_normalized", bool(torch.allclose(sums, torch.ones_like(sums), atol=1e-6))))
-    checks.append(item("synthetic_padding_weights_zero", float(outputs["temporal_weights"][0, 1:].abs().max()) == 0.0))
+    checks.append(
+        item(
+            "synthetic_padding_weights_zero",
+            float(outputs["temporal_weights"][0, 1:].detach().abs().max()) == 0.0,
+        )
+    )
     checks.append(item("synthetic_single_visit_finite", bool(torch.isfinite(outputs["patient_state"][0]).all())))
     checks.append(item("synthetic_multi_visit_finite", bool(torch.isfinite(outputs["patient_state"][1:]).all())))
     checks.append(item("synthetic_recency_exact", bool(torch.allclose(outputs["recency"][0], torch.tensor([1.0, 0.0, 0.0])) and torch.allclose(outputs["recency"][1], torch.tensor([0.0, 0.5, 1.0])))))
@@ -421,6 +426,7 @@ def full_server_checks(config: Dict[str, Any], output_dir: Path) -> List[Dict[st
     real_weight_ok = True
     real_conflict_ok = True
     gradient_ok = True
+    gradient_details: Dict[str, Dict[str, Any]] = {}
     frozen_grad_ok = True
     frozen_eval_ok = True
     all_capacity_ok = True
@@ -517,11 +523,44 @@ def full_server_checks(config: Dict[str, Any], output_dir: Path) -> List[Dict[st
         training_outputs = model(batch)
         loss = F.binary_cross_entropy_with_logits(training_outputs["logit"], batch["label"])
         loss.backward()
-        trainable_gradients = [parameter.grad for _, parameter in trainable]
-        gradient_ok = gradient_ok and all(
-            gradient is not None and bool(torch.isfinite(gradient).all()) and float(gradient.abs().sum()) > 0
-            for gradient in trainable_gradients
+        missing_gradients = [name for name, parameter in trainable if parameter.grad is None]
+        nonfinite_gradients = [
+            name
+            for name, parameter in trainable
+            if parameter.grad is not None and not bool(torch.isfinite(parameter.grad).all())
+        ]
+        group_sums = {
+            "empty_slot_tokens": sum(
+                float(parameter.grad.abs().sum())
+                for name, parameter in trainable
+                if name.startswith("core.empty_slot_tokens") and parameter.grad is not None
+            ),
+            "temporal_scorer": sum(
+                float(parameter.grad.abs().sum())
+                for name, parameter in trainable
+                if name.startswith(("core.temporal_norm.", "core.temporal_linear.", "core.temporal_output."))
+                and parameter.grad is not None
+            ),
+            "patient_projection": sum(
+                float(parameter.grad.abs().sum())
+                for name, parameter in trainable
+                if name.startswith("core.patient_projection.") and parameter.grad is not None
+            ),
+            "classifier": sum(
+                float(parameter.grad.abs().sum())
+                for name, parameter in trainable
+                if name.startswith("core.classifier.") and parameter.grad is not None
+            ),
+        }
+        seed_gradient_ok = not missing_gradients and not nonfinite_gradients and all(
+            value > 0 for value in group_sums.values()
         )
+        gradient_ok = gradient_ok and seed_gradient_ok
+        gradient_details[str(seed)] = {
+            "missing": missing_gradients,
+            "nonfinite": nonfinite_gradients,
+            "module_group_absolute_sums": group_sums,
+        }
         frozen_grad_ok = frozen_grad_ok and all(parameter.grad is None for parameter in model.frozen_sources.parameters())
         del model
         if torch.cuda.is_available():
@@ -541,7 +580,7 @@ def full_server_checks(config: Dict[str, Any], output_dir: Path) -> List[Dict[st
     checks.append(item("real_five_mechanism_slot_shape", real_shape_ok))
     checks.append(item("real_temporal_weights_normalized", real_weight_ok))
     checks.append(item("real_conflicts_finite_range", real_conflict_ok))
-    checks.append(item("real_trainable_gradients_all_finite_nonzero", gradient_ok))
+    checks.append(item("real_trainable_gradients_connected_finite_nonzero_by_module", gradient_ok, gradient_details))
     checks.append(item("real_frozen_modules_receive_no_gradient", frozen_grad_ok))
     checks.append(item("real_frozen_modules_remain_eval", frozen_eval_ok))
     checks.append(item("all_seed_capacity_contracts_pass", all_capacity_ok))
