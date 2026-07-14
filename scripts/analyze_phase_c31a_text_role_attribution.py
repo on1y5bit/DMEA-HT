@@ -661,10 +661,6 @@ def run_reproduction(
             nonlocal projector_calls
             projector_calls += 1
 
-        adapter_handle = model.adapter.register_forward_hook(count_adapter)
-        projector_handle = model.c27.frozen_sources.text_projector.register_forward_hook(
-            count_projector
-        )
         loader = build_validation_loader(config, rows)
         ids: List[str] = []
         labels: List[int] = []
@@ -672,20 +668,102 @@ def run_reproduction(
         combination_probabilities: Dict[str, List[np.ndarray]] = {
             key: [] for key in COMBINATIONS
         }
+        direct_c30_logits: List[np.ndarray] = []
+        direct_c30_probabilities: List[np.ndarray] = []
         max_source_error = 0.0
+        max_direct_source_error = 0.0
+        max_direct_validity_error = 0.0
+        max_direct_fallback_error = 0.0
+        max_direct_shared_logit_error = 0.0
+        max_direct_shared_probability_error = 0.0
         with torch.inference_mode():
             for batch in loader:
                 batch = move_batch(batch, device)
+                captured: Dict[str, torch.Tensor] = {}
+
+                def capture_core(
+                    _module: torch.nn.Module, inputs: Tuple[torch.Tensor, ...]
+                ) -> None:
+                    captured["source_states"] = inputs[0].detach().clone()
+                    captured["source_valid"] = inputs[1].detach().clone()
+                    captured["fallback_context"] = inputs[3].detach().clone()
+
+                core_handle = model.c27.core.register_forward_pre_hook(capture_core)
+                direct_c30 = model(batch, use_vtca=True)
+                core_handle.remove()
+                adapter_handle = model.adapter.register_forward_hook(count_adapter)
+                projector_handle = model.c27.frozen_sources.text_projector.register_forward_hook(
+                    count_projector
+                )
                 result = RoleFactorialForward(model).shared_forward(batch)
+                adapter_handle.remove()
+                projector_handle.remove()
                 ids.extend(str(value) for value in batch["patient_id"])
                 labels.extend(int(value) for value in batch["label"].detach().cpu().numpy())
                 max_source_error = max(max_source_error, source_mapping_error(result))
+                max_direct_source_error = max(
+                    max_direct_source_error,
+                    float(
+                        (
+                            captured["source_states"]
+                            - result["combination_sources"]["111"]
+                        )
+                        .abs()
+                        .max()
+                        .cpu()
+                    ),
+                )
+                max_direct_validity_error = max(
+                    max_direct_validity_error,
+                    float(
+                        (
+                            captured["source_valid"].to(torch.int8)
+                            - result["source_valid"].to(torch.int8)
+                        )
+                        .abs()
+                        .max()
+                        .cpu()
+                    ),
+                )
+                max_direct_fallback_error = max(
+                    max_direct_fallback_error,
+                    float(
+                        (
+                            captured["fallback_context"] - result["fallback_context"]
+                        )
+                        .abs()
+                        .max()
+                        .cpu()
+                    ),
+                )
+                max_direct_shared_logit_error = max(
+                    max_direct_shared_logit_error,
+                    float(
+                        (
+                            direct_c30["logit"] - result["outputs"]["111"]["logit"]
+                        )
+                        .abs()
+                        .max()
+                        .cpu()
+                    ),
+                )
+                max_direct_shared_probability_error = max(
+                    max_direct_shared_probability_error,
+                    float(
+                        (
+                            direct_c30["prob"] - result["outputs"]["111"]["prob"]
+                        )
+                        .abs()
+                        .max()
+                        .cpu()
+                    ),
+                )
+                direct_c30_logits.append(direct_c30["logit"].detach().cpu().numpy())
+                direct_c30_probabilities.append(direct_c30["prob"].detach().cpu().numpy())
                 for combination in COMBINATIONS:
                     output = result["outputs"][combination]
                     combination_logits[combination].append(output["logit"].detach().cpu().numpy())
                     combination_probabilities[combination].append(output["prob"].detach().cpu().numpy())
-        adapter_handle.remove()
-        projector_handle.remove()
         after_digest = state_digest(model)
 
         id_array = np.asarray(ids, dtype=str)
@@ -701,6 +779,8 @@ def run_reproduction(
             key: np.concatenate(parts).astype(np.float64)[order]
             for key, parts in combination_probabilities.items()
         }
+        direct_logits = np.concatenate(direct_c30_logits).astype(np.float64)[order]
+        direct_probabilities = np.concatenate(direct_c30_probabilities).astype(np.float64)[order]
         c27_saved = read_prediction(c27_prediction_path)
         c30_saved = read_prediction(c30_prediction_path)
         c27_prob = c27_saved[probability_column(c27_saved)].to_numpy(dtype=np.float64)
@@ -724,6 +804,8 @@ def run_reproduction(
         c27_prob_error = float(np.max(np.abs(probabilities["000"] - c27_prob)))
         c30_logit_error = float(np.max(np.abs(logits["111"] - c30_logit)))
         c30_prob_error = float(np.max(np.abs(probabilities["111"] - c30_prob)))
+        direct_c30_logit_error = float(np.max(np.abs(direct_logits - c30_logit)))
+        direct_c30_prob_error = float(np.max(np.abs(direct_probabilities - c30_prob)))
         c27_auc_error = abs(auc(label_array, probabilities["000"]) - auc(label_array, c27_prob))
         c30_auc_error = abs(auc(label_array, probabilities["111"]) - auc(label_array, c30_prob))
         class_mismatch = int(
@@ -782,6 +864,13 @@ def run_reproduction(
                 "c30_max_abs_logit_error": c30_logit_error,
                 "c30_max_abs_probability_error": c30_prob_error,
                 "c30_auc_error": c30_auc_error,
+                "direct_c30_max_abs_logit_error": direct_c30_logit_error,
+                "direct_c30_max_abs_probability_error": direct_c30_prob_error,
+                "direct_vs_shared_c30_max_abs_logit_error": max_direct_shared_logit_error,
+                "direct_vs_shared_c30_max_abs_probability_error": max_direct_shared_probability_error,
+                "direct_vs_shared_source_max_abs_error": max_direct_source_error,
+                "direct_vs_shared_validity_max_abs_error": max_direct_validity_error,
+                "direct_vs_shared_fallback_max_abs_error": max_direct_fallback_error,
                 "threshold_class_mismatch_count": class_mismatch,
                 "preferred_c27_logit_tolerance_pass": c27_logit_error <= PREFERRED_LOGIT_ERROR,
                 "preferred_c27_probability_tolerance_pass": c27_prob_error <= PREFERRED_PROBABILITY_ERROR,
