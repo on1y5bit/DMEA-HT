@@ -32,7 +32,6 @@ from dmea_ht.c26sm_stable_mechanism_mixer import (  # noqa: E402
 )
 from dmea_ht.config import load_config  # noqa: E402
 from dmea_ht.data import PatientHTDataset, collate_patient_batch, read_manifest  # noqa: E402
-from dmea_ht.mechanism_evidence_alignment import TEXT_MASK_KEYS  # noqa: E402
 
 SEEDS = (0, 42, 3407)
 
@@ -244,15 +243,18 @@ def full_server_checks(config: Dict[str, Any], output_dir: Path) -> List[Dict[st
         reference["patient_id"] = reference["patient_id"].astype(str)
         reference_map = reference.set_index("patient_id")
         seen: List[str] = []
-        first_batch = None
+        first_outputs = None
         model.eval()
         with torch.no_grad():
             for batch in val_loader:
                 batch = move_batch(batch, device)
                 outputs = model(batch)
                 c17_outputs = model.frozen_c17(batch)
-                if first_batch is None:
-                    first_batch = batch
+                if first_outputs is None:
+                    first_outputs = {
+                        key: outputs[key].detach()
+                        for key in ("mechanism_core", "text_context", "bio_context", "context", "mechanism_state")
+                    }
                 finite_ok = finite_ok and all(bool(torch.isfinite(outputs[key]).all()) for key in ("logit", "mechanism_nodes", "mechanism_node_weights", "mechanism_state", "delta_logit"))
                 weights_ok = weights_ok and bool(torch.allclose(outputs["mechanism_node_weights"].sum(dim=1), torch.ones(len(batch["patient_id"]), device=device), atol=1e-6))
                 max_initial_error = max(max_initial_error, float((outputs["logit"] - outputs["base_logit"]).abs().max().cpu()))
@@ -270,21 +272,15 @@ def full_server_checks(config: Dict[str, Any], output_dir: Path) -> List[Dict[st
                     if float(shortcut.get("has_bio", 1) or 0) <= 0 or float(shortcut.get("image_padding_count", shortcut.get("padding_count", 0)) or 0) > 0:
                         missing_modality_rows += 1
         alignment_ok = alignment_ok and set(seen) == set(reference["patient_id"]) and len(seen) == 94
-        assert first_batch is not None
+        assert first_outputs is not None
         with torch.no_grad():
-            frozen = model.frozen_c17
-            mea = frozen.mechanism_evidence_alignment
-            encoded = frozen.base_model.encode_modalities(first_batch)
-            text_masks = {key: first_batch[key] for key in TEXT_MASK_KEYS}
-            image = mea.image(encoded["image_tokens"], first_batch["image_mask"])
-            text = mea.text(encoded["text_tokens"], first_batch["report_attention_mask"], text_masks)
-            bio = mea.bio(encoded["bio_tokens"], first_batch["bio_missing_mask"])
-            mixed = model.mixer(image["nodes"], image["valid"], text["nodes"], text["valid"], bio["nodes"], bio["valid"])
-            text_context = mea.mechanisms.relations["text_global"](text["nodes"][:, 5]) * text["valid"][:, 5].unsqueeze(-1)
-            bio_context = mea.mechanisms.relations["bio_other"](bio["nodes"][:, 0]) * bio["valid"][:, 0].unsqueeze(-1)
-            expected_state = mea.mechanisms.disease_norm(mixed["mechanism_core"] + text_context + bio_context)
-            actual_state = model(first_batch)["mechanism_state"]
-            max_context_error = max(max_context_error, float((expected_state - actual_state).abs().max().cpu()))
+            expected_context = first_outputs["text_context"] + first_outputs["bio_context"]
+            context_error = (expected_context - first_outputs["context"]).abs().max()
+            expected_state = model.frozen_c17.mechanism_evidence_alignment.mechanisms.disease_norm(
+                first_outputs["mechanism_core"] + expected_context
+            )
+            state_error = (expected_state - first_outputs["mechanism_state"]).abs().max()
+            max_context_error = max(max_context_error, float(torch.maximum(context_error, state_error).cpu()))
 
         mixed_batch = None
         for batch in train_loader:
