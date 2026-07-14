@@ -2426,3 +2426,29 @@
 - Selected-structure shortcut-only validation AUC was `0.3277501132` for each seed, below the fixed `0.55` threshold. Shortcut variables remained audit-only and were never model or loss inputs.
 - Final C23 decision: `DEMA_C23_POSITIVE_SUPPRESSION`. The small mean validation-AUC increase cannot override the hard positive-preservation failure. C23 is not promoted, no further local-residual layer is authorized from this result, and the current strict-best route remains `DEMA_C17_POSITIVE_PRESERVATION`.
 - Final formal artifacts are tracked under `analysis_reports/phase_c23_dema/`; server checkpoints and prediction outputs remain under `runs/dema_ht_c23_confidence_gated_residual_multiseed/`.
+
+## 2026-07-14 Phase C24 Decision-Side-Preserving Residual Direct Multi-Seed
+
+### Pre-Edit Contract
+
+- Official model name remains `DEMA-HT`. The canonical server worktree remains `/home/linruixin/chen/project/DMEA-HT` on `main`; starting commit is `d5d049d`.
+- C23 improved mean validation AUC and reduced pairwise inversions versus C17, but it was not promoted because one seed-42 positive patient crossed the frozen C17 logit-zero boundary and changed from TP to FN.
+- C24 is a strict single-variable correction of C23. It freezes the complete validation-selected C17 predictor and reuses the same frozen latent pathological-mechanism interaction representation, residual-head architecture, confidence gate, residual maximum `0.15`, optimizer, learning rate, dropout, epoch budget, patience, manifest, patient-level split, seeds, and loss weights.
+- The only change is a deterministic safe local bound: `min(0.15 * exp(-abs(z_c17)), relu(abs(z_c17) - 1e-4))`. The bound and confidence gate are detached and non-trainable.
+- C24 cannot change the sign of a frozen C17 logit. Samples with `abs(z_c17) <= 1e-4` receive zero residual bound; all other samples retain at least `1e-4` distance from the opposite decision side under either residual direction.
+- C24 cannot repair or introduce C17 threshold errors by construction. Any decision-side violation or any C17-to-C24 threshold transition invalidates the run and cannot be rescued by AUC.
+- No new GitHub branch, worktree, project copy, smoke config, smoke run, seed-0 pilot, second C24 variant, or hyperparameter sweep is permitted. Once all static, synthetic, path, checkpoint, split-count, and validation-reproduction checks pass, seeds `[0, 42, 3407]` launch directly without further confirmation.
+- Validation AUC is the sole checkpoint-selection and promotion metric. Test remains reporting-only after validation selection. AUPRC is not calculated, displayed, compared, or used. Shortcut fields, saved predictions, correctness/error flags, and all prior audit fields remain excluded from the model and loss.
+
+### Implementation And Local Verification
+
+- Added `dmea_ht/c24_decision_side_residual.py`, `configs/dema_ht_c24_decision_side_residual_multiseed.yaml`, `scripts/gate_phase_c24_decision_side_residual.py`, `scripts/train_phase_c24.py`, and `scripts/collect_phase_c24_formal_report.py` without modifying C17-C23 execution paths.
+- The training path exports C17 and C24 predicted classes, all three bound values, active-bound type, confidence group, latent-representation norm, residual, and per-patient decision-side preservation. It raises immediately if any decision-side violation appears.
+- The collector generates decision-side and threshold-equivalence audits, positive/negative and confidence-group audits, active-bound behavior, all `2209` positive-negative pairs per seed, inversion repaired/introduced counts, residual health, shortcut safety, and C17/C23/C24 comparison.
+- Local syntax and `git diff --check` passed. The local static/synthetic gate passed `31/31` checks, including zero initialization, bound non-negativity and composition, extreme positive/negative directions, zero bound near the decision boundary, residual limits, finite nonzero new-head gradient, graph-connected empty-group losses, forbidden-input exclusion, and legacy-config parsing.
+- Local execution used synthetic tensors only. No local data loading, checkpoint inference, or training was performed.
+
+### Server Runtime And Final Decision
+
+- Implementation commit: pending.
+- Full server gate, resolved paths, parameter counts, runtime, GPU, start/end times, per-seed AUC, bound behavior, decision-side equivalence, residual/inversion/shortcut audits, and final decision: pending formal server execution.

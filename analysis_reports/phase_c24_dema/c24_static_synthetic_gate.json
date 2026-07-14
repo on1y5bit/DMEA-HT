@@ -1,0 +1,204 @@
+{
+  "phase": "C24",
+  "gate": "STATIC_ONLY",
+  "pass": true,
+  "checks": [
+    {
+      "name": "phase_is_c24",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "formal_seeds_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "selection_is_validation_auc_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "test_is_post_selection_reporting_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "temperature_fixed_to_one",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "residual_max_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "loss_contract_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "epsilon_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "gate_in_unit_interval",
+      "pass": true,
+      "detail": [
+        1.0,
+        0.6065306663513184,
+        0.3678794503211975,
+        0.1353352814912796,
+        0.049787066876888275
+      ]
+    },
+    {
+      "name": "gate_monotonic_in_abs_logit",
+      "pass": true,
+      "detail": [
+        1.0,
+        0.6065306663513184,
+        0.3678794503211975,
+        0.1353352814912796,
+        0.049787066876888275
+      ]
+    },
+    {
+      "name": "gate_and_bounds_have_no_parameters",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "boundary_and_safe_bounds_nonnegative",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "safe_bound_below_both_limits",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "zero_initialized_logit_equality",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "residual_bound",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "new_head_finite_nonzero_gradient",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "negative_preserve_graph_connected_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "positive_preserve_graph_connected_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "high_confidence_preserve_graph_connected_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "delta_below_safe_bound",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "positive_base_stays_positive",
+      "pass": true,
+      "detail": [
+        1.9999999494757503e-05,
+        9.999999747378752e-05,
+        0.00010199999815085903,
+        9.999983012676239e-05,
+        0.322809636592865,
+        1.979699730873108,
+        -1.9999999494757503e-05,
+        -9.999999747378752e-05,
+        -9.999999747378752e-05,
+        -0.019899999722838402,
+        -0.07719038426876068,
+        -2.0203003883361816
+      ]
+    },
+    {
+      "name": "negative_base_stays_negative",
+      "pass": true,
+      "detail": [
+        1.9999999494757503e-05,
+        9.999999747378752e-05,
+        0.00010199999815085903,
+        9.999983012676239e-05,
+        0.322809636592865,
+        1.979699730873108,
+        -1.9999999494757503e-05,
+        -9.999999747378752e-05,
+        -9.999999747378752e-05,
+        -0.019899999722838402,
+        -0.07719038426876068,
+        -2.0203003883361816
+      ]
+    },
+    {
+      "name": "near_zero_bound_and_delta_are_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "high_confidence_delta_smaller_than_low",
+      "pass": true,
+      "detail": [
+        0.09989999979734421,
+        0.007468060124665499
+      ]
+    },
+    {
+      "name": "shortcut_fields_absent_from_model",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_c17_final_logit_is_base",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "representation_is_frozen_c17_mechanism_state",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "prediction_csvs_absent_from_training_inputs",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "unrelated_alignment_paths_absent",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "disabled_metric_absent_from_formal_path",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "existing_configs_still_parse",
+      "pass": true,
+      "detail": []
+    }
+  ],
+  "decision": "C24_STATIC_GATE_PASS"
+}
