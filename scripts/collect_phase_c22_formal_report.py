@@ -238,7 +238,7 @@ def main() -> None:
                     "route": route,
                     "pairwise_inversions": int(pairwise[column].sum()),
                     "pairwise_rows": int(len(pairwise)),
-                    "repaired_vs_c17": int(pairwise["c17_inversion"].sum() - pairwise[column].sum()) if route == "C22" else 0,
+                    "repaired_vs_c17": int(pairwise["c22_repaired_vs_c17"].sum()) if route == "C22" else 0,
                     "introduced_vs_c17": int(pairwise["c22_introduced_vs_c17"].sum()) if route == "C22" else 0,
                 }
             )
