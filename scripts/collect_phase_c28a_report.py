@@ -699,6 +699,26 @@ def write_positive_report(
                 f"material rescues=`{int(as_bool(subset['rescued_official_material_damage']).sum())}`; "
                 f"TP-to-FN rescues=`{int(as_bool(subset['rescued_official_c17_tp_to_fn']).sum())}`."
             )
+        seed_positive = predictions[
+            (predictions["seed"].astype(int) == seed)
+            & predictions["variant"].eq("V0_official")
+            & (predictions["label"].astype(int) == 1)
+        ].copy()
+        seed_positive["material_damage"] = (
+            (
+                (seed_positive["c17_predicted_class"].astype(int) == 1)
+                & (seed_positive["predicted_class"].astype(int) == 0)
+            )
+            | ((seed_positive["final_prob"] - seed_positive["c17_prob"]) <= -0.05)
+        )
+        for family in ("conflict_group", "text_evidence_group"):
+            group_values = []
+            for group, group_frame in seed_positive.groupby(family):
+                damaged = int(group_frame["material_damage"].sum())
+                group_values.append(
+                    f"{group} {damaged}/{len(group_frame)} ({damaged / len(group_frame):.3f})"
+                )
+            lines.append(f"  - {family} damage rates: " + "; ".join(group_values) + ".")
     lines.extend(
         [
             "",
@@ -731,8 +751,30 @@ def write_route_reports(
     ]
     for variant in VARIANTS:
         frame = metrics[metrics["variant"].eq(variant)].sort_values("seed")
-        values = ", ".join(f"seed {int(row.seed)} `{row.AUC:.10f}`" for row in frame.itertuples(index=False))
-        lines.append(f"- {variant}: {values}; mean `{frame['AUC'].mean():.10f}`.")
+        values = ", ".join(
+            f"seed {int(row.seed)} AUC `{row.AUC:.10f}`/sensitivity `{row.Sensitivity:.10f}`/"
+            f"inversions `{int(row.pairwise_inversion_count)}`/n `{int(row.patient_count)}`"
+            for row in frame.itertuples(index=False)
+        )
+        lines.append(
+            f"- {variant}: {values}; mean AUC `{frame['AUC'].mean():.10f}`; mean positive probability "
+            f"`{frame['positive_probability_mean'].mean():.10f}`; aggregate C17 TP-to-FN "
+            f"`{int(frame['c17_tp_to_variant_fn'].sum())}`."
+        )
+    official = metrics[metrics["variant"].eq("V0_official")].sort_values("seed")
+    latest = metrics[metrics["variant"].eq("V4_latest_only")].sort_values("seed")
+    lines.extend(
+        [
+            "",
+            "## Attribution Guard",
+            "",
+            f"- Latest-only reduced aggregate C17 TP-to-FN from `{int(official['c17_tp_to_variant_fn'].sum())}` "
+            f"to `{int(latest['c17_tp_to_variant_fn'].sum())}`, but mean validation AUC changed by "
+            f"`{latest['AUC'].mean() - official['AUC'].mean():+.10f}` and mean inversion count changed by "
+            f"`{latest['pairwise_inversion_count'].mean() - official['pairwise_inversion_count'].mean():+.10f}`.",
+            "- This positive-recall rescue therefore fails the fixed ranking non-worsening guard and cannot authorize a temporal design.",
+        ]
+    )
     lines.extend(
         [
             "",
