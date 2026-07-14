@@ -1,0 +1,518 @@
+{
+  "phase": "C26-SM",
+  "gate": "FULL_SERVER",
+  "pass": true,
+  "passed": 63,
+  "total": 63,
+  "checks": [
+    {
+      "name": "phase_is_c26sm",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "formal_seeds_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "validation_auc_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "test_reporting_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "rho_fixed_nontrainable",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "residual_and_loss_contract_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "c26e_withdrawn_no_files",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_checkpoint_averaging_calls",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_c17_checkpoint_template",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_multihead_attention_in_new_model",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_shared_message_projection",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "relation_parameters_are_scalars",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "single_update_step",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "shared_five_node_scorer",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_edge_specific_high_dimensional_module_dict",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_mechanism_to_mechanism_edges",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "real_topology_sources_present",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "context_order_is_text_then_bio_then_norm",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_residual_prediction_path",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_ranking_loss",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no_forbidden_alignment_design",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "shortcut_fields_absent_from_predictor_and_loss",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "audit_fields_absent_from_predictor",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "saved_prediction_csv_not_training_input",
+      "pass": true,
+      "detail": [
+        "metrics_path",
+        "shard_metrics_path",
+        "shard_epoch_path"
+      ]
+    },
+    {
+      "name": "representation_patient_ids_are_unicode",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "optimizer_only_in_training_entry",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "validation_decision_precedes_test_stage",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "disabled_metric_absent",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "synthetic_outputs_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "masked_softmax_normalized",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "initial_node_weights_uniform",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "initial_relation_gates_half",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "empty_slot_fallback_finite",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "empty_slot_not_encoded_as_opposition",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "zero_initialized_residual_output",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "residual_bound_holds",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "initial_residual_gradient_finite_nonzero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "all_negative_positive_preserve_graph_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "one_formal_config_only",
+      "pass": true,
+      "detail": [
+        "dema_ht_c26sm_stable_mechanism_mixer_multiseed.yaml"
+      ]
+    },
+    {
+      "name": "no_smoke_pilot_fallback_config",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "legacy_configs_parse",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "canonical_branch_main",
+      "pass": true,
+      "detail": "main"
+    },
+    {
+      "name": "only_canonical_worktree",
+      "pass": true,
+      "detail": [
+        "/home/linruixin/chen/project/DMEA-HT"
+      ]
+    },
+    {
+      "name": "no_c26sm_project_copy",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "name": "all_required_paths_resolve",
+      "pass": true,
+      "detail": [
+        {
+          "seed": 0,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 0,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_0.csv",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_42_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_42_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 42,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_42.csv",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c13_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c13_temporal_focus_stress_seeds/checkpoints/seed_3407_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c16_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_v2_c16_mea_core_seed0/checkpoints/seed_0_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c17_checkpoint",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_3407_best.pt",
+          "exists": true
+        },
+        {
+          "seed": 3407,
+          "role": "c17_validation_predictions",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/predictions/val_predictions_seed_3407.csv",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "manifest",
+          "absolute_path": "/data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c26sm_run_root",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c26sm_stable_mechanism_mixer_multiseed",
+          "exists": true
+        },
+        {
+          "seed": "all",
+          "role": "c26sm_report_root",
+          "absolute_path": "/home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c26sm_dema",
+          "exists": true
+        }
+      ]
+    },
+    {
+      "name": "manifest_split_label_counts",
+      "pass": true,
+      "detail": {
+        "train_0": 301,
+        "train_1": 301,
+        "val_0": 47,
+        "val_1": 47,
+        "test_0": 42,
+        "test_1": 42
+      }
+    },
+    {
+      "name": "seed_0_c17_checkpoint_contract",
+      "pass": true,
+      "detail": {
+        "seed": 0,
+        "best_epoch": 9
+      }
+    },
+    {
+      "name": "seed_0_trainable_scope",
+      "pass": true,
+      "detail": [
+        "mixer.empty_mechanism_tokens",
+        "mixer.message_norm.weight",
+        "mixer.message_norm.bias",
+        "mixer.shared_message.weight",
+        "mixer.shared_message.bias",
+        "mixer.relation_logits.bio_function",
+        "mixer.relation_logits.bio_immune",
+        "mixer.relation_logits.image_morphology",
+        "mixer.relation_logits.text_morphology",
+        "mixer.relation_logits.text_opposition",
+        "mixer.relation_logits.text_temporal",
+        "mixer.update_norm.weight",
+        "mixer.update_norm.bias",
+        "mixer.score_norm.weight",
+        "mixer.score_norm.bias",
+        "mixer.score_hidden.weight",
+        "mixer.score_hidden.bias",
+        "mixer.score_output.weight",
+        "mixer.score_output.bias",
+        "residual_mlp.mlp.0.weight",
+        "residual_mlp.mlp.0.bias",
+        "residual_mlp.mlp.1.weight",
+        "residual_mlp.mlp.1.bias",
+        "residual_mlp.mlp.4.weight",
+        "residual_mlp.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "seed_42_c17_checkpoint_contract",
+      "pass": true,
+      "detail": {
+        "seed": 42,
+        "best_epoch": 3
+      }
+    },
+    {
+      "name": "seed_42_trainable_scope",
+      "pass": true,
+      "detail": [
+        "mixer.empty_mechanism_tokens",
+        "mixer.message_norm.weight",
+        "mixer.message_norm.bias",
+        "mixer.shared_message.weight",
+        "mixer.shared_message.bias",
+        "mixer.relation_logits.bio_function",
+        "mixer.relation_logits.bio_immune",
+        "mixer.relation_logits.image_morphology",
+        "mixer.relation_logits.text_morphology",
+        "mixer.relation_logits.text_opposition",
+        "mixer.relation_logits.text_temporal",
+        "mixer.update_norm.weight",
+        "mixer.update_norm.bias",
+        "mixer.score_norm.weight",
+        "mixer.score_norm.bias",
+        "mixer.score_hidden.weight",
+        "mixer.score_hidden.bias",
+        "mixer.score_output.weight",
+        "mixer.score_output.bias",
+        "residual_mlp.mlp.0.weight",
+        "residual_mlp.mlp.0.bias",
+        "residual_mlp.mlp.1.weight",
+        "residual_mlp.mlp.1.bias",
+        "residual_mlp.mlp.4.weight",
+        "residual_mlp.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "seed_3407_c17_checkpoint_contract",
+      "pass": true,
+      "detail": {
+        "seed": 3407,
+        "best_epoch": 6
+      }
+    },
+    {
+      "name": "seed_3407_trainable_scope",
+      "pass": true,
+      "detail": [
+        "mixer.empty_mechanism_tokens",
+        "mixer.message_norm.weight",
+        "mixer.message_norm.bias",
+        "mixer.shared_message.weight",
+        "mixer.shared_message.bias",
+        "mixer.relation_logits.bio_function",
+        "mixer.relation_logits.bio_immune",
+        "mixer.relation_logits.image_morphology",
+        "mixer.relation_logits.text_morphology",
+        "mixer.relation_logits.text_opposition",
+        "mixer.relation_logits.text_temporal",
+        "mixer.update_norm.weight",
+        "mixer.update_norm.bias",
+        "mixer.score_norm.weight",
+        "mixer.score_norm.bias",
+        "mixer.score_hidden.weight",
+        "mixer.score_hidden.bias",
+        "mixer.score_output.weight",
+        "mixer.score_output.bias",
+        "residual_mlp.mlp.0.weight",
+        "residual_mlp.mlp.0.bias",
+        "residual_mlp.mlp.1.weight",
+        "residual_mlp.mlp.1.bias",
+        "residual_mlp.mlp.4.weight",
+        "residual_mlp.mlp.4.bias"
+      ]
+    },
+    {
+      "name": "c17_validation_patient_label_alignment",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "c17_validation_logits_reproduce",
+      "pass": true,
+      "detail": 2.384185791015625e-07
+    },
+    {
+      "name": "c17_validation_probabilities_reproduce",
+      "pass": true,
+      "detail": 5.960464477539063e-08
+    },
+    {
+      "name": "initial_c26sm_equals_c13",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "real_context_order_reproduced",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "real_missing_modality_outputs_finite",
+      "pass": true,
+      "detail": 138
+    },
+    {
+      "name": "real_node_weights_normalized",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "initial_trainable_gradient_finite_nonzero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "warm_mixer_gradient_finite_nonzero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_modules_receive_no_gradient",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "stable_mixer_capacity_at_most_half",
+      "pass": true,
+      "detail": 0.0926588776043817
+    }
+  ],
+  "decision": "C26SM_DIRECT_MULTI_SEED_AUTHORIZED"
+}

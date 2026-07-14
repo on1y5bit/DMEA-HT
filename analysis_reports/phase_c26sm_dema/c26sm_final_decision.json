@@ -1,0 +1,20 @@
+{
+  "phase": "C26-SM",
+  "decision": "DEMA_C26SM_POSITIVE_SUPPRESSION",
+  "c17_mean_auc": 0.8696242643730194,
+  "c26sm_mean_auc": 0.8702278557416628,
+  "c26sm_std_auc": 0.008473152341250253,
+  "auc_gate": false,
+  "positive_preservation_pass": false,
+  "inversion_pass": false,
+  "mechanism_stability_pass": false,
+  "mechanism_health_pass": true,
+  "residual_health_pass": false,
+  "shortcut_pass": true,
+  "test_used_for_decision": false,
+  "ensemble_used": false,
+  "deployment_contract": "one_checkpoint_one_model_one_forward",
+  "validation_decision_frozen_before_test": true,
+  "keep_c17_strict_best": true,
+  "stop_c26sm_tuning": true
+}

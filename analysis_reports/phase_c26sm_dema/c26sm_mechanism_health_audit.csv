@@ -1,0 +1,4 @@
+seed,mean_node_weight_entropy,fraction_max_node_weight_above_0_90,mean_absolute_deviation_from_uniform,all_relation_gates_in_range,empty_slot_max_norm_fraction,mechanism_norms_finite
+0,1.0334156424580634,0.06382978723404255,0.17831060000516955,True,0.0,True
+42,1.587188619501135,0.0,0.03433021374839418,True,0.0,True
+3407,1.3503068112848131,0.0,0.12301596925296684,True,0.0,True

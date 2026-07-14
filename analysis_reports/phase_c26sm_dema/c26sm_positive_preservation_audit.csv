@@ -1,0 +1,4 @@
+seed,c13_tp_to_fn,c13_fn_to_tp,mean_positive_delta,fraction_positive_delta_below_minus_0_10,c17_rescues,retained_c17_rescues,lost_c17_rescues,new_rescues_vs_c13_not_c17
+0,0,10,0.4245416254122206,0.0425531914893617,10,10,0,0
+42,0,0,-0.08258775086637503,0.2978723404255319,2,0,2,0
+3407,0,8,0.21529392392790697,0.23404255319148937,9,8,1,0
