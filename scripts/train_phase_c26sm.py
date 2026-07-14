@@ -276,7 +276,7 @@ def save_validation_seed(result: Dict[str, Any], out_dir: Path) -> Dict[str, Any
     order = np.argsort(np.asarray([str(row["patient_id"]) for row in split_result["predictions"]]))
     np.savez_compressed(
         out_dir / "representations" / f"val_mechanism_state_seed_{seed}.npz",
-        patient_id=frame["patient_id"].astype(str).to_numpy(),
+        patient_id=np.asarray(frame["patient_id"].astype(str).tolist(), dtype=np.str_),
         label=frame["label"].to_numpy(dtype=np.int64),
         mechanism_state=split_result["representations"][order].astype(np.float32),
     )
@@ -459,7 +459,7 @@ def main() -> None:
             order = np.argsort(original_ids)
             np.savez_compressed(
                 out_dir / "representations" / f"test_mechanism_state_seed_{seed}.npz",
-                patient_id=frame["patient_id"].astype(str).to_numpy(),
+                patient_id=np.asarray(frame["patient_id"].astype(str).tolist(), dtype=np.str_),
                 label=frame["label"].to_numpy(dtype=np.int64),
                 mechanism_state=result["representations"][order].astype(np.float32),
             )
@@ -507,7 +507,7 @@ def main() -> None:
             order = np.argsort(np.asarray([str(row["patient_id"]) for row in split_result["predictions"]]))
             np.savez_compressed(
                 out_dir / "representations" / f"{split}_mechanism_state_seed_{seed}.npz",
-                patient_id=frame["patient_id"].astype(str).to_numpy(),
+                patient_id=np.asarray(frame["patient_id"].astype(str).tolist(), dtype=np.str_),
                 label=frame["label"].to_numpy(dtype=np.int64),
                 mechanism_state=split_result["representations"][order].astype(np.float32),
             )

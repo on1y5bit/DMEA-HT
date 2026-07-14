@@ -139,7 +139,20 @@ def pairwise_table(frame: pd.DataFrame) -> pd.DataFrame:
 def load_representation(run_dir: Path, seed: int) -> Dict[str, np.ndarray]:
     path = run_dir / "representations" / f"val_mechanism_state_seed_{seed}.npz"
     with np.load(path, allow_pickle=False) as payload:
-        return {key: payload[key] for key in payload.files}
+        labels = payload["label"]
+        mechanism_state = payload["mechanism_state"]
+    predictions = pd.read_csv(
+        run_dir / "predictions" / f"val_predictions_seed_{seed}.csv",
+        dtype={"patient_id": str},
+    ).sort_values("patient_id").reset_index(drop=True)
+    prediction_labels = predictions["label"].to_numpy(dtype=np.int64)
+    if len(predictions) != len(mechanism_state) or not np.array_equal(labels, prediction_labels):
+        raise RuntimeError(f"C26-SM representation/prediction alignment failed for seed {seed}")
+    return {
+        "patient_id": np.asarray(predictions["patient_id"].astype(str).tolist(), dtype=np.str_),
+        "label": labels,
+        "mechanism_state": mechanism_state,
+    }
 
 
 def main() -> None:

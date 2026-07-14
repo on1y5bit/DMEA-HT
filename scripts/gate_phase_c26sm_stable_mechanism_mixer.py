@@ -109,6 +109,7 @@ def static_checks(config: Mapping[str, Any], output_dir: Path) -> List[Dict[str,
     checks.append(item("audit_fields_absent_from_predictor", not any(token in model_source for token in ("c14", "c20", "c21", "hard_patient", "inversion_count"))))
     allowed_training_csv_inputs = {"metrics_path", "shard_metrics_path", "shard_epoch_path"}
     checks.append(item("saved_prediction_csv_not_training_input", bool(read_csv_inputs) and set(read_csv_inputs) <= allowed_training_csv_inputs, read_csv_inputs))
+    checks.append(item("representation_patient_ids_are_unicode", train_source.count("dtype=np.str_") == 3))
     checks.append(item("optimizer_only_in_training_entry", "Optimizer" in train_source and "Optimizer" not in model_source))
     checks.append(item(
         "validation_decision_precedes_test_stage",
