@@ -2390,3 +2390,30 @@
 - Residual health passed: all seeds had nonzero residual variance and no bound saturation. The selected-structure shortcut-only label AUC was `0.4762084402`, below the `0.55` audit threshold; shortcut fields remained audit-only.
 - Final C22 decision: `DEMA_C22_POSITIVE_SUPPRESSION`. C22 is not promoted. The strict-best route remains `DEMA_C17_POSITIVE_PRESERVATION`; C22 does not support a claim that a particular mechanism node is clinically necessary.
 - Final server artifacts are under `analysis_reports/phase_c22_dema/` and the formal run is under `runs/dema_ht_c22_stable_evidence_pooling_multiseed/`.
+
+## 2026-07-14 Phase C23 Confidence-Gated Local Residual Direct Multi-Seed
+
+### Pre-Edit Contract
+
+- Official project and research name remain `DEMA-HT`; the canonical server worktree remains `/home/linruixin/chen/project/DMEA-HT` on `main`. No branch, worktree, project copy, smoke run, or seed-0 pilot is permitted.
+- The authoritative data root is `/data/csb/DMEA-HT/HT_2025.12_25`, the frozen manifest is `manifest_distmatch_structmatch_evidence_v2_c13_temporal_focus.jsonl`, and the runtime is `/home/linruixin/chen/conda/envs/ma`.
+- C23 freezes the complete validation-selected C17 route for each seed, including C13, encoders, evidence projectors, mechanism propagation, role scoring, conflict aggregation, mechanism head, and the C17 residual head.
+- The C23 base logit is the full frozen C17 final logit. The new head reads only the frozen C17 `mea_mechanism_state`, described conservatively as a latent pathological-mechanism interaction representation rather than an identified clinical node.
+- The deterministic non-learnable gate is `exp(-abs(frozen_c17_logit) / 1.0)`. The bounded correction is `0.15 * gate.detach() * tanh(raw_delta_c23)`, and only the new C23 residual head is trainable.
+- The fixed objective is `BCEWithLogits + 0.001 * mean(delta^2) + 0.02 * positive_preserve + 0.02 * negative_preserve + 0.01 * high_confidence_preserve`. Missing-mask terms remain graph-connected zero.
+- Validation AUC is the sole checkpoint-selection and route-decision metric. Test remains reporting-only after validation selection. Shortcut fields remain audit-only and are excluded from the model and loss.
+- Once the full server path/reproduction gate prints `C23_DIRECT_MULTI_SEED_AUTHORIZED`, formal seeds `[0, 42, 3407]` must launch directly without further confirmation.
+
+### Implementation And Local Verification
+
+- Added `dmea_ht/c23_confidence_gated_residual.py`, `configs/dema_ht_c23_confidence_gated_residual_multiseed.yaml`, `scripts/gate_phase_c23_confidence_gated_residual.py`, `scripts/train_phase_c23.py`, and `scripts/collect_phase_c23_formal_report.py`.
+- The independent training path records per-epoch loss components, validation AUC and threshold diagnostics, gate statistics, positive/negative residual behavior, confidence-group residual magnitude, bound proximity, and pairwise inversion counts.
+- The collector produces the required patient diagnostics, C17 transitions, positive/negative preservation audit, confidence-group and high-confidence damage audits, pairwise ranking/inversion tables, residual-health and shortcut audits, C17 comparison, seed-stability report, and final decision report.
+- Local syntax checks passed. The local static/synthetic gate passed all `23/23` checks, including initial C17/C23 logit equality, deterministic gate range and monotonicity, residual bound, finite nonzero new-head gradient, graph-connected one-class zeros, shortcut exclusion, prediction-file exclusion, and legacy-config parsing.
+- Local execution was limited to syntax and synthetic tensors. No local data loading, checkpoint inference, or training was performed.
+
+### Server Runtime And Final Decision
+
+- Implementation commit: pending.
+- Server gate commit and resolved path inventory: pending.
+- Training start time, GPU, completion time, per-seed validation AUC, preservation gates, inversion audit, shortcut audit, and final decision: pending formal server execution.

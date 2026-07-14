@@ -1,0 +1,138 @@
+{
+  "phase": "C23",
+  "gate": "STATIC_ONLY",
+  "pass": true,
+  "checks": [
+    {
+      "name": "phase_is_c23",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "formal_seeds_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "selection_is_validation_auc_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "test_is_post_selection_reporting_only",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "temperature_fixed_to_one",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "residual_max_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "loss_contract_fixed",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "gate_in_unit_interval",
+      "pass": true,
+      "detail": [
+        1.0,
+        0.6065306663513184,
+        0.3678794503211975,
+        0.1353352814912796,
+        0.049787066876888275
+      ]
+    },
+    {
+      "name": "gate_monotonic_in_abs_logit",
+      "pass": true,
+      "detail": [
+        1.0,
+        0.6065306663513184,
+        0.3678794503211975,
+        0.1353352814912796,
+        0.049787066876888275
+      ]
+    },
+    {
+      "name": "gate_has_no_parameters",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "zero_initialized_logit_equality",
+      "pass": true,
+      "detail": 0.0
+    },
+    {
+      "name": "residual_bound",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "new_head_finite_nonzero_gradient",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "negative_preserve_graph_connected_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "positive_preserve_graph_connected_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "high_confidence_preserve_graph_connected_zero",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "high_confidence_delta_smaller_than_low",
+      "pass": true,
+      "detail": [
+        0.13572561740875244,
+        0.007468060124665499
+      ]
+    },
+    {
+      "name": "shortcut_fields_absent_from_model",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "frozen_c17_final_logit_is_base",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "representation_is_frozen_c17_mechanism_state",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "prediction_csvs_absent_from_training_inputs",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "unrelated_alignment_paths_absent",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "existing_configs_still_parse",
+      "pass": true,
+      "detail": []
+    }
+  ],
+  "decision": "C23_STATIC_GATE_PASS"
+}
