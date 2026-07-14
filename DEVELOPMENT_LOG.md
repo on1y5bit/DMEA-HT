@@ -2547,3 +2547,21 @@
 - Selected-structure shortcut-only AUC was `0.2829334541` and passed. Raw visit/image label associations remained separate audit-only warnings at orientation-invariant AUC `0.9769126301` and `0.9418288818`; they were never predictor or loss inputs.
 - Final route: `KEEP_DEMA_C17_STRICT_BEST` and `STOP_C26SM_TUNING`. C26-SM is not promoted. C26-E remains withdrawn, and no ensemble artifact exists.
 - Final tracked audit artifacts are under `analysis_reports/phase_c26sm_dema/`; authoritative checkpoints, validation/test predictions, and representations remain server-side under `runs/dema_ht_c26sm_stable_mechanism_mixer_multiseed/`.
+
+## 2026-07-14 Phase C27-VTME Visit-Level Temporal Mechanism Encoder
+
+### Pre-Edit Contract
+
+- Official model name remains `DEMA-HT`. C26-SM was not promoted, `STOP_C26SM_TUNING` remains binding, and no C26-SM-v2 or further propagation/residual tuning is allowed.
+- C26-E remains `C26E_WITHDRAWN_BY_USER`; no ensemble, checkpoint averaging, multi-seed distillation, or multi-model deployment artifact may be implemented or run.
+- C27-VTME is a strict single-model route. Formal seeds `[0, 42, 3407]` are independent architecture-stability replicates and are never combined at inference. Deployment, if promoted, is one checkpoint, one model, and one forward.
+- C27 first performs a mandatory real-data visit-reconstruction audit. Visit boundaries, image grouping, report blocks, and dated bio rows must come from the C13 selected visits, source visit directories, and `all_patients.xlsx`; labels, predictions, and concatenated patient reports cannot define or fill visit boundaries.
+- C27 preserves the C13 patient-level task, labels, splits, final-year history cutoff, distmatch-selected visits, and selected image paths. No visit may be added, removed, resampled, or moved across patients.
+- A missing visit-level report remains empty with a source reason. The concatenated patient report may not be copied into a missing visit. Dated bio is attached only to the exact source visit date; patient-level fallback bio may be represented once globally and never copied across visits.
+- Visit reconstruction must retain `780` unique patients and split-label counts `301/301`, `47/47`, and `42/42`, with zero cross-patient image/report/bio leakage. Visit-report coverage must be at least `0.80`, and at least `0.70` of multi-visit validation patients must have two reconstructable report blocks. Failure stops C27 before model implementation or training.
+- If reconstruction passes, C27 freezes the corresponding C17 image, text, and bio encoders plus pre-propagation evidence projectors. It may not read C17 mechanism outputs, final logits, residuals, or any C23-C26 predictions as model inputs.
+- The authorized architecture uses five independent within-visit mechanism slots, arithmetic valid-source pooling, one shared low-capacity temporal scorer, a fixed `log(2)` ordinal-recency prior, fixed representation-only latest/history conflict scalars, one patient projection, and one direct classifier.
+- C27 uses no Transformer, RNN, MultiheadAttention, mechanism-to-mechanism graph, relation gates, post-C17 residual, ranking loss, weak-label loss, auxiliary supervision, distillation, or ensemble. BCEWithLogitsLoss is the only training objective.
+- Explicit visit count, image count, report length, missing-count, patient ID, labels, shortcut fields, absolute dates, true time intervals, and source folders remain outside the predictor. Availability masks are used only for safe pooling.
+- No branch, worktree, project copy, smoke, seed-0 pilot, fallback, second variant, or sweep is permitted. Validation AUC is the only checkpoint-selection and promotion metric; AUPRC is not calculated or reported, and test remains reporting-only after the validation decision is frozen.
+- Starting commit: `3462c4e`. Canonical server path remains `/home/linruixin/chen/project/DMEA-HT` on `main`; data root remains `/data/csb/DMEA-HT/HT_2025.12_25`; runtime remains `/home/linruixin/chen/conda/envs/ma`.
