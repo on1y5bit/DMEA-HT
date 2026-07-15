@@ -980,6 +980,50 @@ def clean_status(output: Path) -> bool:
     return not git_output("status", "--porcelain", "--untracked-files=no")
 
 
+def write_reproduction_failure_reports(
+    output: Path, reproduction: pd.DataFrame, gate: Mapping[str, Any]
+) -> None:
+    lines = [
+        "# C31-A Reproduction Report",
+        "",
+        f"- Gate: `{gate['status']}` (`{gate['passed']}/{gate['total']}`).",
+        f"- Device: `{gate['device']}`.",
+        f"- Commit: `{gate['git_commit']}`.",
+    ]
+    for row in reproduction.sort_values("seed").itertuples():
+        lines.append(
+            f"- Seed `{int(row.seed)}`: C27 logit/probability errors "
+            f"`{row.c27_max_abs_logit_error:.3e}`/"
+            f"`{row.c27_max_abs_probability_error:.3e}`; C30 errors "
+            f"`{row.c30_max_abs_logit_error:.3e}`/"
+            f"`{row.c30_max_abs_probability_error:.3e}`; AUC errors "
+            f"`{row.c27_auc_error:.3e}`/`{row.c30_auc_error:.3e}`; "
+            f"class mismatches `{int(row.threshold_class_mismatch_count)}`."
+        )
+    lines.extend(
+        [
+            "",
+            "The fixed hard logit/probability tolerances are `1e-7`/`1e-9`.",
+            "C31-A stopped immediately; no factorial analysis or training was run.",
+        ]
+    )
+    (output / "c31a_reproduction_report.md").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
+    decision = {
+        "phase": "C31-A",
+        "primary_label": "C31A_REPRODUCTION_FAIL",
+        "authorization": "C31B_NOT_AUTHORIZED",
+        "route": "STOP_VISIT_TEXT_ADAPTER_ROUTE",
+        "strict_best": "KEEP_DEMA_C17_STRICT_BEST",
+        "full_analysis_run": False,
+        "training_run": False,
+    }
+    (output / "c31a_route_decision.json").write_text(
+        json.dumps(decision, indent=2) + "\n", encoding="utf-8"
+    )
+
+
 def run_gate(args: argparse.Namespace) -> None:
     output = resolve_path(args.output_dir)
     config = load_config(resolve_path(args.config))
@@ -1041,7 +1085,14 @@ def run_gate(args: argparse.Namespace) -> None:
     graph.to_csv(output / "c31a_text_role_graph_inventory.csv", index=False)
     write_graph_report(graph, output)
     passed = sum(bool(value) for _, value in checks)
-    status = "C31A_ANALYSIS_AUTHORIZED" if passed == len(checks) else "C31A_ANALYSIS_BLOCKED"
+    reproduction_failed = not runtime["c27_reproduced"] or not runtime["c30_reproduced"]
+    status = (
+        "C31A_ANALYSIS_AUTHORIZED"
+        if passed == len(checks)
+        else "C31A_REPRODUCTION_FAIL"
+        if reproduction_failed
+        else "C31A_ANALYSIS_BLOCKED"
+    )
     payload = {
         "phase": "C31-A",
         "status": status,
@@ -1057,6 +1108,8 @@ def run_gate(args: argparse.Namespace) -> None:
     (output / "c31a_analysis_gate.json").write_text(
         json.dumps(payload, indent=2) + "\n", encoding="utf-8"
     )
+    if reproduction_failed:
+        write_reproduction_failure_reports(output, reproduction, payload)
     print(json.dumps({"status": status, "passed": passed, "total": len(checks)}))
     if status != "C31A_ANALYSIS_AUTHORIZED":
         raise SystemExit(2)

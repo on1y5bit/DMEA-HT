@@ -2767,3 +2767,10 @@
 - Checks 11 and 12 remained the only failures: strict `000`-to-C27 and `111`-to-C30 saved-output reproduction. Patient IDs, labels, threshold classes, AUC, the single adapter call, two projector calls, role-source mapping, exact decomposition, all `2,209` pairs per seed, finite outputs, and bitwise checkpoint preservation passed.
 - CPU maximum absolute logit errors for seeds `0/42/3407` were `2.1159649e-05`, `1.0344386e-04`, and `1.1110306e-04` for C27, and `2.0891428e-05`, `1.0895729e-04`, and `1.1110306e-04` for C30. These exceed the fixed hard limits and are not accepted as formal reproduction evidence.
 - No tolerance was relaxed, no complete attribution analysis or C31-B route was launched, and no training occurred. The next permitted action remains a CUDA gate rerun after the host GPU/driver is genuinely healthy; full validation attribution may begin only after exactly `24/24` checks pass.
+
+### CUDA Reproduction Gate Result
+
+- After the GPU reset completed, `nvidia-smi` reported `29 C`, `P8`, `0%` utilization and normal compute mode; PyTorch reported one CUDA device with `torch.cuda.is_available() == True`.
+- The corrected C31-A gate ran on CUDA at commit `389bb35` and passed `23/24`. Official C27/`000` reproduction passed at maximum logit error `8.8817842e-16` and probability error `1.1102230e-16`.
+- Official C30/`111` reproduction was the sole failure. Maximum logit errors for seeds `0/42/3407` were `5.3644180e-07`, `4.7683716e-07`, and `4.7683716e-07`; maximum probability error was `1.1920929e-07` for every seed. AUC error and threshold-class mismatch count were zero for all seeds, but the fixed `1e-7`/`1e-9` hard tolerances were not met.
+- Per the corrected mandatory reproduction contract, the formal result is `C31A_REPRODUCTION_FAIL`, `C31B_NOT_AUTHORIZED`, `STOP_VISIT_TEXT_ADAPTER_ROUTE`, and `KEEP_DEMA_C17_STRICT_BEST`. The complete factorial attribution analysis and all training remain stopped.
