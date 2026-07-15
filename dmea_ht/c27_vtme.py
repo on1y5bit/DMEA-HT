@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any, Dict, Mapping
 
@@ -56,8 +57,9 @@ def prefixed_state(state: Mapping[str, torch.Tensor], prefix: str) -> Dict[str, 
 class FrozenC17EvidenceBackbone(nn.Module):
     """Only the C17 source encoders and pre-propagation projectors."""
 
-    def __init__(self, config: Dict[str, Any], seed: int) -> None:
+    def __init__(self, config: Dict[str, Any], seed: int, trainable: bool = False) -> None:
         super().__init__()
+        self.trainable = bool(trainable)
         model_cfg = dict(config["model"])
         phase_cfg = dict(config["c27"])
         hidden_dim = int(model_cfg["hidden_dim"])
@@ -86,11 +88,11 @@ class FrozenC17EvidenceBackbone(nn.Module):
             prefixed_state(state, "mechanism_evidence_alignment.bio."), strict=True
         )
         for parameter in self.parameters():
-            parameter.requires_grad = False
-        self.eval()
+            parameter.requires_grad_(self.trainable)
+        self.train(self.trainable)
 
     def train(self, mode: bool = True) -> "FrozenC17EvidenceBackbone":
-        super().train(False)
+        super().train(bool(mode) if self.trainable else False)
         return self
 
 
@@ -198,7 +200,8 @@ class C27VTMEModel(nn.Module):
         model_cfg = dict(config["model"])
         phase_cfg = dict(config["c27"])
         hidden_dim = int(model_cfg["hidden_dim"])
-        self.frozen_sources = FrozenC17EvidenceBackbone(config, seed)
+        self.e2e_train = bool(config.get("c37", {}).get("train_e2e", False))
+        self.frozen_sources = FrozenC17EvidenceBackbone(config, seed, trainable=self.e2e_train)
         self.core = VisitTemporalMechanismCore(
             hidden_dim=hidden_dim,
             dropout=float(model_cfg["dropout"]),
@@ -208,7 +211,7 @@ class C27VTMEModel(nn.Module):
 
     def train(self, mode: bool = True) -> "C27VTMEModel":
         super().train(mode)
-        self.frozen_sources.eval()
+        self.frozen_sources.train(mode if self.e2e_train else False)
         self.core.train(mode)
         return self
 
@@ -307,7 +310,8 @@ class C27VTMEModel(nn.Module):
         }
 
     def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        with torch.no_grad():
+        source_context = nullcontext() if self.e2e_train else torch.no_grad()
+        with source_context:
             frozen = self._frozen_visit_sources(batch)
         outputs = self.core(
             frozen["source_states"],

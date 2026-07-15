@@ -1,0 +1,78 @@
+phase: c37
+
+project:
+  name: dema_ht_c37_e2e_vrl_multiseed
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  output_dir: runs/dema_ht_c37_e2e_vrl_multiseed
+  report_dir: analysis_reports/phase_c37_dema
+
+model:
+  name: dmea_ht
+  variant: dmea
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_patient: 28
+  max_images_per_visit: 4
+  image_size: 224
+  dropout: 0.15
+  mea_num_heads: 4
+
+c17:
+  mean_validation_auc: 0.8696242643730194
+c17_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed
+
+c27:
+  c17_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_{seed}_best.pt
+  c27_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed/checkpoints/seed_{seed}_best.pt
+  c27_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed
+  recency_prior_log_odds: 0.6931471805599453
+  trainable_parameter_limit: 50000000
+  mean_validation_auc: 0.8822996831145314
+
+baselines:
+  c32_mean_validation_auc: 0.8743020974800061
+  c32_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c32_vpa_multiseed
+  c33_mean_validation_auc: 0.8711332428
+  c33_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c33_jera_multiseed
+  c36_mean_validation_auc: 0.8255620944620493
+  c36_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c36_jtsa_multiseed
+
+c37:
+  init_from_c27: true
+  train_e2e: true
+  train_image_encoder: true
+  train_text_encoder: true
+  train_bio_encoder: true
+  train_evidence_projectors: true
+  train_c27_prediction_path: true
+  encoder_lr_scale: 0.01
+  projector_lr_scale: 0.05
+  prediction_path_lr_scale: 0.10
+  initial_reproduction_logit_tolerance: 0.000001
+  trainable_parameter_limit: 50000000
+
+training:
+  seeds: [0, 42, 3407]
+  batch_size: 4
+  effective_batch_size: 4
+  gradient_accumulation_steps: 1
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 30
+  patience: 8
+  primary_metric: val_AUC
+  checkpoint_metric: val_auc
+  num_workers: 2
+  evaluate_test_after_validation_decision: true
+
+loss:
+  bce_only: true
+
+deployment:
+  one_checkpoint: true
+  one_model: true
+  one_forward: true
+  ensemble: false
