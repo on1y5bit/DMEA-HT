@@ -3392,3 +3392,26 @@
 - Added `dmea_ht/c56_ppek.py`, `configs/dema_ht_c56_ppek_multiseed.yaml`, `scripts/gate_phase_c56_ppek.py`, `scripts/train_phase_c56.py`, and `scripts/collect_phase_c56_report.py`.
 - The implementation keeps the C17 source stack under `no_grad`, computes the fixed support/opposition kernel moments, and applies the declared bounded opposition penalty `0.75 * tanh(softplus(score))` in one forward.
 - Local Python compilation, YAML parsing, `git diff --check`, and a no-data tensor/penalty-bound check passed. The exact server gate and three-seed formal results remain pending; no C56 conclusion or Test result is valid before Validation freeze and reporting-only Test.
+
+### C56 Formal Result And Decision
+
+- The C56 gate passed exactly `11/11` on the canonical server. Direct parallel formal seeds `[0, 42, 3407]` completed in the `ma` environment on the NVIDIA GeForce RTX 5090; Validation-selected epochs were seed `0: 14`, seed `42: 11`, and seed `3407: 21`.
+- C56 Validation AUC was `0.8836577637 / 0.8963331824 / 0.8976912630`, mean/std `0.8925607364 +/- 0.0077400444`. The mean improved versus C17 by `+0.0229364720` and versus C27 by `+0.0102610533`; no seed reached `0.9000`, so the goal AUC gate failed.
+- Positive preservation failed: C17 TP-to-C56-FN / FN-to-C56-TP was `7/5`, `7/1`, and `4/6`; sensitivity changes were `-0.0425531915`, `-0.1276595745`, and `+0.0425531915`, with aggregate counts `18/12`. Seed 42 crossed the substantive sensitivity-loss bound.
+- Ranking safety failed. C27/C56 inversion counts were `217/257`, `284/229`, and `279/226`; repaired/introduced pairs were `91/131`, `121/66`, and `133/80`, aggregate `345/277`. The mean improved versus C27, but seed 0 increased inversions by `40` and exceeded the per-seed bound.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test AUC mean/std was `0.8633786848 +/- 0.0145306186`.
+- Validation was frozen before Test as `C56_POSITIVE_DAMAGE`; no deployment checkpoint was selected. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and no ensemble, threshold tuning, or Test-based selection was used.
+- C56 is not evidence for the data-limit stop condition because both positive and ranking safety were not stable. The goal remains active; the next hypothesis moves to direct nonlinear continuous biochemical evidence interactions rather than another opposition/readout bound.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C57-CBIE
+
+### Pre-Edit Contract
+
+- C56 improved positive sensitivity relative to C55 but lost part of the C55 AUC/ranking gain. The unresolved evidence gap is whether the frozen biochemical representation is discarding nonlinear information in the continuous clinical measurements themselves.
+- C57 tests Continuous Biochemical Interaction Evidence. The frozen C17 image/text raw and aligned states form a fixed patient-level image-text evidence kernel. Independently, the seven continuous biochemical inputs are summarized by fixed latest, inverse-log2 historical mean, latest-history delta, and historical dispersion, then expanded with the bounded nonlinear basis `[x, tanh(x), x*tanh(x)]`.
+- A factorized patient-level interaction maps the image-text evidence and nonlinear biochemical basis into equal low-rank coordinates and multiplies them elementwise. One patient readout consumes the image-text kernel, biochemical basis, and their bilinear interaction. This is a direct continuous-measurement mechanism, not C43 within-visit FiLM, C50 latent biochemical conditioning, a visit score, or a source representation adapter.
+- Chronology is used only by fixed latest/history/delta/dispersion statistics. Biochemical missingness is used only to mask fixed statistics; no missingness flag or audit-only field is concatenated as a classifier feature. Patient IDs, dates, visit counts, image/report counts, padding fields, source paths, saved predictions, and Test artifacts remain excluded.
+- All C17 encoders, propagation modules, and pre-propagation evidence projectors remain frozen. The trainable scope is limited to the image-text projection, biochemical projection, factorized interaction readout, and classifier under a `5,000,000` parameter limit.
+- C57 uses BCE with logits only, independent formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct multiseed execution after an exact gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or ranking loss is authorized.
+- Promotion requires AUC, positive-preservation, ranking, shortcut, health, capacity, and patient-level split/Test gates. If C57 fails, record it and continue to the next distinct hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C57-CBIE is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
