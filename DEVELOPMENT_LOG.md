@@ -2759,3 +2759,11 @@
 - Reports must separately export `excluded_damage_role` and `beneficial_role`. If both are the same non-none role, the analysis is invalid and C31-B is not authorized.
 - Pairwise margins and their exact Shapley decomposition use positive-minus-negative logits, as required by the corrected contract; inversion counts remain invariant to the monotone sigmoid transform.
 - A damaging-role label does not itself authorize C31-B. `C31B_ONE_ROLE_ADAPTER_AUTHORIZED` requires one uniquely beneficial, non-damaging role; otherwise `C31B_NOT_AUTHORIZED`, `STOP_VISIT_TEXT_ADAPTER_ROUTE`, and `KEEP_DEMA_C17_STRICT_BEST` remain binding.
+
+### 2026-07-15 Recovery Recheck
+
+- The canonical server and SSH endpoint recovered, and both local and server worktrees were at implementation commit `f669b2f`. The RTX 5090 was enumerated with `2/32607 MiB` allocated, but `nvidia-smi` still reported `ERR!`/`N/A` for fan, temperature, performance state, power, utilization, and compute status.
+- The formal corrected C31-A gate was rerun once in the foreground. PyTorch reported `torch.cuda.is_available() == False` with one enumerated CUDA device, so the analyzer correctly fell back to CPU and returned `C31A_ANALYSIS_BLOCKED` with `22/24` checks passed.
+- Checks 11 and 12 remained the only failures: strict `000`-to-C27 and `111`-to-C30 saved-output reproduction. Patient IDs, labels, threshold classes, AUC, the single adapter call, two projector calls, role-source mapping, exact decomposition, all `2,209` pairs per seed, finite outputs, and bitwise checkpoint preservation passed.
+- CPU maximum absolute logit errors for seeds `0/42/3407` were `2.1159649e-05`, `1.0344386e-04`, and `1.1110306e-04` for C27, and `2.0891428e-05`, `1.0895729e-04`, and `1.1110306e-04` for C30. These exceed the fixed hard limits and are not accepted as formal reproduction evidence.
+- No tolerance was relaxed, no complete attribution analysis or C31-B route was launched, and no training occurred. The next permitted action remains a CUDA gate rerun after the host GPU/driver is genuinely healthy; full validation attribution may begin only after exactly `24/24` checks pass.
