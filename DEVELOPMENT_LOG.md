@@ -3425,3 +3425,4 @@
 ### Gate Correction
 
 - The first server gate stopped before training because the nonlinear biochemical basis remained `[B, 7, 12]` while the projection contract expected `[B, 84]`. The fix flattens the patient-level basis after construction; no data, label, split, or model-route change was made. The corrected gate must pass before formal execution.
+- The first post-gate formal launch then stopped all three shards on the first evidence-token aggregation because fixed statistics were still `[B, S, 4H]` at that reporting-compatible output path. The fix reshapes them to `[B, S, 4, H]` before token pooling; no checkpoint or formal metric was produced by that failed launch.

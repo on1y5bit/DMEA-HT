@@ -181,13 +181,15 @@ class C57CBIEModel(C47DRFEModel):
         patient_state = self.patient_readout(torch.cat([image_text_state, bio_state, joint_state], dim=-1))
         logit = self.classifier(patient_state).squeeze(-1)
 
-        representative_summary = torch.cat([image_summary, text_summary], dim=1)
+        image_stats = image_summary.reshape(image_summary.shape[0], 2, 4, self.hidden_dim)
+        text_stats = text_summary.reshape(text_summary.shape[0], 2, 4, self.hidden_dim)
+        representative_summary = torch.cat([image_stats, text_stats], dim=1)
         representative_valid = torch.cat([image_available, text_available], dim=1)
         evidence_tokens, evidence_present = self._safe_statistic_tokens(representative_summary, representative_valid)
         evidence_valid = evidence_present.unsqueeze(1).expand(-1, 4)
         attention = evidence_valid.to(evidence_tokens.dtype)
         attention = attention / attention.sum(dim=1, keepdim=True).clamp_min(1.0)
-        stream_tokens = torch.cat([image_summary[:, :, 0], text_summary[:, :, 0]], dim=1)
+        stream_tokens = torch.cat([image_stats[:, :, 0], text_stats[:, :, 0]], dim=1)
         safe_valid = representative_valid.clone()
         no_evidence = ~safe_valid.any(dim=1)
         if bool(no_evidence.any().item()):
