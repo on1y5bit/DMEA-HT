@@ -282,7 +282,7 @@ class C34MSCTModel(nn.Module):
         source_variance = (
             (source_states - observed_mean.unsqueeze(-1)).pow(2) * observed_weights
         ).sum(dim=-1) / observed_count.clamp_min(1.0)
-        source_disagreement = torch.sqrt(source_variance.clamp_min(0.0))
+        source_disagreement = torch.sqrt(source_variance.clamp_min(1e-12))
         source_disagreement = torch.where(
             observed_count >= 2.0,
             source_disagreement,
@@ -316,7 +316,7 @@ class C34MSCTModel(nn.Module):
         history_variance = (
             (visit_state - history_state.unsqueeze(-1)).pow(2) * history_weights
         ).sum(dim=1) / history_denom.clamp_min(1.0)
-        history_dispersion = torch.sqrt(history_variance.clamp_min(0.0))
+        history_dispersion = torch.sqrt(history_variance.clamp_min(1e-12))
         history_dispersion = torch.where(
             history_count >= 2,
             history_dispersion,
