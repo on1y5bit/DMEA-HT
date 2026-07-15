@@ -3131,4 +3131,4 @@
 - C17 image/text/bio encoders and pre-propagation evidence projectors remain frozen. Only the joint visit token encoder, history set encoder, latest-to-history patient query, fixed-history readout, and classifier are trainable. Missing evidence is represented only by attention masks and zeroed evidence tokens, never as a classifier feature.
 - C44 keeps BCE with logits only, formal seeds `[0, 42, 3407]`, one Validation-AUC-selected checkpoint per independent model, direct parallel execution after gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, AUPRC, smoke, pilot, sweep, or closed-route micro-variant is authorized.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C44 fails, record the result and continue unless all data-limit stop conditions are evidenced.
-- C44 implementation will be recorded below before server execution.
+- C44 implementation commit is `0b7bc6d`; local static validation passed before publish.
