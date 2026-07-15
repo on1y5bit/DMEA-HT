@@ -3,9 +3,9 @@ phase: goal_data_limit_audit
 project:
   manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
   expected_manifest_sha256: cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b
-  output_dir: analysis_reports/goal_auc_090/data_limit_audit
+  output_dir: analysis_reports/goal_auc_090/data_limit_audit_c41
   seeds: [0, 42, 3407]
-  candidate_models: [C38, C39, C40]
+  candidate_models: [C38, C39, C40, C41]
   models:
     C17:
       run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed
@@ -20,3 +20,6 @@ project:
     C40:
       run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c40_bceq_multiseed
       decision_json: /home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c40_dema/c40_validation_decision.json
+    C41:
+      run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c41_melr_multiseed
+      decision_json: /home/linruixin/chen/project/DMEA-HT/analysis_reports/phase_c41_dema/c41_validation_decision.json

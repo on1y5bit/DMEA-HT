@@ -3049,3 +3049,17 @@
 - C41 uses BCE with logits only, formal seeds `[0, 42, 3407]`, one independent model/checkpoint/Validation-AUC selection per seed, direct parallel execution after the gate, and reporting-only Test after the Validation decision. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, or closed-route micro-variant is authorized.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite/noncollapsed training health, and patient-level split/test isolation. If C41 fails, its final decision and the next whole-model hypothesis will be recorded; the goal will not be closed by an inconclusive audit.
 - Starting implementation commit for C41-MELR will be recorded below before server execution.
+
+### C41 Formal Result And Decision
+
+- C41 implementation was committed and pushed at `550b8f6`; the capacity-contract correction was pushed at `98073ff`. The canonical server pulled `98073ff`, passed the corrected gate exactly `11/11` with `C41_MELR_DIRECT_MULTI_SEED_AUTHORIZED`, and completed direct parallel seeds `[0, 42, 3407]` on the NVIDIA GeForce RTX 5090. The initial `10/11` gate failure was only the measured `1,128,709` trainable parameters exceeding the initial `1,000,000` bound; no training started before the bound was corrected to `2,000,000`.
+- Validation-selected epochs were seed `0: 14`, seed `42: 6`, and seed `3407: 4`. C41 Validation AUC was `0.8524219104 / 0.8678134903 / 0.8700769579`, mean/std `0.8634374528 +/- 0.0096066359`. C41-C17 was `-0.0176550475 / -0.0090538705 / +0.0081484835`, mean `-0.0061868115`; C41-C27 was `-0.0493435944 / -0.0036215482 / -0.0036215482`, mean `-0.0188622303`. The `0.90` target was not reached.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The selected-structure shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test was evaluated after the frozen Validation decision with mean/std AUC `0.8095238095 +/- 0.0037173688`.
+- Positive preservation failed: C17 TP-to-C41-FN / FN-to-C41-TP was `12/6`, `16/1`, and `2/5`, aggregate `30/12`. Sensitivity changes versus C17 were `-0.1276595745 / -0.3191489362 / +0.0638297872`; seeds `0` and `42` showed substantive positive damage.
+- Ranking safety failed: C27-to-C41 inversions were `217 -> 326`, `284 -> 292`, and `279 -> 287`; repaired/introduced pairs were `95/204`, `115/123`, and `86/94`, aggregate `296/421`. Mean inversions increased from `260.0` to `301.7` (`+16.03%`), with seed `0` increasing by `109`.
+- The Validation decision was frozen before Test as `C41_POSITIVE_DAMAGE`; AUC, positive, and ranking gates were false while shortcut, health, and capacity gates were true. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`; no C41 deployment checkpoint was selected.
+
+### Post-C41 Data-Limit Audit Recheck
+
+- Because C41 is another healthy, shortcut-safe whole-model hypothesis below `0.89`, the Validation-only audit will be rerun over C17/C27/C38/C39/C40/C41. The recheck will preserve the same manifest, patient alignment, Test isolation, common-hard-patient, error-concentration, and evidence-enrichment criteria.
+- The goal remains active until this expanded audit either supports `DEMA_HT_AUC_090_DATA_LIMIT_SUSPECTED` under all six stop conditions or authorizes another genuinely different overall model hypothesis.

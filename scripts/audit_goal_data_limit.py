@@ -26,7 +26,7 @@ SEEDS = (0, 42, 3407)
 EXPECTED_VAL_COUNT = 94
 EXPECTED_VAL_POSITIVES = 47
 EXPECTED_MANIFEST_SHA256 = "cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b"
-MODEL_ORDER = ("C17", "C27", "C38", "C39", "C40")
+MODEL_ORDER = ("C17", "C27", "C38", "C39", "C40", "C41")
 EVIDENCE_FIELDS = (
     "selected_n_visits",
     "n_visits",
@@ -388,7 +388,7 @@ def write_report(
     common_hard_patient_rate = float(patient_errors["hard_common_error"].mean())
     common_hard_positive_rate = float(patient_errors.loc[patient_errors["label"] == 1, "hard_common_fn"].mean())
     common_hard_negative_rate = float(patient_errors.loc[patient_errors["label"] == 0, "hard_common_fp"].mean())
-    all_candidates_healthy_safe = not decision_failures and len(decisions) == 3
+    all_candidates_healthy_safe = not decision_failures and len(decisions) == 4
     data_limit_supported = bool(
         structural_pass
         and all_candidates_healthy_safe
@@ -466,8 +466,8 @@ def main() -> None:
     if any(str(row.get("split", "")).lower() not in {"train", "val", "test"} for row in manifest_rows):
         raise RuntimeError("Manifest contains an unknown split")
     candidates = tuple(config["project"].get("candidate_models", ("C38", "C39", "C40")))
-    if tuple(config["project"].get("seeds", SEEDS)) != SEEDS or candidates != ("C38", "C39", "C40"):
-        raise RuntimeError("The goal audit requires candidates C38/C39/C40 and seeds [0, 42, 3407]")
+    if tuple(config["project"].get("seeds", SEEDS)) != SEEDS or candidates != ("C38", "C39", "C40", "C41"):
+        raise RuntimeError("The goal audit requires candidates C38/C39/C40/C41 and seeds [0, 42, 3407]")
     decisions, decision_failures = load_decisions(config, candidates)
     predictions, ids, labels = load_predictions(config, manifest_rows)
     feature_by_id = {
