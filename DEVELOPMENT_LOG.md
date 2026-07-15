@@ -3112,3 +3112,23 @@
 
 - Direct parallel Validation shards for seeds `[0, 42, 3407]` all completed. The first collector invocation stopped before the Validation decision because `c17_run_dir` in the C43 config had a `dmea`/`dema` spelling mismatch; no reporting-only Test was started and no C43 checkpoint needs retraining.
 - The canonical config path is corrected to the existing C17 formal run, and the completed C43 Validation outputs will be reused for decision freeze.
+
+### C43 Formal Result And Decision
+
+- After the path correction, the completed C43 Validation shards were reused. Validation-selected epochs were seed `0: 3`, seed `42: 5`, and seed `3407: 10`. C43 Validation AUC was `0.8569488456 / 0.8845631507 / 0.8813942961`, mean/std `0.8743020975 +/- 0.0151116486`; the `0.9000` target was not reached.
+- C43 improved mean AUC versus C17 by `+0.0046778331` and remained `-0.0079975856` versus C27. Positive preservation passed: C17 TP-to-C43 FN / FN-to-C43 TP was `1/8`, `4/4`, and `4/4`, aggregate `9/16`, with minimum sensitivity change `0.0`.
+- Ranking safety failed because C27/C43 inversions were `217/316`, `284/255`, and `279/262`; repaired/introduced pairs were `71/170`, `107/78`, and `86/69`. The mean increase was below ten percent, but seed 0 introduced `99` inversions and exceeded the per-seed limit. The formal decision is `C43_RANKING_DAMAGE`.
+- C43 training health passed `9/9`; shortcut safety passed for all seeds, with selected-structure shortcut-only label AUC `0.2833861476` and maximum absolute selected-structure Spearman `0.1990636382`. Reporting-only Test AUC mean/std was `0.8435374150 +/- 0.0152535420`; no deployment checkpoint was selected.
+- C43 is healthy and positive-safe but not ranking-safe, so it is not a data-limit-safe hypothesis. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and the goal remains active. The next model must preserve instance-level patient evidence relationships without using a learned visit score or reopening the closed C27/C37 visit-level route.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C44-MISE
+
+### Pre-Edit Contract
+
+- C43's within-visit biochemical conditioning preserved positive sensitivity but collapsed the patient ranking structure for seed 0. Its fixed single-vector trajectory pooling is the next bottleneck: it discards interactions among multiple historical evidence instances before the patient readout.
+- C44 tests a new patient-level multi-instance hypothesis. Each chronological visit first becomes one joint image-text-bio evidence token from the frozen C17 modality evidence states. The historical tokens are processed by a permutation-invariant self-attention set encoder; the fixed latest token queries the encoded history, and a patient readout combines latest evidence, history consensus, and the fixed inverse-log2 historical mean.
+- C44 is not C43's biochemical FiLM flow, C38's mechanism-node query pooling, C39's pairwise modality relation stack, C40's biochemical query, or C42's fourteen-token evidence graph. It has no visit logit, visit ranking head, temporal scorer, positional shortcut, or learned visit selection. Attention is used only to form a patient-level multi-instance state from evidence tokens.
+- C17 image/text/bio encoders and pre-propagation evidence projectors remain frozen. Only the joint visit token encoder, history set encoder, latest-to-history patient query, fixed-history readout, and classifier are trainable. Missing evidence is represented only by attention masks and zeroed evidence tokens, never as a classifier feature.
+- C44 keeps BCE with logits only, formal seeds `[0, 42, 3407]`, one Validation-AUC-selected checkpoint per independent model, direct parallel execution after gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, AUPRC, smoke, pilot, sweep, or closed-route micro-variant is authorized.
+- Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C44 fails, record the result and continue unless all data-limit stop conditions are evidenced.
+- C44 implementation will be recorded below before server execution.
