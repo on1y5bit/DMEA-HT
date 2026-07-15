@@ -1,0 +1,82 @@
+{
+  "phase": "C33-JERA",
+  "status": "C33_JERA_DIRECT_MULTI_SEED_AUTHORIZED",
+  "passed": 15,
+  "total": 15,
+  "git_commit": "8af03a770e01e9a80a94c2ce5fdcd2a84ad4d309",
+  "project": "/home/linruixin/chen/project/DMEA-HT",
+  "branch": "main",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 5090",
+  "trainable_parameter_count": 4167942,
+  "frozen_parameter_count": 38946435,
+  "trainable_modules": [
+    "c27.core.classifier",
+    "c27.core.patient_projection",
+    "c27.frozen_sources.bio_projector",
+    "c27.frozen_sources.image_projector",
+    "c27.frozen_sources.text_projector"
+  ],
+  "checks": [
+    {
+      "name": "01_canonical_main_clean",
+      "passed": true
+    },
+    {
+      "name": "02_c27_checkpoints_exist_and_seed_match",
+      "passed": true
+    },
+    {
+      "name": "03_visit_manifest_sha256_exact",
+      "passed": true
+    },
+    {
+      "name": "04_patient_split_label_contract",
+      "passed": true
+    },
+    {
+      "name": "05_initial_c27_predictions_reproduced",
+      "passed": true
+    },
+    {
+      "name": "06_only_projectors_patient_projection_classifier_trainable",
+      "passed": true
+    },
+    {
+      "name": "07_modality_encoders_have_no_gradients",
+      "passed": true
+    },
+    {
+      "name": "08_temporal_recency_conflict_path_frozen",
+      "passed": true
+    },
+    {
+      "name": "09_all_authorized_modules_have_finite_nonzero_gradients",
+      "passed": true
+    },
+    {
+      "name": "10_bce_is_the_only_loss",
+      "passed": true
+    },
+    {
+      "name": "11_shortcut_fields_do_not_enter_forward",
+      "passed": true
+    },
+    {
+      "name": "12_test_blocked_before_validation_decision",
+      "passed": true
+    },
+    {
+      "name": "13_secondary_metric_absent",
+      "passed": true
+    },
+    {
+      "name": "14_single_model_no_ensemble",
+      "passed": true
+    },
+    {
+      "name": "15_independent_seed_checkpoints",
+      "passed": true
+    }
+  ]
+}

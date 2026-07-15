@@ -1,0 +1,4 @@
+seed,patient_ids_exact,labels_exact,max_abs_logit_error,max_abs_probability_error,AUC_error,threshold_class_mismatch_count,all_outputs_finite,reproduction_pass
+0,True,True,9.5367431640625e-07,8.940696716308594e-08,0.0,0,True,True
+42,True,True,4.76837158203125e-07,1.1920928955078125e-07,0.0,0,True,True
+3407,True,True,4.76837158203125e-07,1.1920928955078125e-07,0.0,0,True,True
