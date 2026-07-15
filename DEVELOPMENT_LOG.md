@@ -3301,3 +3301,35 @@
 - The trainable scope is limited to the shared trajectory stream encoder, patient query/attention/norm, modality evidence heads, synergy head, and opposition head; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C52 fails, record the formal result and continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C52-ECR is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### C52 Formal Result And Decision
+
+- The C52 gate passed exactly `11/11` on the canonical server. Direct parallel formal seeds `[0, 42, 3407]` completed on the NVIDIA GeForce RTX 5090 in the `ma` environment; Validation-selected epochs were seed `0: 2`, seed `42: 7`, and seed `3407: 9`.
+- C52 Validation AUC was `0.8641919421 / 0.8746038932 / 0.8827523766`, mean/std `0.8738494040 +/- 0.0093031916`. The mean improved versus C17 by `+0.0042251396` but was `-0.0084502792` versus C27; no seed reached `0.9000`, so the goal AUC gate failed.
+- Positive preservation failed: C17 TP-to-C52-FN / FN-to-C52-TP was `8/3`, `3/2`, and `5/1`; sensitivity changes were `-0.1063829787`, `-0.0212765957`, and `-0.0851063830`, with aggregate counts `16/6`.
+- Ranking safety failed. C27/C52 inversion counts were `217/300`, `284/277`, and `279/259`; repaired/introduced pairs were `85/168`, `106/99`, and `107/87`, aggregate `298/354`. Seed 0 increased inversions by `83` and its relative increase was `38.25%`.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test AUC mean/std was `0.8259637188 +/- 0.0085786542`.
+- Validation was frozen before Test as `C52_POSITIVE_DAMAGE`; no deployment checkpoint was selected. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and no ensemble, threshold tuning, or Test-based selection was used.
+- C52's evidence-conservation readout did not provide a safe improvement, so it is not evidence for the data-limit stop condition. The goal remains active.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C53 Data-Limit Audit
+
+### Validation-Only Audit Result
+
+- The expanded audit used the canonical manifest SHA-256 `cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b`, patient-level Validation alignment, C17/C27 reference predictions, and C47/C49/C50/C51/C52 candidate Validation predictions. It did not open Test predictions, Test labels, Test metrics, or Test-derived artifacts.
+- Structural checks passed with no decision failures. Candidate Validation means were C47 `0.8835068659`, C49 `0.8838086615`, C50 `0.8792817263`, C51 `0.8798853176`, and C52 `0.8738494040`; all remained below `0.89`.
+- Errors were concentrated in the top quartile of patients (`0.8057553957` of all errors), but the common-hard-patient rate was only `0.1702127660` and the common positive false-negative rate was `0.1914893617`, below the required `0.20` and `0.25` thresholds. Common negative false-positive rate was `0.1489361702`.
+- Evidence did not identify an enriched stratum: hard-positive conflict rate was `0.3333333333`, easy-positive conflict rate was `0.3684210526`, and enriched evidence strata count was `0`. The audit conclusion is `DATA_LIMIT_AUDIT_INCONCLUSIVE`.
+- The audit confirms that repeated safe head/readout hypotheses have not yet isolated an unavoidable evidence deficit. The goal remains active; the next hypothesis must change the representation adaptation locus rather than add another patient pooling geometry.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C54-LRRA
+
+### Pre-Edit Contract
+
+- The C53 audit is inconclusive: errors are concentrated but not shared by enough patients, and no evidence stratum is enriched. C47/C49 provide useful raw/aligned signal, while C50-C52 show that changing only the patient readout does not reliably preserve it.
+- C54 tests Low-Rank Representation Re-Adaptation. The six frozen C17 raw/aligned stream states receive six trainable low-rank residual adapters with a shared bottleneck rank before fixed latest/history/delta/dispersion trajectory formation. The original C17 encoders and evidence projectors remain frozen; the trainable representation transport is a new model locus, not projector-only tuning or a residual to a frozen prediction.
+- A shared trajectory encoder then forms six adapted patient evidence tokens. One fixed-order patient readout consumes the adapted stream tokens, consensus, and discordance in a single forward. There is no learned visit score, temporal attention, router, visit selector, pairwise ranking objective, patient ID, date, visit-count feature, image/report count, padding field, source path, saved prediction, missingness classifier feature, or Test artifact.
+- C54 uses BCE with logits only, one independent model/checkpoint per seed, formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct parallel execution after an exact gate, and reporting-only Test after the Validation decision. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or closed-route micro-variant is authorized.
+- The trainable scope is limited to six low-rank stream adapters, the shared fixed-trajectory encoder, patient readout, and classifier; all C17 source parameters remain frozen. Adapter rank is fixed at `32` and total trainable parameters must remain below `5,000,000`.
+- Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C54 fails, record the formal result and continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C54-LRRA is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
