@@ -3081,3 +3081,8 @@
 - The NaN source gradient was traced to the newly trainable fixed trajectory dispersion: `sqrt(variance)` has an infinite derivative at exact zero variance, and invalid or constant history dimensions then propagated NaN through the end-to-end graph. The dispersion now uses `sqrt(clamp_min(variance, 1e-8))`; this changes only numerical stability, not the fixed latest/history/delta/dispersion definition.
 - Gate check 09 also had a false negative because the collector reporting field `threshold_tuned: False` contains the word `threshold`. The contract now checks the explicit false metadata field and the trainer source, rather than rejecting that audit record name.
 - The correction must pass local static checks, GitHub push, server pull, and an exact `11/11` gate before direct parallel seeds `[0, 42, 3407]` may start.
+
+### C42 Validation Collection Correction
+
+- After the corrected `11/11` gate, direct parallel Validation training completed for seeds `[0, 42, 3407]`. The collector stopped before freezing the decision because it expected `c42_minus_C17_sensitivity`, while the inherited comparison helper emits the lower-case `c42_minus_c17_sensitivity` after the C41-to-C42 rename.
+- The failure occurred before reporting-only Test; the run directory contains only Validation predictions and checkpoints. The collector key is corrected, and the completed Validation shards will be reused without retraining.

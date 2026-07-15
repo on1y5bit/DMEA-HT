@@ -54,7 +54,7 @@ def freeze_validation_decision(config: Mapping[str, Any], run_dir: Path, report_
     mean_auc = float(auc_values.mean())
     std_auc = float(auc_values.std(ddof=1))
     auc_pass = bool(mean_auc >= 0.9000 and int((auc_values >= 0.9000).sum()) >= 2 and std_auc <= 0.025)
-    positive_pass = bool(float(positive["c42_minus_C17_sensitivity"].min()) >= -0.10 and int(positive["c17_tp_to_c42_fn"].sum()) <= int(positive["c17_fn_to_c42_tp"].sum()) + 3)
+    positive_pass = bool(float(positive["c42_minus_c17_sensitivity"].min()) >= -0.10 and int(positive["c17_tp_to_c42_fn"].sum()) <= int(positive["c17_fn_to_c42_tp"].sum()) + 3)
     mean_c27_inversions = float(inversions["C27_inversions"].mean())
     mean_c42_inversions = float(inversions["C42_inversions"].mean())
     ranking_pass = bool((mean_c42_inversions - mean_c27_inversions) / max(mean_c27_inversions, 1.0) <= 0.10 and int(inversions["C42_minus_C27_inversions"].max()) <= 20)
