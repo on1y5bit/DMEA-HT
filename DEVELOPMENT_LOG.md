@@ -3212,3 +3212,23 @@
 - The trainable scope is limited to shared support/opposition stream encoders, signed evidence patient readout, and classifier; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C48 fails, record the formal result and continue to the next genuinely different whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C48-SPE is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### C48 Formal Result And Decision
+
+- The initial C48 gate stopped at configuration construction because the shared C47 source implementation expected a `c47` block; no C48 seed started. The source configuration was adapted to the C48 stream contract, local static checks passed, and the corrected gate then passed exactly `11/11` before direct training.
+- Direct parallel formal seeds `[0, 42, 3407]` completed. Validation-selected epochs were seed `0: 12`, seed `42: 4`, and seed `3407: 5`. Validation AUC was `0.8795835220 / 0.8899954731 / 0.8727931191`, mean/std `0.8807907047 +/- 0.0086644800`; the `0.9000` target was not reached.
+- C48 improved mean AUC versus C17 by `+0.0111664403` but remained `-0.0015089784` versus C27. Positive preservation failed: C17 TP-to-C48-FN / FN-to-C48-TP was `3/6`, `15/0`, and `2/5`; seed 42 sensitivity changed by `-0.3191489362`, with aggregate counts `20/11`.
+- Ranking safety failed. C27/C48 inversion counts were `217/266`, `284/243`, and `279/281`; repaired/introduced pairs were `108/157`, `115/74`, and `103/105`, aggregate `326/336`. Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds with shortcut-only label AUC `0.2833861476`.
+- Validation was frozen before reporting-only Test as `C48_POSITIVE_DAMAGE`; Test AUC mean/std was `0.8350340136 +/- 0.0094689870`. No checkpoint was deployed, and no ensemble, threshold tuning, or Test-based selection was used. C48 is not data-limit-safe; the strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and the goal remains active.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C49-CREB
+
+### Pre-Edit Contract
+
+- C47 established that raw and aligned C17 states jointly carry the strongest post-C17 signal, while C48 showed that a global signed split alone does not stabilize the seed-42 positive side. C49 changes the evidence unit again by binding raw and aligned states within each modality before patient pooling.
+- C49 tests Cross-Resolution Evidence Binding. For image, text, and biochemical evidence separately, each visit forms a learned interaction token from raw state, aligned state, absolute discrepancy, and elementwise product. The three bound modality streams then use fixed latest/history/delta/dispersion statistics; one shared bound-stream encoder, fixed consensus, and fixed discordance feed one patient classifier.
+- The three modality order and chronology are fixed. There is no learned visit score, temporal attention, router, visit selector, patient ID, date, visit-count feature, image/report count, padding field, source path, saved prediction, missingness classifier feature, or Test artifact. Missingness only masks a bound stream before pooling.
+- C49 uses BCE with logits only, one independent model/checkpoint per seed, formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct parallel execution after an exact gate, and reporting-only Test after the Validation decision. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or closed-route micro-variant is authorized.
+- The trainable scope is limited to the shared raw/aligned binding encoder, shared bound-stream trajectory encoder, patient readout, and classifier; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
+- Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C49 fails, record the formal result and continue to the next genuinely different whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C49-CREB is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
