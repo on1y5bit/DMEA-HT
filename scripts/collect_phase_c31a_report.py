@@ -1044,6 +1044,7 @@ def main() -> None:
         "patient_id": str,
         "positive_patient_id": str,
         "negative_patient_id": str,
+        "combination": str,
     }
     frames = {
         key: pd.read_csv(output / name, dtype=id_dtypes)
