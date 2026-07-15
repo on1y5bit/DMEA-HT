@@ -3086,3 +3086,12 @@
 
 - After the corrected `11/11` gate, direct parallel Validation training completed for seeds `[0, 42, 3407]`. The collector stopped before freezing the decision because it expected `c42_minus_C17_sensitivity`, while the inherited comparison helper emits the lower-case `c42_minus_c17_sensitivity` after the C41-to-C42 rename.
 - The failure occurred before reporting-only Test; the run directory contains only Validation predictions and checkpoints. The collector key is corrected, and the completed Validation shards will be reused without retraining.
+
+### C42 Formal Result And Decision
+
+- The completed Validation shards were reused after the collector correction. Validation-selected epochs were seed `0: 5`, seed `42: 15`, and seed `3407: 9`. C42 Validation AUC was `0.8673607967 / 0.8863739249 / 0.8673607967`, mean/std `0.8736985061 +/- 0.0109772346`; zero of three seeds reached `0.9000`, so the goal AUC gate failed.
+- C42 improved mean AUC versus C17 by `+0.0040742417` but remained `-0.0086011770` versus C27. Positive preservation was unsafe: C17 TP-to-C42 FN / FN-to-C42 TP was `3/7`, `14/2`, and `4/5`, with seed 42 sensitivity change `-0.2553191489`; aggregate counts were `21/14`.
+- Ranking safety also failed. C27/C42 inversions were `217/293`, `284/251`, and `279/293`; repaired/introduced pairs were `80/156`, `114/81`, and `79/93`, with aggregate `273/330` and a seed-0 increase of `76` inversions. C42 training health passed `9/9`, shortcut safety passed for all seeds, and the selected-structure shortcut-only label AUC remained `0.2833861476` (maximum absolute selected-structure Spearman `0.1579966478`).
+- The Validation decision was frozen before Test as `C42_POSITIVE_DAMAGE`; reporting-only Test AUC mean/std was `0.8280423280 +/- 0.0171416923`. No C42 deployment checkpoint was selected. `ensemble_used`, threshold tuning, and Test-based selection remained false.
+- Because C42 failed positive/ranking safety, it is not evidence for the data-limit stop condition. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, the goal remains active, and the next round must be a genuinely different whole-model hypothesis rather than C42 graph or C27/C37 visit-level refinement.
+- The server received commit `34c68fc` through a verified Git bundle fallback after two GitHub pull attempts timed out; the repository was fast-forwarded and the final report completed without retraining.
