@@ -3136,3 +3136,22 @@
 ### C44 Gate Correction
 
 - The first server gate correctly stopped C44 at `10/11` because the implementation had latest/history/set-query states but omitted the declared fixed dispersion statistic. No C44 training started. The patient readout now explicitly receives fixed latest, set-attended history, history mean, latest-history delta, and history dispersion; the gate remains strict about this contract.
+
+### C44 Formal Result And Decision
+
+- After the dispersion correction, the C44 gate passed exactly `11/11` and direct parallel formal seeds `[0, 42, 3407]` completed on the canonical RTX 5090 server. Validation-selected epochs were seed `0: 6`, seed `42: 25`, and seed `3407: 11`. Validation AUC was `0.8551380715 / 0.8854685378 / 0.8818469896`, mean/std `0.8741511996 +/- 0.0165651195`; the `0.9000` target was not reached.
+- C44 improved mean AUC versus C17 by `+0.0045269353` but remained `-0.0081484835` versus C27. Positive preservation failed: C17 TP-to-C44-FN / FN-to-C44-TP was `4/5`, `12/3`, and `3/6`, aggregate `19/14`; seed 42 sensitivity changed by `-0.1914893617`.
+- Ranking safety failed. C27/C44 inversion counts were `217/320`, `284/253`, and `279/261`; repaired/introduced pairs were `88/191`, `171/140`, and `101/83`, aggregate `360/414`. The selected-structure shortcut audit passed for all seeds, with shortcut-only label AUC `0.2833861476` and maximum absolute selected-structure Spearman `0.1489895714`. Training health passed `9/9`, and capacity passed.
+- The Validation decision was frozen before reporting-only Test as `C44_POSITIVE_DAMAGE`; Test AUC mean/std was `0.8053665911 +/- 0.0440587196`. No C44 checkpoint was deployed, and no ensemble, threshold tuning, or Test-based selection was used. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, the `0.90` goal remains active, and C44 is not evidence for the data-limit stop condition.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C45-SRSE
+
+### Pre-Edit Contract
+
+- C44 preserved the fixed patient evidence structure but showed seed-dependent positive damage and ranking instability. The next hypothesis targets stability of cross-modal evidence organization rather than adding a new temporal scorer, visit selector, or residual head.
+- C45 tests a Stability-Robust Shared Evidence model. Frozen C17 image, report, and biochemical patient evidence streams are each summarized with the fixed latest/history/delta/dispersion statistics. One shared evidence encoder maps the three modality summaries into a common state space; a robust weighted consensus state and a cross-modality discordance state are then read by one patient classifier.
+- Modality dropout is applied only during training, keeps at least one available modality for every patient, and is not exposed as a classifier feature. Missingness and validity remain masks for evidence availability only. The model uses no patient ID, dates, visit count, image/report count, padding field, source path, saved prediction, or Test artifact.
+- C45 uses BCE with logits only and trains one independent model per seed. An exponential moving average of the same model's trainable parameters is updated after every optimizer step; Validation AUC selects exactly one EMA parameter state per seed. There is no prediction ensemble, checkpoint averaging, threshold tuning, calibration, secondary metric, smoke, pilot, sweep, or closed-route micro-variant.
+- The trainable scope is limited to the shared evidence encoder, robust consensus/discordance readout, patient classifier, and EMA bookkeeping; C17 encoders and evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
+- Promotion requires mean Validation AUC `>= 0.9000`, at least `2/3` seeds `>= 0.9000`, std `<= 0.025`, positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C45 fails, its result will be recorded and the goal will continue to the next distinct hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C45-SRSE is authorized after this contract; local static checks, an exact gate, direct parallel seeds `[0, 42, 3407]`, Validation freeze, and reporting-only Test are required.
