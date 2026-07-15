@@ -2880,3 +2880,17 @@
 - Validation decision was frozen before Test as `DEMA_C34_TRAINING_INVALID`. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`; `STOP_C34_MSCT_TUNING` is binding and no C34 deployment checkpoint exists.
 - Reporting-only Test was completed after the frozen decision. Test AUC was seed `0: 0.6349206349`, seed `42: 0.6632653061`, and seed `3407: 0.7261904762`, mean/std `0.6747921391 +/- 0.0467139903`. Test did not change the decision, checkpoint, threshold, or deployment selection.
 - The initial SSH attachment timed out after the formal parent and seed processes had already started; the parent completed Validation, and the reporting-only Test plus final report were completed separately without retraining. The final report is `analysis_reports/phase_c34_dema/phase_c34_dema_final_report.md` on the canonical server.
+
+## 2026-07-15 Phase C35-MTSA Mechanism-Trajectory State Anchoring
+
+### Pre-Edit Contract
+
+- C34-MSCT is closed with `DEMA_C34_TRAINING_INVALID` and `STOP_C34_MSCT_TUNING`. Its empty-visit fallback gradient was unobserved in real data, but the substantive failure was premature scalar compression and source averaging before mechanism organization.
+- C35-MTSA is a new holistic single-model route. It preserves five independent mechanism identities from frozen C17 pre-propagation evidence representations: M1 morphology, M2 immune, M3 function, M4 opposition, and M5 temporal text.
+- Only the C17 image/text/bio encoders and complete C17 pre-propagation image/text/bio evidence projectors may be loaded and frozen. C17 propagation/readout modules, C27-C34 modules, and saved predictions are excluded from the C35 predictor.
+- Each mechanism uses real projector nodes and a learned fallback only when its real evidence is absent. M1 uses an arithmetic valid-source mean of image morphology, text support, and text nonspecific morphology; M2-M5 retain their specified bio/text nodes without learned source attention or source averaging across mechanisms.
+- Five independent `256 -> 32` mechanism projectors produce `[B,V,5,32]` visit states. Each mechanism then uses a fixed log2 ordinal-recency history mean, latest state, and latest-history delta, yielding a `[B,5,96]` trajectory. No learned temporal scorer, RNN, Transformer, absolute date, interval, visit-count feature, or visit-level supervision is permitted.
+- Five independent coordinate heads produce the signed patient mechanism coordinate `[c_M1,...,c_M5]`. Learned symmetric non-HT/HT anchors use the squared-distance margin as the only final logit, with fixed temperature `1.0`; BCE with logits is the only loss.
+- Formal seeds remain `[0, 42, 3407]`, with one independent model, optimizer, checkpoint, and Validation-AUC selection per seed. The direct multi-seed gate must pass exactly `18/18` before training. No smoke, pilot, variant, sweep, ensemble, checkpoint/prediction averaging, AUPRC, calibration, threshold tuning, or Test-based selection is allowed.
+- Validation AUC is the primary and sole checkpoint metric. Validation decisions and all positive-preservation, ranking, shortcut, coordinate, and anchor health audits must be frozen before reporting-only Test evaluation. Test remains reporting-only.
+- Starting implementation commit: `b853925`. C35 implementation, gate, training, collection, formal results, deployment decision, and final commit will be recorded below after execution.
