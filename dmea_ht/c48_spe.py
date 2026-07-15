@@ -20,7 +20,9 @@ class C48SPEModel(C47DRFEModel):
     """Signed support/opposition evidence readout over fixed C17 streams."""
 
     def __init__(self, config: Dict[str, Any], seed: int) -> None:
-        super().__init__(config, seed)
+        source_config = dict(config)
+        source_config["c47"] = dict(config["c48"])
+        super().__init__(source_config, seed)
         for name in ("stream_encoder", "patient_readout", "classifier"):
             delattr(self, name)
         model_cfg = dict(config["model"])
