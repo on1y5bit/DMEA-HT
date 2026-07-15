@@ -130,7 +130,8 @@ class C42E2EPETModel(C41MELRModel):
         history_valid = history_denominator > 0.0
         delta = (latest - history) * (latest_valid & history_valid).unsqueeze(-1).to(states.dtype)
         variance = ((states - history.unsqueeze(1)).pow(2) * history_effective.unsqueeze(-1)).sum(dim=1) / history_denominator.clamp_min(1.0).unsqueeze(-1)
-        dispersion = variance.sqrt() * history_valid.unsqueeze(-1).to(states.dtype)
+        # Keep the end-to-end derivative finite when a history trajectory has zero variance.
+        dispersion = variance.clamp_min(1e-8).sqrt() * history_valid.unsqueeze(-1).to(states.dtype)
         return torch.cat([latest, history, delta, dispersion], dim=-1), latest_valid | history_valid
 
     def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:

@@ -3074,3 +3074,10 @@
 - The sole loss is BCE with logits. Formal seeds remain `[0, 42, 3407]`, with one independently initialized-from-C17 single model and Validation-AUC checkpoint per seed. The new model uses one fixed training configuration, direct parallel execution after its gate, and reporting-only Test after the frozen Validation decision. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, or closed-route micro-variant is authorized.
 - C42 promotion requires mean Validation AUC `>= 0.9000`, at least `2/3` seeds `>= 0.9000`, std `<= 0.025`, positive safety versus C17, ranking safety versus C27, shortcut safety, finite training health, and patient-level split/Test isolation. If it fails, its result is added to the expanded audit and the goal continues unless all data-limit stop conditions are finally evidenced.
 - Starting implementation commit for C42-E2E-PET will be recorded below before server execution.
+
+### C42 Initial Gate Diagnosis And Correction
+
+- The server gate at `6502d90` correctly blocked formal training at `9/11`; no C42 seed was started. A single-batch RTX 5090 reverse-mode audit showed finite source forward tensors and a connected graph, but `0` finite nonzero source parameter gradients because all source gradients were NaN.
+- The NaN source gradient was traced to the newly trainable fixed trajectory dispersion: `sqrt(variance)` has an infinite derivative at exact zero variance, and invalid or constant history dimensions then propagated NaN through the end-to-end graph. The dispersion now uses `sqrt(clamp_min(variance, 1e-8))`; this changes only numerical stability, not the fixed latest/history/delta/dispersion definition.
+- Gate check 09 also had a false negative because the collector reporting field `threshold_tuned: False` contains the word `threshold`. The contract now checks the explicit false metadata field and the trainer source, rather than rejecting that audit record name.
+- The correction must pass local static checks, GitHub push, server pull, and an exact `11/11` gate before direct parallel seeds `[0, 42, 3407]` may start.

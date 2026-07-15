@@ -158,7 +158,13 @@ def main() -> None:
     )
     test_blocked = "C42 Validation decision must be frozen before reporting-only Test" in train_source and "set(metrics[\"split\"]) != {\"val\"}" in train_source and "c42_validation_decision.json" in train_source
     direct_contract = "subprocess.Popen" in train_source and "validation-seed" in train_source and 'f"seed_{seed}_best.pt"' in train_source and len(SEEDS) == 3 and config["deployment"] == {"one_checkpoint": True, "one_model": True, "one_forward": True, "ensemble": False}
-    loss_contract = bool(config["loss"]["bce_only"]) and base_train_source.count("binary_cross_entropy_with_logits") == 1 and "scheduler" not in base_train_source.lower() and "threshold" not in train_source.lower()
+    loss_contract = (
+        bool(config["loss"]["bce_only"])
+        and base_train_source.count("binary_cross_entropy_with_logits") == 1
+        and "scheduler" not in train_source.lower()
+        and "threshold" not in train_source.lower()
+        and '"threshold_tuned": False' in collector_source
+    )
     branch = git_output("branch", "--show-current")
     dirty_lines = [line for line in git_output("status", "--porcelain", "--untracked-files=no").splitlines() if line.strip()]
     dirty_allowed = all(line.strip().endswith("DEVELOPMENT_LOG.md") for line in dirty_lines)
@@ -174,7 +180,7 @@ def main() -> None:
         ("06_source_and_graph_gradients", gradient_pass),
         ("07_shortcut_fields_excluded", shortcut_pass),
         ("08_patient_evidence_graph_contract", route_pass and config["c42"]["fixed_recency_kernel"] == "inverse_log2_age" and config["c42"]["learned_visit_score"] is False),
-        ("09_bce_only_and_no_secondary_metric", loss_contract and "threshold" not in collector_source.lower()),
+        ("09_bce_only_and_no_secondary_metric", loss_contract),
         ("10_validation_test_isolation", test_blocked),
         ("11_direct_single_model_multiseed_contract", direct_contract),
     ]
