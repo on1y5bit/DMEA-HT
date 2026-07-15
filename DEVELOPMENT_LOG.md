@@ -3174,3 +3174,22 @@
 - The trainable scope is limited to the shared mechanism encoder, fixed-order patient readout, and classifier; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C46 fails, record the formal result and continue to the next genuinely different whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C46-MCFS is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### C46 Formal Result And Decision
+
+- The C46 gate passed exactly `11/11`; direct parallel formal seeds `[0, 42, 3407]` completed with fixed mechanism-slot trajectories and one Validation-AUC-selected model per seed. Validation-selected epochs were seed `0: 6`, seed `42: 9`, and seed `3407: 8`. Validation AUC was `0.8709823450 / 0.8619284744 / 0.8669081032`, mean/std `0.8666063075 +/- 0.0045344739`; the `0.9000` target was not reached.
+- C46 was below C17 by `-0.0030179568` mean AUC and below C27 by `-0.0156933756`. Positive preservation failed: C17 TP-to-C46-FN / FN-to-C46-TP was `3/10`, `17/1`, and `3/5`; seed 42 sensitivity changed by `-0.3404255319`, with aggregate counts `23/16`.
+- Ranking safety failed. C27/C46 inversion counts were `217/285`, `284/305`, and `279/294`; repaired/introduced pairs were `98/166`, `129/150`, and `94/109`, aggregate `321/425`. Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds with shortcut-only label AUC `0.2833861476`.
+- Validation was frozen before reporting-only Test as `C46_POSITIVE_DAMAGE`; Test AUC mean/std was `0.8036659108 +/- 0.0278720999`. No checkpoint was deployed, and no ensemble, threshold tuning, or Test-based selection was used. C46 is not data-limit-safe; the strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and the goal remains active.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C47-DRFE
+
+### Pre-Edit Contract
+
+- C46 retained mechanism semantics but still produced seed-dependent positive damage. The unresolved representation risk is that the aligned evidence projectors alone discard useful low-level encoder state. C47 therefore tests a dual-resolution representation without changing the patient chronology rule.
+- C47 tests Dual-Resolution Fixed Evidence. For each visit, three frozen C17 raw encoder states and three frozen C17 pre-propagation aligned evidence states are kept as six separate streams. Every stream receives the same fixed latest/history/delta/dispersion statistics. One shared stream encoder maps the six summaries; fixed stream order, cross-stream consensus, and cross-stream discordance are read by one patient classifier.
+- The six stream order is fixed to `raw_image`, `raw_text`, `raw_bio`, `aligned_image`, `aligned_text`, and `aligned_bio`. There is no learned visit score, temporal attention, router, visit selector, patient ID, date, visit-count feature, image/report count, padding field, source path, saved prediction, missingness classifier feature, or Test artifact. Missingness only masks a stream before fixed pooling.
+- C47 uses BCE with logits only, one independent model/checkpoint per seed, formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct parallel execution after an exact gate, and reporting-only Test after the Validation decision. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or closed-route micro-variant is authorized.
+- The trainable scope is limited to the shared stream encoder, fixed-order patient readout, and classifier; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
+- Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C47 fails, record the formal result and continue to the next genuinely different whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C47-DRFE is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
