@@ -1,0 +1,9 @@
+{
+  "phase": "C31-A",
+  "primary_label": "C31A_REPRODUCTION_FAIL",
+  "authorization": "C31B_NOT_AUTHORIZED",
+  "route": "STOP_VISIT_TEXT_ADAPTER_ROUTE",
+  "strict_best": "KEEP_DEMA_C17_STRICT_BEST",
+  "full_analysis_run": false,
+  "training_run": false
+}

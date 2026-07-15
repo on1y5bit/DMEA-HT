@@ -1,0 +1,125 @@
+{
+  "phase": "C31-A",
+  "status": "C31A_REPRODUCTION_FAIL",
+  "passed": 23,
+  "total": 24,
+  "git_commit": "a72ad893c3df4bf967871f65d88c39dd3b31fea4",
+  "branch": "main",
+  "project": "/home/linruixin/chen/project/DMEA-HT",
+  "device": "cuda",
+  "checks": [
+    {
+      "name": "01_canonical_main_clean_project",
+      "passed": true
+    },
+    {
+      "name": "02_single_worktree_no_project_copy",
+      "passed": true
+    },
+    {
+      "name": "03_analysis_only_no_parameter_update_or_checkpoint_writer",
+      "passed": true
+    },
+    {
+      "name": "04_validation_only_primary_metric_only",
+      "passed": true
+    },
+    {
+      "name": "05_fixed_three_seeds_and_eight_combinations",
+      "passed": true
+    },
+    {
+      "name": "06_three_c30_checkpoints_and_saved_outputs_exist",
+      "passed": true
+    },
+    {
+      "name": "07_checkpoint_seed_metadata_correct",
+      "passed": true
+    },
+    {
+      "name": "08_all_c27_c30_parameters_frozen",
+      "passed": true
+    },
+    {
+      "name": "09_validation_patient_ids_and_labels_exact",
+      "passed": true
+    },
+    {
+      "name": "10_validation_94_and_47_47_per_seed",
+      "passed": true
+    },
+    {
+      "name": "11_000_reproduces_official_c27",
+      "passed": true
+    },
+    {
+      "name": "12_111_reproduces_official_c30",
+      "passed": false
+    },
+    {
+      "name": "13_threshold_classes_exact",
+      "passed": true
+    },
+    {
+      "name": "14_same_adapter_called_once_per_shared_forward",
+      "passed": true
+    },
+    {
+      "name": "15_original_and_adapted_projected_once_each",
+      "passed": true
+    },
+    {
+      "name": "16_unactivated_roles_use_original_sources",
+      "passed": true
+    },
+    {
+      "name": "17_image_bio_validity_and_fallback_shared",
+      "passed": true
+    },
+    {
+      "name": "18_actual_role_graph_has_three_available_groups",
+      "passed": true
+    },
+    {
+      "name": "19_global_projector_node_recorded_unavailable",
+      "passed": true
+    },
+    {
+      "name": "20_all_factorial_outputs_finite",
+      "passed": true
+    },
+    {
+      "name": "21_checkpoint_state_bitwise_unchanged",
+      "passed": true
+    },
+    {
+      "name": "22_exact_shapley_and_factorial_completeness",
+      "passed": true
+    },
+    {
+      "name": "23_all_2209_pairs_per_seed_combination",
+      "passed": true
+    },
+    {
+      "name": "24_shortcuts_excluded_and_corrected_decision_policy_present",
+      "passed": true
+    }
+  ],
+  "runtime": {
+    "checkpoints_exist": true,
+    "checkpoint_metadata": true,
+    "all_parameters_frozen": true,
+    "ids_labels_aligned": true,
+    "balanced_validation": true,
+    "c27_reproduced": true,
+    "c30_reproduced": false,
+    "classes_reproduced": true,
+    "adapter_once": true,
+    "projector_twice": true,
+    "source_mapping": true,
+    "all_finite": true,
+    "state_unchanged": true,
+    "decomposition_complete": true,
+    "pair_contract": true
+  }
+}

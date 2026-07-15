@@ -1,0 +1,5 @@
+group,bit,projector_nodes,guidance_masks,c27_mechanism,image_or_bio_context,intervention_available,reason
+R1_MORPHOLOGY_SUPPORT_GROUP,0,support[0]+nonspecific[3] mean,support|diagnostic_hint; nonspecific; full-mask fallback,M1,image morphology unchanged; valid-source mean,True,Consumed by C27 morphology source
+R4_OPPOSITION_GROUP,1,opposition[1],opposition; full-mask fallback,M4,none,True,Consumed by C27 opposition source
+R5_TEMPORAL_GROUP,2,uncertainty[2]+temporal[4] mean,uncertainty; latest|history with temporal projection; full-mask fallback,M5,none,True,Consumed by C27 temporal text source
+GLOBAL_NODE_UNAVAILABLE,-1,global[5],full report,none,none,False,Projected but not consumed by a C27 mechanism slot
