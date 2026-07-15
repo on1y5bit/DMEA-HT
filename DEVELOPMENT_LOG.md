@@ -3449,3 +3449,10 @@
 - C58 uses BCE with logits only, independent formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct multiseed execution after an exact gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or ranking loss is authorized.
 - The trainable scope is limited to the three modality projections, patient readout, and classifier under a `5,000,000` parameter limit. Promotion requires AUC, positive-preservation, ranking, shortcut, health, capacity, and patient-level split/Test gates. If C58 fails, record it and continue to the next distinct hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C58-MLTF is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### Implementation Before Formal Run
+
+- Added `dmea_ht/c58_mltf.py`, `configs/dema_ht_c58_mltf_multiseed.yaml`, `scripts/gate_phase_c58_mltf.py`, `scripts/train_phase_c58.py`, and `scripts/collect_phase_c58_report.py`.
+- The implementation keeps the C17 source stack under `no_grad`, forms fixed patient-level image/text trajectory statistics and masked continuous-bio nonlinear statistics, projects each modality to rank 32, and exposes only the declared pairwise/triple tensor products to one patient readout and classifier.
+- The gate checks the frozen source scope, finite outputs under modality-missing probes, nonzero trainable-head gradients with zero source gradients, shortcut exclusion, fixed stream/chronology contract, BCE-only training, Validation/Test isolation, and direct single-model multiseed execution.
+- Local Python compilation, YAML parsing, and `git diff --check` passed. The exact server gate and three-seed formal results remain pending; no C58 conclusion or Test result is valid before Validation freeze and reporting-only Test.
