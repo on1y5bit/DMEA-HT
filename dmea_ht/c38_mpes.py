@@ -213,7 +213,7 @@ class C38MPESModel(nn.Module):
         positions = torch.arange(
             visit_mask.shape[1], device=visit_mask.device, dtype=counts.dtype
         ).unsqueeze(0)
-        latest_mask = visit_mask & positions.eq((counts - 1).clamp_min(0))
+        latest_mask = visit_mask & positions.eq((counts.unsqueeze(-1) - 1).clamp_min(0))
         history_mask = visit_mask & ~latest_mask
 
         latest, latest_valid, latest_weights, latest_entropy = self._pool_bucket(
