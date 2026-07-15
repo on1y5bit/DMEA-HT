@@ -163,7 +163,11 @@ def run_runtime_checks(
         "gradient_contract": True,
         "independent_heads": True,
     }
-    details: Dict[str, Any] = {"single_visit_seen": False, "multi_visit_seen": False}
+    details: Dict[str, Any] = {
+        "single_visit_seen": False,
+        "multi_visit_seen": False,
+        "gradient_norms_by_seed": {},
+    }
 
     for seed in SEEDS:
         set_seed(seed)
@@ -303,6 +307,7 @@ def run_runtime_checks(
                 continue
             loss.backward()
         norms = trainable_gradient_norms(model)
+        details["gradient_norms_by_seed"][str(seed)] = norms
         runtime["gradient_contract"] &= all(
             np.isfinite(value) and value > 0.0 for value in norms.values()
         )
@@ -449,6 +454,7 @@ def main() -> None:
         "trajectory_dimension": 5,
         "single_visit_seen": bool(details["single_visit_seen"]),
         "multi_visit_seen": bool(details["multi_visit_seen"]),
+        "gradient_norms_by_seed": details["gradient_norms_by_seed"],
         "checks": [{"name": name, "passed": bool(value)} for name, value in checks],
     }
     (report_dir / "c34_gate.json").write_text(
