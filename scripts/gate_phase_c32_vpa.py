@@ -180,13 +180,19 @@ def run_runtime_checks(
                 all_finite &= bool(torch.isfinite(output["logit"]).all())
                 visit_mask = batch["visit_mask"].bool()
                 missing_seen["image"] |= bool(
-                    ((~batch["image_mask"].bool().any(dim=-1)) & visit_mask).any()
+                    (
+                        (~batch["image_mask"].bool())
+                        & visit_mask.unsqueeze(-1)
+                    ).any()
                 )
                 missing_seen["text"] |= bool(
-                    ((~batch["visit_text_valid"].bool()) & visit_mask).any()
+                    (
+                        (~batch["report_attention_mask"].bool())
+                        & visit_mask.unsqueeze(-1)
+                    ).any()
                 )
                 missing_seen["bio"] |= bool(
-                    (batch["bio_missing_mask"].bool().all(dim=-1) & visit_mask).any()
+                    (batch["bio_missing_mask"].bool().any(dim=-1) & visit_mask).any()
                 )
         actual = pd.DataFrame(
             {
