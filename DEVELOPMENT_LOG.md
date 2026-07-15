@@ -3107,3 +3107,8 @@
 - C43 uses BCE with logits only, formal seeds `[0, 42, 3407]`, one Validation-AUC-selected checkpoint per independent model, direct parallel execution after an exact gate, and reporting-only Test after the Validation decision. No ensemble, averaging, calibration, threshold tuning, AUPRC, smoke, pilot, sweep, or closed-route micro-variant is authorized.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C43 fails, its result will be recorded and the goal will continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation commit for C43-MCFE is `acfa61d`; local static validation passed before publish.
+
+### C43 Validation Collection Correction
+
+- Direct parallel Validation shards for seeds `[0, 42, 3407]` all completed. The first collector invocation stopped before the Validation decision because `c17_run_dir` in the C43 config had a `dmea`/`dema` spelling mismatch; no reporting-only Test was started and no C43 checkpoint needs retraining.
+- The canonical config path is corrected to the existing C17 formal run, and the completed C43 Validation outputs will be reused for decision freeze.

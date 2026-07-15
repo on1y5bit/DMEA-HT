@@ -21,7 +21,7 @@ model:
 
 c17:
   c17_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_{seed}_best.pt
-  c17_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dmea_ht_c17_formal_multiseed
+  c17_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed
   mean_validation_auc: 0.8696242643730194
 
 c27:
