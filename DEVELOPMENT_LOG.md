@@ -2845,3 +2845,23 @@
 - Shortcut safety passed. Selected-structure shortcut-only label AUC was `0.2833861476`; maximum absolute prediction/selected-structure Spearman was `0.1822654762`. Raw visit/image warnings remained `0.9769126301`/`0.9418288818` and stayed audit-only.
 - Validation decision was frozen before Test as `DEMA_C33_POSITIVE_DAMAGE`. Reporting-only Test AUC was `0.8242630385 / 0.8724489796 / 0.8446712018`, mean/std `0.8471277400 +/- 0.0241867146`. Mean sensitivity/specificity/balanced accuracy were `0.8095238095 / 0.7063492063 / 0.7579365079`.
 - C33 did not exceed C27 and produced substantial positive/ranking damage. `KEEP_DEMA_C17_STRICT_BEST` and `STOP_C33_JERA_TUNING` are binding; mean Validation AUC `0.90` was not reached and deployment checkpoint is `none`. Further C27 projector/readout/text-adapter/VTME local tuning is stopped; any future work requires a new overall single-model mechanism hypothesis.
+
+## 2026-07-15 Phase C34-MSCT Mechanism-State Coordinate Trajectory
+
+### Pre-Edit Contract
+
+- C33-JERA returned `DEMA_C33_POSITIVE_DAMAGE`: mean Validation AUC `0.8711332428`, a decrease of `0.0111664403` versus C27, with aggregate positive and pairwise ranking damage.
+- C27 local projector, temporal, patient-readout, classifier, text-adapter, and gradual-unfreezing routes are stopped. C34-MSCT is a new holistic single-model hypothesis, not a C27 patch.
+- Each visit maps five real evidence sources to one shared HT disease-state coordinate: image morphology, text support, text opposition, bio immune, and bio function. The source heads answer the same future-state question and do not receive source or visit labels.
+- Frozen C17 validation-selected image, text, and bio encoders are the only representation initialization. C17 mechanism propagation, role scorer, residual head, C27 temporal scorer, patient projection, classifier, all C30-C33 modules, and saved predictions are excluded from the C34 predictor.
+- Visit state uses fixed arithmetic source aggregation. The fixed five-dimensional trajectory is latest state, log2 ordinal-recency history state, latest-history delta, fixed historical dispersion, and latest source disagreement. The final readout is `LayerNorm(5)` followed by `Linear(5,1)`.
+- BCE with logits is the only training loss. Trainable scope is limited to five independent coordinate heads, learned source fallback tokens, empty-visit state, and the final five-dimensional linear readout; the hard trainable parameter limit is `1,000,000`.
+- Formal seeds are `[0, 42, 3407]`, each with an independent model, optimizer, checkpoint, and validation-AUC selection. No smoke, pilot, variant, sweep, ensemble, averaging, secondary metric, calibration, threshold tuning, or Test-based selection is permitted.
+- Validation must be frozen before reporting-only Test. Promotion requires the fixed C27 AUC, positive-preservation, ranking, and shortcut gates; failure keeps `DEMA_C17` as the strict best and stops C34 tuning.
+
+### Implementation Before Formal Run
+
+- Starting commit was `3bb2c61`. Added `dmea_ht/c34_msct.py`, `configs/dema_ht_c34_msct_multiseed.yaml`, `scripts/gate_phase_c34_msct.py`, `scripts/train_phase_c34.py`, and `scripts/collect_phase_c34_report.py`.
+- The implementation uses only the existing visit reconstruction and audited text context masks. It does not pass shortcut fields, patient identifiers, absolute dates, report length, image counts, visit counts, missing counts, or saved predictions into the model.
+- The 18-check gate verifies canonical main, manifest and split contracts, C17 encoder prefixes, frozen encoders, C34-only trainable scope, source state shape/range, missing-source fallback finiteness, single/multi-visit trajectory behavior, five-dimensional readout, BCE-only training, finite nonzero gradients, capacity, validation/Test isolation, no secondary metric, no ensemble, and independent seed checkpoints.
+- The formal server gate and three-seed results are pending. No C34 conclusion or Test result is valid until the gate, Validation decision, and reporting-only Test complete in that order.

@@ -1,0 +1,62 @@
+phase: c34
+
+project:
+  name: dema_ht_c34_msct_multiseed
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  output_dir: runs/dema_ht_c34_msct_multiseed
+  report_dir: analysis_reports/phase_c34_dema
+
+model:
+  name: dmea_ht
+  variant: dmea
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_patient: 28
+  max_images_per_visit: 4
+  image_size: 224
+  dropout: 0.15
+
+c17:
+  c17_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_{seed}_best.pt
+  run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed
+
+c27:
+  run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed
+  mean_validation_auc: 0.8822996831145314
+
+c34:
+  encoder_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_{seed}_best.pt
+  manifest_sha256: cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b
+  trainable_parameter_limit: 1000000
+  promotion_gain: 0.003
+  auc_target: 0.90
+  recency_prior: log2_ordinal
+  source_fusion: arithmetic_mean
+  patient_classifier: linear
+  loss: bce_only
+
+training:
+  seeds: [0, 42, 3407]
+  batch_size: 4
+  effective_batch_size: 4
+  gradient_accumulation_steps: 1
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 30
+  patience: 8
+  primary_metric: val_AUC
+  checkpoint_metric: val_auc
+  num_workers: 2
+  evaluate_test_after_validation_decision: true
+
+loss:
+  bce_only: true
+
+deployment:
+  one_checkpoint: true
+  one_model: true
+  one_forward: true
+  ensemble: false
