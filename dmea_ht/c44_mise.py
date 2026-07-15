@@ -52,8 +52,8 @@ class C44MISEModel(C41MELRModel):
         )
         self.query_norm = nn.LayerNorm(hidden_dim)
         self.patient_readout = nn.Sequential(
-            nn.LayerNorm(hidden_dim * 3),
-            nn.Linear(hidden_dim * 3, hidden_dim),
+            nn.LayerNorm(hidden_dim * 5),
+            nn.Linear(hidden_dim * 5, hidden_dim),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.LayerNorm(hidden_dim),
@@ -118,6 +118,10 @@ class C44MISEModel(C41MELRModel):
         history_mean = (visit_tokens * history_weight.unsqueeze(-1)).sum(dim=1)
         history_mean = history_mean / history_denominator.clamp_min(1.0)
         history_valid = history_denominator.squeeze(-1) > 0.0
+        centered = (visit_tokens - history_mean.unsqueeze(1)).pow(2)
+        variance = (centered * history_weight.unsqueeze(-1)).sum(dim=1)
+        variance = variance / history_denominator.clamp_min(1.0)
+        dispersion = variance.clamp_min(1e-8).sqrt() * history_valid.unsqueeze(-1).to(visit_tokens.dtype)
         safe_history = history_effective.clone()
         no_history = ~safe_history.any(dim=1)
         if bool(no_history.any().item()):
@@ -141,11 +145,11 @@ class C44MISEModel(C41MELRModel):
         )
         history_state = self.query_norm(queried_history.squeeze(1))
         history_state = history_state * history_valid.unsqueeze(-1).to(history_state.dtype)
-        patient_input = torch.cat([latest_state, history_state, history_mean], dim=-1)
+        delta_state = (latest_state - history_mean) * (latest_valid & history_valid).unsqueeze(-1).to(latest_state.dtype)
+        patient_input = torch.cat([latest_state, history_state, history_mean, delta_state, dispersion], dim=-1)
         patient_state = self.patient_readout(patient_input)
         logit = self.classifier(patient_state).squeeze(-1)
-        delta_state = (latest_state - history_mean) * (latest_valid & history_valid).unsqueeze(-1).to(latest_state.dtype)
-        evidence_tokens = torch.stack([latest_state, history_state, history_mean, delta_state], dim=1)
+        evidence_tokens = torch.stack([latest_state, history_state, delta_state, dispersion], dim=1)
         evidence_valid = torch.stack(
             [latest_valid, history_valid, history_valid, latest_valid & history_valid], dim=1
         )

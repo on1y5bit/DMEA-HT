@@ -3132,3 +3132,7 @@
 - C44 keeps BCE with logits only, formal seeds `[0, 42, 3407]`, one Validation-AUC-selected checkpoint per independent model, direct parallel execution after gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, AUPRC, smoke, pilot, sweep, or closed-route micro-variant is authorized.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C44 fails, record the result and continue unless all data-limit stop conditions are evidenced.
 - C44 implementation commit is `0b7bc6d`; local static validation passed before publish.
+
+### C44 Gate Correction
+
+- The first server gate correctly stopped C44 at `10/11` because the implementation had latest/history/set-query states but omitted the declared fixed dispersion statistic. No C44 training started. The patient readout now explicitly receives fixed latest, set-attended history, history mean, latest-history delta, and history dispersion; the gate remains strict about this contract.
