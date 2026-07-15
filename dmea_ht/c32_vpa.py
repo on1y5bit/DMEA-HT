@@ -45,8 +45,9 @@ class C32VPAModel(nn.Module):
         super().__init__()
         self.seed = int(seed)
         self.c27 = C27VTMEModel(config, seed)
+        phase_key = getattr(self, "checkpoint_config_key", "c32")
         checkpoint_path = Path(
-            str(config["c32"]["c27_checkpoint"]).replace("{seed}", str(seed))
+            str(config[phase_key]["c27_checkpoint"]).replace("{seed}", str(seed))
         )
         payload = load_checkpoint(checkpoint_path)
         if int(payload.get("seed", -1)) != self.seed:

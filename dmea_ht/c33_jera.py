@@ -31,6 +31,8 @@ def parameter_category(name: str) -> str | None:
 class C33JERAModel(C32VPAModel):
     """C27 with joint adaptation of existing evidence and patient readout modules."""
 
+    checkpoint_config_key = "c33"
+
     def __init__(self, config: Dict[str, Any], seed: int) -> None:
         super().__init__(config, seed)
         for module in (self.c27.core.patient_projection, self.c27.core.classifier):
