@@ -986,6 +986,25 @@ def write_reports(
     (output / "c31a_route_decision.md").write_text(
         "\n".join(route_lines) + "\n", encoding="utf-8"
     )
+    route_decision = {
+        "phase": "C31-A",
+        "primary_label": decision["primary_label"],
+        "benefit_label": decision["benefit_label"],
+        "authorization": decision["authorization"],
+        "excluded_damage_role": decision["excluded_damage_role"],
+        "beneficial_role": decision["beneficial_role"],
+        "route": (
+            "C31B_DIRECT_MULTI_SEED"
+            if decision["authorization"] == "C31B_ONE_ROLE_ADAPTER_AUTHORIZED"
+            else "STOP_VISIT_TEXT_ADAPTER_ROUTE"
+        ),
+        "strict_best": "KEEP_DEMA_C17_STRICT_BEST",
+        "full_analysis_run": True,
+        "c31b_run": False,
+    }
+    (output / "c31a_route_decision.json").write_text(
+        json.dumps(route_decision, indent=2) + "\n", encoding="utf-8"
+    )
 
     summary_index = summary.set_index("combination")
     final_lines = [
