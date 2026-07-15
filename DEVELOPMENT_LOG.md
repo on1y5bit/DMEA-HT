@@ -3357,3 +3357,9 @@
 - The trainable scope is limited to the fixed-kernel patient readout and classifier; all C17 encoders, propagation modules, and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C55 fails, record the formal result and continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C55-PESK is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### Implementation Before Formal Run
+
+- Added `dmea_ht/c55_pesk.py`, `configs/dema_ht_c55_pesk_multiseed.yaml`, `scripts/gate_phase_c55_pesk.py`, `scripts/train_phase_c55.py`, and `scripts/collect_phase_c55_report.py`.
+- The implementation keeps the C17 source stack under `no_grad`, forms fixed availability-weighted raw/aligned modality states, and computes only fixed patient-level product/disagreement moments before one classifier. No audit-only field is read by the model.
+- Local Python compilation, YAML parsing, `git diff --check`, and a no-data tensor-shape check passed. The exact server gate and three-seed formal results remain pending; no C55 conclusion or Test result is valid before Validation freeze and reporting-only Test.

@@ -1,0 +1,68 @@
+phase: c55
+
+project:
+  name: dema_ht_c55_pesk_multiseed
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  output_dir: runs/dema_ht_c55_pesk_multiseed
+  report_dir: analysis_reports/phase_c55_dema
+
+model:
+  name: dema_ht
+  variant: c55_pesk
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_visit: 4
+  image_size: 224
+  dropout: 0.10
+  mea_num_heads: 4
+
+c17:
+  c17_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_{seed}_best.pt
+  c17_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed
+  mean_validation_auc: 0.8696242643730194
+
+c27:
+  c27_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed
+  mean_validation_auc: 0.8822996831145314
+
+c55:
+  hypothesis: patient_evidence_set_kernel
+  source: frozen_c17_raw_and_prepropagated_states
+  stream_order: [raw_image, raw_text, raw_bio, aligned_image, aligned_text, aligned_bio]
+  interaction_pairs: [[0, 1], [0, 2], [1, 2]]
+  fixed_patient_statistics: latest_history_delta_dispersion
+  fixed_recency_kernel: inverse_log2_age
+  readout_dim: 128
+  classifier_hidden_dim: 64
+  learned_visit_score: false
+  temporal_attention: false
+  router: false
+  shortcut_fields_used_as_inputs: false
+  missingness_as_classifier_feature: false
+  trainable_parameter_limit: 5000000
+
+training:
+  seeds: [0, 42, 3407]
+  batch_size: 4
+  effective_batch_size: 4
+  gradient_accumulation_steps: 1
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 40
+  patience: 10
+  primary_metric: val_AUC
+  checkpoint_metric: val_auc
+  num_workers: 2
+  evaluate_test_after_validation_decision: true
+
+loss:
+  bce_only: true
+
+deployment:
+  one_checkpoint: true
+  one_model: true
+  one_forward: true
+  ensemble: false
