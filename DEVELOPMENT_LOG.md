@@ -3363,3 +3363,26 @@
 - Added `dmea_ht/c55_pesk.py`, `configs/dema_ht_c55_pesk_multiseed.yaml`, `scripts/gate_phase_c55_pesk.py`, `scripts/train_phase_c55.py`, and `scripts/collect_phase_c55_report.py`.
 - The implementation keeps the C17 source stack under `no_grad`, forms fixed availability-weighted raw/aligned modality states, and computes only fixed patient-level product/disagreement moments before one classifier. No audit-only field is read by the model.
 - Local Python compilation, YAML parsing, `git diff --check`, and a no-data tensor-shape check passed. The exact server gate and three-seed formal results remain pending; no C55 conclusion or Test result is valid before Validation freeze and reporting-only Test.
+
+### C55 Formal Result And Decision
+
+- The C55 gate passed exactly `11/11` on the canonical server. Direct parallel formal seeds `[0, 42, 3407]` completed in the `ma` environment on the NVIDIA GeForce RTX 5090; Validation-selected epochs were seed `0: 31`, seed `42: 14`, and seed `3407: 20`.
+- C55 Validation AUC was `0.8931643278 / 0.8909008601 / 0.9085559077`, mean/std `0.8975403652 +/- 0.0096066359`. The mean improved versus C17 by `+0.0279161008` and versus C27 by `+0.0152406821`; only seed 3407 reached `0.9000`, so the goal AUC gate failed.
+- Positive preservation failed: C17 TP-to-C55-FN / FN-to-C55-TP was `14/3`, `9/2`, and `13/2`; sensitivity changes were `-0.2340425532`, `-0.1489361702`, and `-0.2340425532`, with aggregate counts `36/7`.
+- Ranking safety passed. C27/C55 inversion counts were `217/236`, `284/241`, and `279/202`; repaired/introduced pairs were `120/139`, `126/83`, and `142/65`, aggregate `388/287`. The largest per-seed increase was `19`, and the mean inversion count decreased versus C27.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test AUC mean/std was `0.8586545729 +/- 0.0094915861`.
+- Validation was frozen before Test as `C55_POSITIVE_DAMAGE`; no deployment checkpoint was selected. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and no ensemble, threshold tuning, or Test-based selection was used.
+- C55 is not evidence for the data-limit stop condition because positive safety failed, despite ranking safety and near-target mean AUC. The goal remains active; the next hypothesis must preserve the C55 patient-ranking gain while preventing opposition evidence from suppressing positive cases.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C56-PPEK
+
+### Pre-Edit Contract
+
+- C55-PESK is the strongest recent global result: mean Validation AUC `0.8975403652` and ranking safety passed, but the unconstrained joint readout produced substantive positive sensitivity damage in every seed. The next bottleneck is polarity organization of fixed cross-modal evidence.
+- C56 tests Polarity-Preserving Patient Evidence Kernel. It keeps the frozen C17 source stack and the fixed patient-level base/product/disagreement moments, but separates signed support evidence (six stream and three product moments) from opposition evidence (three absolute disagreement moments).
+- A support readout produces the single patient support logit. An independent opposition head produces a scalar penalty whose contribution is fixed to `0.75 * tanh(softplus(opposition_score))`, so opposition is nonnegative and bounded and cannot arbitrarily dominate positive support. The final output is this one composed logit in one forward, not an ensemble or residual to a frozen prediction.
+- C56 is a new polarity-preserving evidence organization, not a visit scorer, attention route, router, selector, pairwise ranking objective, or source representation adapter. Chronology enters only through fixed latest/history/delta/dispersion moments; missingness remains a validity mask and is not a classifier feature.
+- Patient IDs, dates, visit counts, image/report counts, padding fields, source paths, saved predictions, and Test artifacts remain excluded. All C17 encoders, propagation modules, and pre-propagation evidence projectors remain frozen.
+- C56 uses BCE with logits only, independent formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct multiseed execution after an exact gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or ranking loss is authorized.
+- The trainable scope is limited to the support readout and opposition head, with a hard limit of `5,000,000` trainable parameters. Promotion requires AUC, positive-preservation, ranking, shortcut, health, capacity, and patient-level split/Test gates. If C56 fails, record it and continue to the next distinct hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C56-PPEK is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
