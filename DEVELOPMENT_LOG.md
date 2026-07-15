@@ -3333,3 +3333,13 @@
 - The trainable scope is limited to six low-rank stream adapters, the shared fixed-trajectory encoder, patient readout, and classifier; all C17 source parameters remain frozen. Adapter rank is fixed at `32` and total trainable parameters must remain below `5,000,000`.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C54 fails, record the formal result and continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C54-LRRA is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### C54 Formal Result And Decision
+
+- The C54 gate passed exactly `11/11` on the canonical server. Direct parallel formal seeds `[0, 42, 3407]` completed in the `ma` environment on the NVIDIA GeForce RTX 5090; Validation-selected epochs were seed `0: 5`, seed `42: 7`, and seed `3407: 8`.
+- C54 Validation AUC was `0.8682661838 / 0.8931643278 / 0.8768673608`, mean/std `0.8794326241 +/- 0.0126457434`. The mean improved versus C17 by `+0.0098083597` but was `-0.0028670590` versus C27; no seed reached `0.9000`, so the goal AUC gate failed.
+- Positive preservation passed: C17 TP-to-C54-FN / FN-to-C54-TP was `3/8`, `1/4`, and `5/5`; sensitivity changes were `+0.1063829787`, `+0.0638297872`, and `0.0000000000`, with aggregate counts `9/17`.
+- Ranking safety failed. C27/C54 inversion counts were `217/291`, `284/236`, and `279/272`; repaired/introduced pairs were `90/164`, `119/71`, and `105/98`, aggregate `314/333`. Seed 0 increased inversions by `74` and exceeded the per-seed bound; its relative increase was `34.10%`.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test AUC mean/std was `0.8365457294 +/- 0.0105346635`.
+- Validation was frozen before Test as `C54_RANKING_DAMAGE`; no deployment checkpoint was selected. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and no ensemble, threshold tuning, or Test-based selection was used.
+- C54 is not evidence for the data-limit stop condition because ranking safety failed. The goal remains active; the next hypothesis must be a distinct whole-model representation/readout route and must preserve patient ranking before any promotion decision.
