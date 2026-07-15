@@ -3255,3 +3255,26 @@
 - The trainable scope is limited to the shared fixed-trajectory encoder, resolution fusion, image-text fusion, continuous biochemical encoder/conditioner, patient readout, and classifier; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C50 fails, record the formal result and continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C50-CBIF is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### C50 Formal Result And Decision
+
+- The C50 gate passed exactly `11/11` on the canonical server. Direct parallel formal seeds `[0, 42, 3407]` completed on the NVIDIA GeForce RTX 5090 in the `ma` environment; Validation-selected epochs were seed `0: 13`, seed `42: 5`, and seed `3407: 4`.
+- C50 Validation AUC was `0.8759619737 / 0.8791308284 / 0.8827523766`, mean/std `0.8792817263 +/- 0.0033977155`. The mean improved versus C17 by `+0.0096574619` but was `-0.0030179568` versus C27; no seed reached `0.9000`, so the goal AUC gate failed.
+- Positive preservation passed: C17 TP-to-C50-FN / FN-to-C50-TP was `7/8`, `7/3`, and `3/5`; sensitivity changes were `+0.0212765957`, `-0.0851063830`, and `+0.0425531915`, with aggregate counts `17/16`.
+- Ranking safety failed. C27/C50 inversion counts were `217/274`, `284/267`, and `279/259`; repaired/introduced pairs were `104/161`, `117/100`, and `100/80`, aggregate `321/341`. Seed 0 increased inversions by `57` and its relative increase was `26.27%`.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test AUC mean/std was `0.8231292517 +/- 0.0169025527`.
+- Validation was frozen before Test as `C50_RANKING_DAMAGE`; no deployment checkpoint was selected. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and no ensemble, threshold tuning, or Test-based selection was used.
+- C50 improved positive stability relative to C49 but did not repair patient ranking, so it is not evidence for the data-limit stop condition. The goal remains active. The next hypothesis will replace learned cross-modal conditioning with a fixed distributional patient-level multi-instance readout.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C51-HRME
+
+### Pre-Edit Contract
+
+- C50 shows that patient-level continuous biochemical conditioning can preserve positive sensitivity, but its learned joint readout still increases seed-0 ranking inversions. The next bottleneck is sensitivity to a few learned cross-modal directions in the patient representation.
+- C51 tests Hierarchical Robust Multi-instance Evidence. Each frozen C17 raw/aligned stream keeps fixed latest/history/delta/dispersion statistics and additionally exposes fixed historical distribution summaries: median and interquartile range. A shared distribution encoder maps the six stream summaries into patient evidence instances.
+- The patient readout is a permutation-invariant DeepSets-style statistic over the six evidence instances: masked mean, masked maximum, mean absolute deviation, and fixed raw/aligned resolution gap. This changes the patient-level geometry without a learned visit score, temporal attention, pairwise relation stack, or ranking loss.
+- Chronology is used only by the fixed latest/history partition and inverse-log2 recency kernel. Missing evidence remains a mask for the fixed summaries; no patient ID, date, visit count, image/report count, padding field, source path, saved prediction, missingness classifier feature, or Test artifact enters the model.
+- C51 uses BCE with logits only, one independent model/checkpoint per seed, formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct parallel execution after an exact gate, and reporting-only Test after the Validation decision. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or closed-route micro-variant is authorized.
+- The trainable scope is limited to the shared distribution encoder, fixed masked set readout, and classifier; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
+- Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C51 fails, record the formal result and continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C51-HRME is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
