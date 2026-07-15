@@ -3426,3 +3426,26 @@
 
 - The first server gate stopped before training because the nonlinear biochemical basis remained `[B, 7, 12]` while the projection contract expected `[B, 84]`. The fix flattens the patient-level basis after construction; no data, label, split, or model-route change was made. The corrected gate must pass before formal execution.
 - The first post-gate formal launch then stopped all three shards on the first evidence-token aggregation because fixed statistics were still `[B, S, 4H]` at that reporting-compatible output path. The fix reshapes them to `[B, S, 4, H]` before token pooling; no checkpoint or formal metric was produced by that failed launch.
+
+### C57 Formal Result And Decision
+
+- After the two pre-training shape corrections, the C57 gate passed exactly `11/11` and direct parallel formal seeds `[0, 42, 3407]` completed on the NVIDIA GeForce RTX 5090. Validation-selected epochs were seed `0: 10`, seed `42: 11`, and seed `3407: 16`.
+- C57 Validation AUC was `0.8709823450 / 0.8990493436 / 0.8841104572`, mean/std `0.8847140486 +/- 0.0140432313`. The mean improved versus C17 by `+0.0150897842` and versus C27 by `+0.0024143655`; no seed reached `0.9000`, so the goal AUC gate failed.
+- Positive preservation passed: C17 TP-to-C57-FN / FN-to-C57-TP was `2/6`, `6/2`, and `7/4`; sensitivity changes were `+0.0851063830`, `-0.0851063830`, and `-0.0638297872`, with aggregate counts `15/12`.
+- Ranking safety failed. C27/C57 inversion counts were `217/285`, `284/223`, and `279/256`; repaired/introduced pairs were `90/158`, `136/75`, and `110/87`, aggregate `336/320`. Seed 0 increased inversions by `68` and exceeded the per-seed bound; its relative increase was `31.34%`.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test AUC mean/std was `0.8354119426 +/- 0.0175675995`.
+- Validation was frozen before Test as `C57_RANKING_DAMAGE`; no deployment checkpoint was selected. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and no ensemble, threshold tuning, or Test-based selection was used.
+- C57 is not evidence for the data-limit stop condition because ranking safety failed. The goal remains active; the next hypothesis tests a new three-way multimodal interaction geometry rather than extending the two-way biochemical route.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C58-MLTF
+
+### Pre-Edit Contract
+
+- C57 preserved positive sensitivity but damaged patient ranking, while C55 had the strongest AUC but damaged positive sensitivity. The unresolved gap is a stable joint representation of image, report text, and continuous biochemical evidence at the patient level.
+- C58 tests Low-Rank Multimodal Tensor Fusion. Fixed latest, inverse-log2 historical mean, latest-history delta, and historical dispersion are formed separately for the raw/aligned image streams, raw/aligned text streams, and the nonlinear continuous biochemical basis `[x, tanh(x), x*tanh(x)]`.
+- Three trainable modality projections map the patient-level image, text, and biochemical summaries to a fixed rank-32 coordinate. The single patient representation contains the three modality coordinates, all three pairwise Hadamard products, and the bounded three-way product `image * text * bio`, followed by one readout and one classifier. This is a joint tensor-factorized representation, not prediction/model averaging or a two-way biochemical conditioner.
+- C58 is distinct from C55's six-stream unconstrained kernel readout and C57's two-way image-text/biochemical interaction. It has no learned visit score, temporal attention, router, visit selector, per-visit ranking head, or visit-level supervision. Missingness remains a fixed-statistic validity mask only.
+- Patient IDs, dates, visit counts, image/report counts, padding fields, source paths, saved predictions, and Test artifacts remain excluded. All C17 encoders, propagation modules, and pre-propagation evidence projectors remain frozen.
+- C58 uses BCE with logits only, independent formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct multiseed execution after an exact gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or ranking loss is authorized.
+- The trainable scope is limited to the three modality projections, patient readout, and classifier under a `5,000,000` parameter limit. Promotion requires AUC, positive-preservation, ranking, shortcut, health, capacity, and patient-level split/Test gates. If C58 fails, record it and continue to the next distinct hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C58-MLTF is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
