@@ -25,6 +25,7 @@ sys.path.insert(0, str(REPO_ROOT))
 from dmea_ht.c38_mpes import (  # noqa: E402
     C38MPESModel,
     HEAD_PREFIXES,
+    MECHANISM_NAMES,
     trainable_parameter_count,
     trainable_parameter_names,
 )
