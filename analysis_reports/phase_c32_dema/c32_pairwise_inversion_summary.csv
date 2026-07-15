@@ -1,0 +1,4 @@
+seed,total_pairs,C17_inversions,C27_inversions,C32_inversions,C32_minus_C27_inversions,C27_to_C32_repaired,C27_to_C32_introduced,minor_ranking_variation_vs_C27
+0,2209,287,217,234,17,22,39,False
+42,2209,272,284,299,15,15,30,False
+3407,2209,305,279,300,21,16,37,False

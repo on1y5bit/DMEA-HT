@@ -1,0 +1,22 @@
+{
+  "phase": "C32-VPA",
+  "decision_label": "DEMA_C32_POSITIVE_DAMAGE",
+  "promoted": false,
+  "strict_best": "KEEP_DEMA_C17_STRICT_BEST",
+  "stop_label": "STOP_C32_VPA_TUNING",
+  "validation_mean_AUC": 0.8743020974800061,
+  "validation_std_AUC": 0.0171207550601835,
+  "mean_AUC_gain_vs_C27": -0.00799758563452535,
+  "mean_0_90_reached": false,
+  "auc_gate_pass": false,
+  "positive_safety_pass": false,
+  "ranking_safety_pass": false,
+  "shortcut_safety_pass": true,
+  "training_health_pass": true,
+  "deployment_seed": null,
+  "deployment_checkpoint": null,
+  "validation_decision_frozen_before_test": true,
+  "test_used_for_decision": false,
+  "ensemble_used": false,
+  "threshold_tuned": false
+}

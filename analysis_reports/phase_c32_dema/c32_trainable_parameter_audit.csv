@@ -1,0 +1,127 @@
+seed,module_name,parameter_name,parameter_count,destination_evidence_role,trainable
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.queries,1280,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.in_proj_weight,196608,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.in_proj_bias,768,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.out_proj.weight,65536,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.out_proj.bias,256,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.0.weight,256,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.0.bias,256,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.1.weight,65536,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.1.bias,256,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.4.weight,65536,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.4.bias,256,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.5.weight,256,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.5.bias,256,image encoder output -> image morphology evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.queries,1536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.0.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.0.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.1.weight,65536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.1.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.4.weight,65536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.4.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.5.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.5.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.0.weight,262144,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.0.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.3.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.3.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_conflict.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_conflict.bias,1,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.input_norm.weight,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.input_norm.bias,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+0,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.queries,1280,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.in_proj_weight,196608,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.in_proj_bias,768,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.out_proj.weight,65536,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.out_proj.bias,256,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.0.weight,256,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.0.bias,256,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.1.weight,65536,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.1.bias,256,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.4.weight,65536,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.4.bias,256,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.5.weight,256,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.5.bias,256,image encoder output -> image morphology evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.queries,1536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.0.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.0.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.1.weight,65536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.1.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.4.weight,65536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.4.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.5.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.5.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.0.weight,262144,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.0.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.3.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.3.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_conflict.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_conflict.bias,1,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.input_norm.weight,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.input_norm.bias,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+42,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.queries,1280,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.in_proj_weight,196608,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.in_proj_bias,768,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.out_proj.weight,65536,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.attn.out_proj.bias,256,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.0.weight,256,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.0.bias,256,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.1.weight,65536,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.1.bias,256,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.4.weight,65536,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.4.bias,256,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.5.weight,256,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.image_projector,c27.frozen_sources.image_projector.out.5.bias,256,image encoder output -> image morphology evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.queries,1536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.0.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.0.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.1.weight,65536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.1.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.4.weight,65536,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.4.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.5.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.out.5.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.0.weight,262144,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.0.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.3.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_proj.3.bias,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_conflict.weight,256,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.text_projector,c27.frozen_sources.text_projector.temporal_conflict.bias,1,text encoder output -> support/nonspecific/opposition/temporal evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.input_norm.weight,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.input_norm.bias,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.0.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.1.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.0.weight,65536,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.0.bias,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.3.weight,256,bio encoder tokens -> immune/function/other evidence,True
+3407,c27.frozen_sources.bio_projector,c27.frozen_sources.bio_projector.group_proj.2.3.bias,256,bio encoder tokens -> immune/function/other evidence,True
