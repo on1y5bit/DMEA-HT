@@ -2794,3 +2794,14 @@
 - Shortcut safety passed for every seed and combination. Selected-structure shortcut-only label AUC was `0.2833861476`; maximum absolute prediction/selected-structure Spearman was `0.1966504829`. Raw visit/image warnings remained `0.9769126301`/`0.9418288818` and were audit-only.
 - Final C31-A label: `C31A_ADAPTER_EFFECT_TOO_SMALL_FOR_LOCALIZATION`. `beneficial_role = none`, `excluded_damage_role = none`, and authorization is `C31B_NOT_AUTHORIZED`. Therefore C31-B was not implemented or trained, Test was not read, and `STOP_VISIT_TEXT_ADAPTER_ROUTE` plus `KEEP_DEMA_C17_STRICT_BEST` remain binding.
 - The complete tracked C31-A report artifact was frozen at commit `38387c1`; no C31-B output directory or checkpoint exists.
+
+## 2026-07-15 Phase C32-VPA Visit-Level Evidence Projector Adaptation
+
+### Pre-Edit Contract
+
+- C31-A completed with `C31A_ADAPTER_EFFECT_TOO_SMALL_FOR_LOCALIZATION`. No damaging text role and no beneficial single text role were identified; C31-B was not authorized and `STOP_VISIT_TEXT_ADAPTER_ROUTE` remains binding.
+- C32-VPA is a distinct representation route that adapts the existing C17 pre-propagation evidence projectors to real C27 visit-level inputs. It does not add a graph, residual, adapter, auxiliary head, architecture, or loss.
+- Each formal seed `[0, 42, 3407]` initializes from its corresponding validation-selected C27 checkpoint. The image, text, and bio encoders and complete C27 temporal/patient prediction path remain frozen; only the existing image, text, and bio evidence projector parameters train.
+- Projector learning rate is fixed to `0.10` times the C27 base rate: `1e-5` from `1e-4`. AdamW family, weight decay, epoch budget, patience, batch size, and validation-AUC checkpoint selection are inherited unchanged from C27. BCE with logits is the only loss.
+- Exactly one formal config is permitted. No branch, worktree, project copy, smoke, seed-0 pilot, variant, sweep, fallback, ensemble, averaging, AUPRC, calibration, threshold tuning, or test-based selection is allowed.
+- A compact `15/15` gate must authorize direct formal execution. After authorization, the three independent seeds run in parallel; Validation decisions and safety audits freeze before reporting-only Test is read.
