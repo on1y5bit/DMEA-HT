@@ -289,6 +289,8 @@ def train_seed(
         raise RuntimeError(f"C33 seed {seed} produced no validation checkpoint")
     model.load_state_dict(best_state, strict=True)
     model.eval()
+    for row in epoch_rows:
+        row["selected_by_val_auc"] = int(row["epoch"]) == best_epoch
     val_result = run_epoch(model, loaders["val"], None, device)
     if val_result["metrics"]["prediction_std"] <= 0.0:
         raise RuntimeError(f"C33 seed {seed} produced constant validation predictions")
