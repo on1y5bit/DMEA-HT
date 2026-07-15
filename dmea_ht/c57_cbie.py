@@ -172,7 +172,9 @@ class C57CBIEModel(C47DRFEModel):
         bio_summary, _, _, _, _, _ = self._fixed_trajectory_statistics(
             bio_values.unsqueeze(-1), bio_valid, visit_mask
         )
-        bio_nonlinear = torch.cat([bio_summary, torch.tanh(bio_summary), bio_summary * torch.tanh(bio_summary)], dim=-1)
+        bio_nonlinear = torch.cat(
+            [bio_summary, torch.tanh(bio_summary), bio_summary * torch.tanh(bio_summary)], dim=-1
+        ).flatten(start_dim=1)
         image_text_state = self.image_text_projection(image_text_features)
         bio_state = self.bio_projection(bio_nonlinear)
         joint_state = image_text_state * bio_state

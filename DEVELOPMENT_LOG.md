@@ -3421,3 +3421,7 @@
 - Added `dmea_ht/c57_cbie.py`, `configs/dema_ht_c57_cbie_multiseed.yaml`, `scripts/gate_phase_c57_cbie.py`, `scripts/train_phase_c57.py`, and `scripts/collect_phase_c57_report.py`.
 - The implementation keeps C17 image/text/bio source modules frozen, uses raw continuous biochemical values only through fixed masked patient statistics, and forms one factorized image-text/biochemical interaction state before classification.
 - Local Python compilation, YAML parsing, `git diff --check`, and a no-data tensor-shape/nonlinear-basis check passed. The exact server gate and three-seed formal results remain pending; no C57 conclusion or Test result is valid before Validation freeze and reporting-only Test.
+
+### Gate Correction
+
+- The first server gate stopped before training because the nonlinear biochemical basis remained `[B, 7, 12]` while the projection contract expected `[B, 84]`. The fix flattens the patient-level basis after construction; no data, label, split, or model-route change was made. The corrected gate must pass before formal execution.
