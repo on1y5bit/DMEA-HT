@@ -3278,3 +3278,26 @@
 - The trainable scope is limited to the shared distribution encoder, fixed masked set readout, and classifier; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
 - Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C51 fails, record the formal result and continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C51-HRME is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### C51 Formal Result And Decision
+
+- The C51 gate passed exactly `11/11` on the canonical server. Direct parallel formal seeds `[0, 42, 3407]` completed on the NVIDIA GeForce RTX 5090 in the `ma` environment; Validation-selected epochs were seed `0: 8`, seed `42: 5`, and seed `3407: 15`.
+- C51 Validation AUC was `0.8691715708 / 0.8682661838 / 0.9022181983`, mean/std `0.8798853176 +/- 0.0193461391`. The mean improved versus C17 by `+0.0102610533` but was `-0.0024143655` versus C27; only one seed reached `0.9000`, so the goal AUC gate failed.
+- Positive preservation failed: C17 TP-to-C51-FN / FN-to-C51-TP was `6/3`, `3/5`, and `13/2`; sensitivity changes were `-0.0638297872`, `+0.0425531915`, and `-0.2340425532`, with aggregate counts `22/10`. Seed 3407 had substantive positive damage.
+- Ranking safety failed. C27/C51 inversion counts were `217/289`, `284/291`, and `279/216`; repaired/introduced pairs were `103/175`, `115/122`, and `145/82`, aggregate `363/379`. Seed 0 increased inversions by `72` and its relative increase was `33.18%`.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test AUC mean/std was `0.7970521542 +/- 0.0102198165`.
+- Validation was frozen before Test as `C51_POSITIVE_DAMAGE`; no deployment checkpoint was selected. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and no ensemble, threshold tuning, or Test-based selection was used.
+- C51's distributional patient set did not provide a safe improvement, so it is not evidence for the data-limit stop condition. The goal remains active. The next hypothesis will test patient-level evidence conservation with a single learned patient query and additive modality evidence decomposition.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C52-ECR
+
+### Pre-Edit Contract
+
+- C51 reduced the global mean and produced a seed-3407 positive collapse. The unresolved failure is not the absence of more distribution statistics; it is that the patient readout does not explicitly conserve separate image, text, and biochemical evidence contributions.
+- C52 tests Dual-Resolution Evidence Conservation Readout. The six frozen C17 raw/aligned streams are converted by fixed latest/history/delta/dispersion trajectories and a shared stream encoder into six patient evidence tokens. One learned patient query attends to those six tokens at the patient level.
+- The final logit is an additive evidence decomposition: separate image, text, and biochemical modality terms, a patient-query synergy term, and a bounded nonnegative opposition term derived from fixed cross-stream discordance. This is one forward and one classifier, not a residual to a frozen C17 logit, ensemble, voting scheme, or ranking objective.
+- Attention is restricted to the six fixed patient trajectory tokens; there is no learned visit score, temporal attention, router, visit selector, patient ID, date, visit-count feature, image/report count, padding field, source path, saved prediction, missingness classifier feature, or Test artifact.
+- C52 uses BCE with logits only, one independent model/checkpoint per seed, formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct parallel execution after an exact gate, and reporting-only Test after the Validation decision. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or pairwise ranking loss is authorized.
+- The trainable scope is limited to the shared trajectory stream encoder, patient query/attention/norm, modality evidence heads, synergy head, and opposition head; all C17 encoders and pre-propagation evidence projectors remain frozen. The declared trainable parameter limit is `5,000,000`.
+- Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C52 fails, record the formal result and continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation for C52-ECR is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
