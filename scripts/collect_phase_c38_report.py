@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from dmea_ht.config import load_config  # noqa: E402
+from dmea_ht.visit_data import read_jsonl  # noqa: E402
 from scripts.collect_phase_c31a_report import (  # noqa: E402
     RAW_SHORTCUT_FIELDS,
     SELECTED_SHORTCUT_FIELDS,
@@ -42,6 +43,34 @@ def read_prediction(path: Path) -> pd.DataFrame:
     frame = pd.read_csv(path, dtype={"patient_id": str})
     frame["patient_id"] = frame["patient_id"].astype(str)
     return frame.sort_values("patient_id").reset_index(drop=True)
+
+
+def ensure_audit_shortcut_columns(
+    frame: pd.DataFrame, config: Mapping[str, Any]
+) -> pd.DataFrame:
+    missing = [field for field in SELECTED_SHORTCUT_FIELDS if field not in frame.columns]
+    if not missing:
+        return frame
+    derived: Dict[str, Dict[str, Any]] = {}
+    for row in read_jsonl(config["project"]["manifest"]):
+        patient_id = str(row["patient_id"])
+        visits = list(row.get("visits") or [])
+        report_present = [bool(str(visit.get("report_text", "") or "").strip()) for visit in visits]
+        derived[patient_id] = {
+            "reconstructable_visit_count": int(sum(report_present)),
+            "visit_report_coverage": float(sum(report_present) / len(visits)) if visits else 0.0,
+            "dated_bio_visit_count": int(
+                sum(visit.get("dated_bio_row_id") is not None for visit in visits)
+            ),
+        }
+    result = frame.copy()
+    for field in missing:
+        result[field] = result["patient_id"].map(
+            {patient_id: values.get(field, np.nan) for patient_id, values in derived.items()}
+        )
+    if any(field not in result.columns or result[field].isna().all() for field in missing):
+        raise RuntimeError(f"C38 audit-only shortcut columns unavailable: {missing}")
+    return result
 
 
 def probability_column(frame: pd.DataFrame) -> str:
@@ -209,10 +238,13 @@ def training_health(run_dir: Path, epoch: pd.DataFrame) -> Tuple[pd.DataFrame, b
     return pd.DataFrame(rows), bool(passed)
 
 
-def shortcut_audit(run_dir: Path) -> pd.DataFrame:
+def shortcut_audit(config: Mapping[str, Any], run_dir: Path) -> pd.DataFrame:
     rows: List[Dict[str, Any]] = []
     for seed in SEEDS:
-        frame = read_prediction(run_dir / "predictions" / f"val_predictions_seed_{seed}.csv")
+        frame = ensure_audit_shortcut_columns(
+            read_prediction(run_dir / "predictions" / f"val_predictions_seed_{seed}.csv"),
+            config,
+        )
         probability = frame[probability_column(frame)].to_numpy(dtype=float)
         correlations = {
             field: safe_spearman(
@@ -254,7 +286,7 @@ def freeze_validation_decision(
     comparisons, positive, inversions = validation_comparisons(config, run_dir, metrics)
     epoch = pd.read_csv(run_dir / "reports" / "metrics_by_epoch.csv")
     health, health_pass = training_health(run_dir, epoch)
-    shortcuts = shortcut_audit(run_dir)
+    shortcuts = shortcut_audit(config, run_dir)
     auc_values = comparisons["AUC"].to_numpy(dtype=float)
     c27_values = comparisons["C27_AUC"].to_numpy(dtype=float)
     mean_auc = float(auc_values.mean())

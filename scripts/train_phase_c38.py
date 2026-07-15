@@ -39,7 +39,11 @@ from dmea_ht.visit_data import (  # noqa: E402
 
 
 SEEDS = (0, 42, 3407)
-AUDIT_SHORTCUT_FIELDS = tuple(SHORTCUT_FIELDS)
+AUDIT_SHORTCUT_FIELDS = tuple(SHORTCUT_FIELDS) + (
+    "reconstructable_visit_count",
+    "visit_report_coverage",
+    "dated_bio_visit_count",
+)
 
 
 def parse_args() -> argparse.Namespace:
