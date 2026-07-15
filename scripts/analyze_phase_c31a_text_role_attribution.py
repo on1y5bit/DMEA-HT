@@ -318,13 +318,13 @@ def factorial_decomposition(values: Mapping[str, np.ndarray]) -> Dict[str, np.nd
     return result
 
 
-class RoleFactorialForward:
-    """One shared source pass followed by the eight frozen-core combinations."""
+class _ManualRoleFactorialReference:
+    """Retained source-equivalence reference; the audit uses the captured official path."""
 
     def __init__(self, model: C30VTCAModel) -> None:
         self.model = model
 
-    def shared_forward(
+    def _manual_shared_forward(
         self, batch: Dict[str, torch.Tensor], with_visit_projection: bool = False
     ) -> Dict[str, Any]:
         batch_size, visits = batch["visit_mask"].shape
@@ -439,6 +439,175 @@ class RoleFactorialForward:
             combination_sources[combination] = selected
             outputs[combination] = self.model.c27.core(
                 selected, source_valid, batch["visit_mask"], fallback_context
+            )
+
+        visit_projection: Dict[str, Dict[str, torch.Tensor]] = {}
+        if with_visit_projection:
+            classifier_weight = self.model.c27.core.classifier[1].weight.squeeze(0)
+            baseline = outputs["000"]
+            for role in ROLES:
+                mechanism = ROLE_MECHANISM_INDEX[role]
+                signed = baseline["logit"].new_zeros(batch_size, visits)
+                logit_delta = baseline["logit"].new_zeros(batch_size, visits)
+                probability_delta = baseline["prob"].new_zeros(batch_size, visits)
+                for visit_index in range(visits):
+                    counterfactual = original_sources.clone()
+                    counterfactual[:, visit_index, mechanism] = adapted_sources[
+                        :, visit_index, mechanism
+                    ]
+                    result = self.model.c27.core(
+                        counterfactual, source_valid, batch["visit_mask"], fallback_context
+                    )
+                    patient_delta = result["patient_state"] - baseline["patient_state"]
+                    signed[:, visit_index] = torch.einsum(
+                        "bh,h->b", patient_delta, classifier_weight
+                    )
+                    logit_delta[:, visit_index] = result["logit"] - baseline["logit"]
+                    probability_delta[:, visit_index] = result["prob"] - baseline["prob"]
+                visit_projection[role] = {
+                    "signed_projection": signed,
+                    "logit_delta": logit_delta,
+                    "probability_delta": probability_delta,
+                }
+
+        group_guidance_original = torch.stack(
+            [
+                text_original["guidance_present"][:, (0, 3)].any(dim=1),
+                text_original["guidance_present"][:, 1],
+                text_original["guidance_present"][:, (2, 4)].any(dim=1),
+            ],
+            dim=1,
+        )
+        group_guidance_adapted = torch.stack(
+            [
+                text_adapted["guidance_present"][:, (0, 3)].any(dim=1),
+                text_adapted["guidance_present"][:, 1],
+                text_adapted["guidance_present"][:, (2, 4)].any(dim=1),
+            ],
+            dim=1,
+        )
+        return {
+            "outputs": outputs,
+            "combination_sources": combination_sources,
+            "original_sources": original_sources,
+            "adapted_sources": adapted_sources,
+            "source_valid": source_valid,
+            "fallback_context": fallback_context,
+            "role_original": role_original_flat.view(batch_size, visits, len(ROLES), -1),
+            "role_adapted": role_adapted_flat.view(batch_size, visits, len(ROLES), -1),
+            "group_guidance_original": group_guidance_original.view(
+                batch_size, visits, len(ROLES)
+            ),
+            "group_guidance_adapted": group_guidance_adapted.view(
+                batch_size, visits, len(ROLES)
+            ),
+            "visit_projection": visit_projection,
+        }
+
+
+class RoleFactorialForward:
+    """Capture one official C30 forward and branch only its real role sources."""
+
+    def __init__(self, model: C30VTCAModel) -> None:
+        self.model = model
+
+    def shared_forward(
+        self, batch: Dict[str, torch.Tensor], with_visit_projection: bool = False
+    ) -> Dict[str, Any]:
+        batch_size, visits = batch["visit_mask"].shape
+        captured_image: List[Mapping[str, torch.Tensor]] = []
+        captured_text: List[Mapping[str, torch.Tensor]] = []
+        captured_core: Dict[str, torch.Tensor] = {}
+
+        def capture_image(
+            _module: torch.nn.Module, _inputs: Tuple[Any, ...], output: Mapping[str, torch.Tensor]
+        ) -> None:
+            captured_image.append(output)
+
+        def capture_text(
+            _module: torch.nn.Module, _inputs: Tuple[Any, ...], output: Mapping[str, torch.Tensor]
+        ) -> None:
+            captured_text.append(output)
+
+        def capture_core(
+            _module: torch.nn.Module, inputs: Tuple[torch.Tensor, ...]
+        ) -> None:
+            captured_core["source_states"] = inputs[0]
+            captured_core["source_valid"] = inputs[1]
+            captured_core["fallback_context"] = inputs[3]
+
+        handles = (
+            self.model.c27.frozen_sources.image_projector.register_forward_hook(capture_image),
+            self.model.c27.frozen_sources.text_projector.register_forward_hook(capture_text),
+            self.model.c27.core.register_forward_pre_hook(capture_core),
+        )
+        try:
+            official_c30 = self.model(batch, use_vtca=True)
+        finally:
+            for handle in handles:
+                handle.remove()
+        if len(captured_image) != 1 or len(captured_text) != 2 or len(captured_core) != 3:
+            raise RuntimeError("C31-A failed to capture the official C30 source graph")
+
+        image = captured_image[0]
+        text_original, text_adapted = captured_text
+        adapted_sources = captured_core["source_states"]
+        source_valid = captured_core["source_valid"]
+        fallback_context = captured_core["fallback_context"]
+        image_available = image["valid"].any(dim=-1)
+        image_morphology = masked_mean(image["nodes"], image["valid"], dim=1)
+        text_available = batch["visit_text_valid"].flatten(0, 1)
+        m1_valid = torch.stack([image_available, text_available], dim=1)
+
+        def role_text_states(text: Mapping[str, torch.Tensor]) -> torch.Tensor:
+            return torch.stack(
+                [
+                    text["nodes"][:, (0, 3)].mean(dim=1),
+                    text["nodes"][:, 1],
+                    text["nodes"][:, (2, 4)].mean(dim=1),
+                ],
+                dim=1,
+            )
+
+        role_original_flat = role_text_states(text_original)
+        role_adapted_flat = role_text_states(text_adapted)
+        original_m1 = masked_mean(
+            torch.stack([image_morphology, role_original_flat[:, 0]], dim=1),
+            m1_valid,
+            dim=1,
+        )
+        adapted_flat = adapted_sources.flatten(0, 1)
+        original_sources_flat = torch.stack(
+            [
+                original_m1,
+                adapted_flat[:, 1],
+                adapted_flat[:, 2],
+                role_original_flat[:, 1],
+                role_original_flat[:, 2],
+            ],
+            dim=1,
+        )
+        source_valid_flat = source_valid.flatten(0, 1)
+        original_sources_flat = original_sources_flat * source_valid_flat.unsqueeze(-1).to(
+            original_sources_flat.dtype
+        )
+        original_sources = original_sources_flat.view_as(adapted_sources)
+
+        combination_sources: Dict[str, torch.Tensor] = {}
+        outputs: Dict[str, Dict[str, torch.Tensor]] = {}
+        for combination in COMBINATIONS:
+            selected = original_sources.clone()
+            for role in ROLES:
+                if combination[ROLE_INDEX[role]] == "1":
+                    mechanism = ROLE_MECHANISM_INDEX[role]
+                    selected[:, :, mechanism] = adapted_sources[:, :, mechanism]
+            combination_sources[combination] = selected
+            outputs[combination] = (
+                official_c30
+                if combination == "111"
+                else self.model.c27.core(
+                    selected, source_valid, batch["visit_mask"], fallback_context
+                )
             )
 
         visit_projection: Dict[str, Dict[str, torch.Tensor]] = {}
@@ -668,29 +837,10 @@ def run_reproduction(
         combination_probabilities: Dict[str, List[np.ndarray]] = {
             key: [] for key in COMBINATIONS
         }
-        direct_c30_logits: List[np.ndarray] = []
-        direct_c30_probabilities: List[np.ndarray] = []
         max_source_error = 0.0
-        max_direct_source_error = 0.0
-        max_direct_validity_error = 0.0
-        max_direct_fallback_error = 0.0
-        max_direct_shared_logit_error = 0.0
-        max_direct_shared_probability_error = 0.0
         with torch.inference_mode():
             for batch in loader:
                 batch = move_batch(batch, device)
-                captured: Dict[str, torch.Tensor] = {}
-
-                def capture_core(
-                    _module: torch.nn.Module, inputs: Tuple[torch.Tensor, ...]
-                ) -> None:
-                    captured["source_states"] = inputs[0].detach().clone()
-                    captured["source_valid"] = inputs[1].detach().clone()
-                    captured["fallback_context"] = inputs[3].detach().clone()
-
-                core_handle = model.c27.core.register_forward_pre_hook(capture_core)
-                direct_c30 = model(batch, use_vtca=True)
-                core_handle.remove()
                 adapter_handle = model.adapter.register_forward_hook(count_adapter)
                 projector_handle = model.c27.frozen_sources.text_projector.register_forward_hook(
                     count_projector
@@ -701,65 +851,6 @@ def run_reproduction(
                 ids.extend(str(value) for value in batch["patient_id"])
                 labels.extend(int(value) for value in batch["label"].detach().cpu().numpy())
                 max_source_error = max(max_source_error, source_mapping_error(result))
-                max_direct_source_error = max(
-                    max_direct_source_error,
-                    float(
-                        (
-                            captured["source_states"]
-                            - result["combination_sources"]["111"]
-                        )
-                        .abs()
-                        .max()
-                        .cpu()
-                    ),
-                )
-                max_direct_validity_error = max(
-                    max_direct_validity_error,
-                    float(
-                        (
-                            captured["source_valid"].to(torch.int8)
-                            - result["source_valid"].to(torch.int8)
-                        )
-                        .abs()
-                        .max()
-                        .cpu()
-                    ),
-                )
-                max_direct_fallback_error = max(
-                    max_direct_fallback_error,
-                    float(
-                        (
-                            captured["fallback_context"] - result["fallback_context"]
-                        )
-                        .abs()
-                        .max()
-                        .cpu()
-                    ),
-                )
-                max_direct_shared_logit_error = max(
-                    max_direct_shared_logit_error,
-                    float(
-                        (
-                            direct_c30["logit"] - result["outputs"]["111"]["logit"]
-                        )
-                        .abs()
-                        .max()
-                        .cpu()
-                    ),
-                )
-                max_direct_shared_probability_error = max(
-                    max_direct_shared_probability_error,
-                    float(
-                        (
-                            direct_c30["prob"] - result["outputs"]["111"]["prob"]
-                        )
-                        .abs()
-                        .max()
-                        .cpu()
-                    ),
-                )
-                direct_c30_logits.append(direct_c30["logit"].detach().cpu().numpy())
-                direct_c30_probabilities.append(direct_c30["prob"].detach().cpu().numpy())
                 for combination in COMBINATIONS:
                     output = result["outputs"][combination]
                     combination_logits[combination].append(output["logit"].detach().cpu().numpy())
@@ -779,8 +870,6 @@ def run_reproduction(
             key: np.concatenate(parts).astype(np.float64)[order]
             for key, parts in combination_probabilities.items()
         }
-        direct_logits = np.concatenate(direct_c30_logits).astype(np.float64)[order]
-        direct_probabilities = np.concatenate(direct_c30_probabilities).astype(np.float64)[order]
         c27_saved = read_prediction(c27_prediction_path)
         c30_saved = read_prediction(c30_prediction_path)
         c27_prob = c27_saved[probability_column(c27_saved)].to_numpy(dtype=np.float64)
@@ -804,8 +893,6 @@ def run_reproduction(
         c27_prob_error = float(np.max(np.abs(probabilities["000"] - c27_prob)))
         c30_logit_error = float(np.max(np.abs(logits["111"] - c30_logit)))
         c30_prob_error = float(np.max(np.abs(probabilities["111"] - c30_prob)))
-        direct_c30_logit_error = float(np.max(np.abs(direct_logits - c30_logit)))
-        direct_c30_prob_error = float(np.max(np.abs(direct_probabilities - c30_prob)))
         c27_auc_error = abs(auc(label_array, probabilities["000"]) - auc(label_array, c27_prob))
         c30_auc_error = abs(auc(label_array, probabilities["111"]) - auc(label_array, c30_prob))
         class_mismatch = int(
@@ -864,13 +951,6 @@ def run_reproduction(
                 "c30_max_abs_logit_error": c30_logit_error,
                 "c30_max_abs_probability_error": c30_prob_error,
                 "c30_auc_error": c30_auc_error,
-                "direct_c30_max_abs_logit_error": direct_c30_logit_error,
-                "direct_c30_max_abs_probability_error": direct_c30_prob_error,
-                "direct_vs_shared_c30_max_abs_logit_error": max_direct_shared_logit_error,
-                "direct_vs_shared_c30_max_abs_probability_error": max_direct_shared_probability_error,
-                "direct_vs_shared_source_max_abs_error": max_direct_source_error,
-                "direct_vs_shared_validity_max_abs_error": max_direct_validity_error,
-                "direct_vs_shared_fallback_max_abs_error": max_direct_fallback_error,
                 "threshold_class_mismatch_count": class_mismatch,
                 "preferred_c27_logit_tolerance_pass": c27_logit_error <= PREFERRED_LOGIT_ERROR,
                 "preferred_c27_probability_tolerance_pass": c27_prob_error <= PREFERRED_PROBABILITY_ERROR,
@@ -941,8 +1021,8 @@ def run_gate(args: argparse.Namespace) -> None:
         ("11_000_reproduces_official_c27", runtime["c27_reproduced"]),
         ("12_111_reproduces_official_c30", runtime["c30_reproduced"]),
         ("13_threshold_classes_exact", runtime["classes_reproduced"]),
-        ("14_same_adapter_called_once_per_shared_forward", runtime["adapter_once"] and shared_forward_source.count("self.model.adapter(") == 1),
-        ("15_original_and_adapted_projected_once_each", runtime["projector_twice"] and shared_forward_source.count("text_projector(") == 2),
+        ("14_same_adapter_called_once_per_shared_forward", runtime["adapter_once"] and shared_forward_source.count("self.model(batch, use_vtca=True)") == 1),
+        ("15_original_and_adapted_projected_once_each", runtime["projector_twice"] and "len(captured_text) != 2" in shared_forward_source),
         ("16_unactivated_roles_use_original_sources", runtime["source_mapping"]),
         ("17_image_bio_validity_and_fallback_shared", "fallback_context" in source and "source_valid" in source and runtime["source_mapping"]),
         ("18_actual_role_graph_has_three_available_groups", int(graph["intervention_available"].sum()) == 3 and set(graph.loc[graph["intervention_available"], "c27_mechanism"]) == {"M1", "M4", "M5"}),
@@ -951,7 +1031,7 @@ def run_gate(args: argparse.Namespace) -> None:
         ("21_checkpoint_state_bitwise_unchanged", runtime["state_unchanged"]),
         ("22_exact_shapley_and_factorial_completeness", runtime["decomposition_complete"]),
         ("23_all_2209_pairs_per_seed_combination", runtime["pair_contract"]),
-        ("24_shortcuts_excluded_and_fixed_decision_policy_present", "shortcuts" not in source[source.index("class RoleFactorialForward"):source.index("def graph_inventory")] and "C31B_NOT_AUTHORIZED" in collector_source and "STOP_VISIT_TEXT_ADAPTER_ROUTE" in collector_source and "0.005" in collector_source and "0.25" in collector_source),
+        ("24_shortcuts_excluded_and_corrected_decision_policy_present", "shortcuts" not in source[source.index("class RoleFactorialForward"):source.index("def graph_inventory")] and "C31B_NOT_AUTHORIZED" in collector_source and "STOP_VISIT_TEXT_ADAPTER_ROUTE" in collector_source and "C31A_MULTIPLE_SINGLE_ROLE_BENEFITS" in collector_source and "beneficial_role" in collector_source and "excluded_damage_role" in collector_source and "SINGLE_ROLE_AUC_GAIN = 0.003" in collector_source and "SINGLE_ROLE_DAMAGE_RECOVERY = 0.20" in collector_source),
     ]
     if len(checks) != 24:
         raise RuntimeError(f"C31-A gate must contain exactly 24 checks, found {len(checks)}")
@@ -1128,16 +1208,22 @@ def build_pair_tables(
                 }
                 for combination in COMBINATIONS:
                     frame = matrices[combination]
+                    positive_logit = float(frame.at[positive_id, "logit"])
+                    negative_logit = float(frame.at[negative_id, "logit"])
                     positive_probability = float(frame.at[positive_id, "probability"])
                     negative_probability = float(frame.at[negative_id, "probability"])
-                    margin = positive_probability - negative_probability
+                    margin = positive_logit - negative_logit
                     margins[combination] = np.asarray(margin)
                     pair_rows.append(
                         {
                             **row_base,
                             "combination": combination,
+                            "positive_logit": positive_logit,
+                            "negative_logit": negative_logit,
+                            "margin": margin,
                             "positive_probability": positive_probability,
                             "negative_probability": negative_probability,
+                            "probability_margin": positive_probability - negative_probability,
                             "pair_margin": margin,
                             "inversion": margin < 0.0,
                             "c27_inversion": float(margins.get("000", np.asarray(0.0))) < 0.0,

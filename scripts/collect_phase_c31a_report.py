@@ -39,6 +39,16 @@ CLOSURE_COMBINATION = {
     "R4_OPPOSITION_GROUP": "101",
     "R5_TEMPORAL_GROUP": "110",
 }
+SINGLE_ROLE_COMBINATION = {
+    "R1_MORPHOLOGY_SUPPORT_GROUP": "100",
+    "R4_OPPOSITION_GROUP": "010",
+    "R5_TEMPORAL_GROUP": "001",
+}
+ROLE_BENEFIT_LABEL = {
+    "R1_MORPHOLOGY_SUPPORT_GROUP": "C31A_R1_SINGLE_ROLE_BENEFIT_SUPPORTED",
+    "R4_OPPOSITION_GROUP": "C31A_R4_SINGLE_ROLE_BENEFIT_SUPPORTED",
+    "R5_TEMPORAL_GROUP": "C31A_R5_SINGLE_ROLE_BENEFIT_SUPPORTED",
+}
 INTERACTION_TERMS = (
     "interaction_R1_R4",
     "interaction_R1_R5",
@@ -79,6 +89,9 @@ ROLE_AUC_RECOVERY = 0.005
 ROLE_DAMAGE_RECOVERY = 0.25
 MAX_CLOSURE_SENSITIVITY_DROP = 0.05
 INTERACTION_SHARE_THRESHOLD = 0.50
+SINGLE_ROLE_AUC_GAIN = 0.003
+SINGLE_ROLE_NEAR_C27 = 0.001
+SINGLE_ROLE_DAMAGE_RECOVERY = 0.20
 
 
 def parse_args() -> argparse.Namespace:
@@ -185,6 +198,7 @@ def build_metrics(
             frame = seed_frame[seed_frame["combination"] == combination].sort_values("patient_id")
             probabilities = frame["probability"].to_numpy(dtype=np.float64)
             predicted = probabilities >= 0.5
+            c17_class = frame["c17_probability"].to_numpy(dtype=float) >= 0.5
             metrics = binary_metrics(labels, probabilities)
             damage = material_damage(frame)
             severe = severe_damage(frame)
@@ -203,7 +217,16 @@ def build_metrics(
                     "material_positive_damage_count": int(damage.sum()),
                     "severe_positive_damage_count": int(severe.sum()),
                     "c17_tp_to_candidate_fn": int(
-                        ((labels == 1) & (frame["c17_probability"].to_numpy(dtype=float) >= 0.5) & ~predicted).sum()
+                        ((labels == 1) & c17_class & ~predicted).sum()
+                    ),
+                    "c17_fn_to_candidate_tp": int(
+                        ((labels == 1) & ~c17_class & predicted).sum()
+                    ),
+                    "c27_tp_to_candidate_fn": int(
+                        ((labels == 1) & baseline_class & ~predicted).sum()
+                    ),
+                    "c27_fn_to_candidate_tp": int(
+                        ((labels == 1) & ~baseline_class & predicted).sum()
                     ),
                     "threshold_transition_count_vs_000": int(changed.sum()),
                     "positive_threshold_transition_count_vs_000": int(((labels == 1) & changed).sum()),
@@ -432,8 +455,14 @@ def build_positive_attribution(
     summary_rows: List[Dict[str, Any]] = []
     for seed_value in (*SEEDS, "ALL"):
         source = predictions if seed_value == "ALL" else predictions[predictions["seed"].astype(int) == seed_value]
+        c27_frame = source[source["combination"] == "000"].sort_values(
+            ["seed", "patient_id"]
+        )
+        c27_candidate = c27_frame["probability"].astype(float).to_numpy() >= 0.5
         for combination in COMBINATIONS:
-            frame = source[source["combination"] == combination]
+            frame = source[source["combination"] == combination].sort_values(
+                ["seed", "patient_id"]
+            )
             mask = material_damage(frame)
             severe = severe_damage(frame)
             positive = frame["label"].astype(int).to_numpy() == 1
@@ -447,6 +476,9 @@ def build_positive_attribution(
                     "material_positive_damage_count": int(mask.sum()),
                     "severe_positive_damage_count": int(severe.sum()),
                     "c17_tp_to_candidate_fn": int((positive & c17_candidate & ~candidate).sum()),
+                    "c17_fn_to_candidate_tp": int((positive & ~c17_candidate & candidate).sum()),
+                    "c27_tp_to_candidate_fn": int((positive & c27_candidate & ~candidate).sum()),
+                    "c27_fn_to_candidate_tp": int((positive & ~c27_candidate & candidate).sum()),
                     "positive_probability_mean": float(frame.loc[frame["label"].astype(int) == 1, "probability"].mean()),
                     "material_damage_rate": float(mask.sum() / max(positive.sum(), 1)),
                 }
@@ -602,12 +634,13 @@ def build_shortcut_audit(predictions: pd.DataFrame) -> pd.DataFrame:
 def role_decision(
     metrics: pd.DataFrame,
     summary: pd.DataFrame,
+    inversions: pd.DataFrame,
     introduced: pd.DataFrame,
     interactions: pd.DataFrame,
     shortcuts: pd.DataFrame,
 ) -> Dict[str, Any]:
     final_summary = summary.set_index("combination")
-    role_rows: List[Dict[str, Any]] = []
+    damage_rows: List[Dict[str, Any]] = []
     major_by_seed: Dict[int, str] = {}
     for seed in SEEDS:
         frame = introduced[introduced["seed"].astype(int) == seed]
@@ -633,19 +666,34 @@ def role_decision(
         closure_metrics = metrics[metrics["combination"] == closure].set_index("seed")
         final_metrics = metrics[metrics["combination"] == "111"].set_index("seed")
         sensitivity_differences = closure_metrics["Sensitivity"] - final_metrics["Sensitivity"]
+        directional_recovery = (
+            (closure_metrics["AUC"] > final_metrics["AUC"])
+            | (
+                closure_metrics["material_positive_damage_count"]
+                < final_metrics["material_positive_damage_count"]
+            )
+        ) & (
+            closure_metrics["pairwise_inversion_count"]
+            <= final_metrics["pairwise_inversion_count"]
+        )
         evidence_recovery = auc_gain >= ROLE_AUC_RECOVERY or damage_reduction >= ROLE_DAMAGE_RECOVERY
         supported = (
             len(major_seeds) >= 2
+            and int(directional_recovery.sum()) >= 2
             and evidence_recovery
             and inversion_reduction > 0
             and float(sensitivity_differences.min()) >= -MAX_CLOSURE_SENSITIVITY_DROP
         )
-        role_rows.append(
+        damage_rows.append(
             {
                 "role": role,
                 "closure_combination": closure,
                 "major_negative_seed_count": len(major_seeds),
                 "major_negative_seeds": ",".join(str(seed) for seed in major_seeds),
+                "directional_recovery_seed_count": int(directional_recovery.sum()),
+                "directional_recovery_seeds": ",".join(
+                    str(int(seed)) for seed in directional_recovery.index[directional_recovery]
+                ),
                 "closure_mean_AUC_gain_vs_111": auc_gain,
                 "closure_material_damage_reduction_fraction": damage_reduction,
                 "closure_mean_inversion_reduction": inversion_reduction,
@@ -653,7 +701,13 @@ def role_decision(
                 "role_damage_supported": supported,
             }
         )
-    supported_roles = [row for row in role_rows if row["role_damage_supported"]]
+    supported_damage_roles = [row for row in damage_rows if row["role_damage_supported"]]
+    damaging_role_set = {str(row["role"]) for row in supported_damage_roles}
+    excluded_damage_role = (
+        str(supported_damage_roles[0]["role"])
+        if len(supported_damage_roles) == 1
+        else None
+    )
 
     interaction_support: Dict[str, List[int]] = {term: [] for term in INTERACTION_TERMS}
     introduced_interactions = interactions[
@@ -686,11 +740,101 @@ def role_decision(
     mostly_small = sum(value < AUC_MINOR for value in pairwise_differences) > len(pairwise_differences) / 2
     shortcut_pass = bool(shortcuts["shortcut_safety_pass"].astype(bool).all())
 
+    baseline_metrics = metrics[metrics["combination"] == "000"].set_index("seed")
+    baseline_inversions = inversions[inversions["combination"] == "000"].set_index("seed")
+    baseline_auc_mean = float(final_summary.at["000", "AUC_mean"])
+    baseline_damage = int(final_summary.at["000", "material_positive_damage_total"])
+    baseline_mean_inversions = float(final_summary.at["000", "mean_pairwise_inversions"])
+    benefit_rows: List[Dict[str, Any]] = []
+    for role in ROLES:
+        combination = SINGLE_ROLE_COMBINATION[role]
+        candidate_metrics = metrics[metrics["combination"] == combination].set_index("seed")
+        candidate_inversions = inversions[
+            inversions["combination"] == combination
+        ].set_index("seed")
+        auc_changes = candidate_metrics["AUC"] - baseline_metrics["AUC"]
+        material_auc_benefit = (auc_changes > 0.0) & (
+            (auc_changes >= AUC_MINOR)
+            | (candidate_metrics["material_damage_change_vs_000"] < 0)
+            | (candidate_metrics["inversion_change_vs_000"] < -INVERSION_MINOR)
+        )
+        mean_auc = float(final_summary.at[combination, "AUC_mean"])
+        mean_auc_gain = mean_auc - baseline_auc_mean
+        candidate_damage = int(
+            final_summary.at[combination, "material_positive_damage_total"]
+        )
+        damage_reduction = (
+            (baseline_damage - candidate_damage) / baseline_damage
+            if baseline_damage > 0
+            else (0.0 if candidate_damage == 0 else -1.0)
+        )
+        near_c27_with_damage_recovery = (
+            mean_auc >= baseline_auc_mean - SINGLE_ROLE_NEAR_C27
+            and damage_reduction >= SINGLE_ROLE_DAMAGE_RECOVERY
+        )
+        inversion_change_by_seed = (
+            candidate_inversions["inversion_count"]
+            - baseline_inversions["inversion_count"]
+        )
+        mean_inversion_change = float(
+            final_summary.at[combination, "mean_pairwise_inversions"]
+            - baseline_mean_inversions
+        )
+        aggregate_repaired = int(candidate_inversions["000_to_combination_repaired"].sum())
+        aggregate_introduced = int(candidate_inversions["000_to_combination_introduced"].sum())
+        sensitivity_changes = candidate_metrics["Sensitivity"] - baseline_metrics["Sensitivity"]
+        benefit_supported = (
+            int(material_auc_benefit.sum()) >= 2
+            and (
+                mean_auc_gain >= SINGLE_ROLE_AUC_GAIN
+                or near_c27_with_damage_recovery
+            )
+            and mean_inversion_change <= INVERSION_MINOR
+            and aggregate_repaired >= aggregate_introduced
+            and float(inversion_change_by_seed.max()) <= 10
+            and candidate_damage <= baseline_damage
+            and float(sensitivity_changes.min()) >= -0.05
+            and role not in damaging_role_set
+            and shortcut_pass
+        )
+        benefit_rows.append(
+            {
+                "role": role,
+                "single_role_combination": combination,
+                "material_AUC_benefit_seed_count": int(material_auc_benefit.sum()),
+                "material_AUC_benefit_seeds": ",".join(
+                    str(int(seed)) for seed in material_auc_benefit.index[material_auc_benefit]
+                ),
+                "mean_AUC": mean_auc,
+                "mean_AUC_gain_vs_000": mean_auc_gain,
+                "material_damage_count": candidate_damage,
+                "material_damage_reduction_fraction_vs_000": damage_reduction,
+                "mean_inversion_change_vs_000": mean_inversion_change,
+                "aggregate_repaired_pairs": aggregate_repaired,
+                "aggregate_introduced_pairs": aggregate_introduced,
+                "maximum_seed_inversion_increase": float(inversion_change_by_seed.max()),
+                "worst_sensitivity_change_vs_000": float(sensitivity_changes.min()),
+                "is_excluded_damage_role": role == excluded_damage_role,
+                "single_role_benefit_supported": benefit_supported,
+            }
+        )
+    supported_benefits = [row for row in benefit_rows if row["single_role_benefit_supported"]]
+    beneficial_role = (
+        str(supported_benefits[0]["role"])
+        if len(supported_benefits) == 1
+        else None
+    )
+    benefit_label = (
+        ROLE_BENEFIT_LABEL[beneficial_role] if beneficial_role is not None else None
+    )
+
     if not shortcut_pass:
         primary = "C31A_ANALYSIS_INVALID"
-    elif len(supported_roles) == 1:
-        primary = ROLE_LABEL[str(supported_roles[0]["role"])]
-    elif len(supported_roles) > 1:
+    elif len(supported_benefits) > 1:
+        primary = "C31A_MULTIPLE_SINGLE_ROLE_BENEFITS"
+    elif len(supported_damage_roles) == 1:
+        primary = ROLE_LABEL[str(supported_damage_roles[0]["role"])]
+    elif len(supported_damage_roles) > 1:
         primary = "C31A_DIFFUSE_TEXT_ROLE_INTERACTION"
     elif interaction_damage:
         primary = "C31A_TEXT_ROLE_INTERACTION_DAMAGE_SUPPORTED"
@@ -699,23 +843,32 @@ def role_decision(
     else:
         primary = "C31A_DIFFUSE_TEXT_ROLE_INTERACTION"
 
-    authorized_role: str | None = None
-    if len(supported_roles) == 1 and shortcut_pass:
-        candidate = supported_roles[0]
-        if (
-            float(candidate["closure_material_damage_reduction_fraction"])
-            >= ROLE_DAMAGE_RECOVERY
-            and float(candidate["closure_mean_inversion_reduction"]) > 0
-        ):
-            authorized_role = str(candidate["role"])
+    role_collision = (
+        beneficial_role is not None
+        and excluded_damage_role is not None
+        and beneficial_role == excluded_damage_role
+    )
+    if role_collision:
+        primary = "C31A_ANALYSIS_INVALID"
+        beneficial_role = None
+        benefit_label = None
     authorization = (
-        "C31B_ONE_ROLE_ADAPTER_AUTHORIZED" if authorized_role else "C31B_NOT_AUTHORIZED"
+        "C31B_ONE_ROLE_ADAPTER_AUTHORIZED"
+        if beneficial_role is not None and len(supported_benefits) == 1 and not role_collision
+        else "C31B_NOT_AUTHORIZED"
     )
     return {
         "primary_label": primary,
+        "benefit_label": benefit_label,
         "authorization": authorization,
-        "authorized_role": authorized_role,
-        "role_rows": role_rows,
+        "excluded_damage_role": (
+            ROLE_SHORT[excluded_damage_role] if excluded_damage_role is not None else None
+        ),
+        "beneficial_role": (
+            ROLE_SHORT[beneficial_role] if beneficial_role is not None else None
+        ),
+        "damage_rows": damage_rows,
+        "benefit_rows": benefit_rows,
         "major_negative_role_by_seed": major_by_seed,
         "interaction_support_seeds": interaction_support,
         "supported_interactions": supported_interactions,
@@ -724,6 +877,7 @@ def role_decision(
             final_summary.at["111", "AUC_mean"] - final_summary.at["000", "AUC_mean"]
         ),
         "shortcut_pass": shortcut_pass,
+        "role_collision_invalid": role_collision,
     }
 
 
@@ -769,21 +923,34 @@ def write_reports(
         "# C31-A Role Decision",
         "",
         f"- Primary label: `{decision['primary_label']}`.",
+        f"- Benefit label: `{decision['benefit_label'] or 'none'}`.",
         f"- C31-B authorization: `{decision['authorization']}`.",
-        f"- Authorized role: `{decision['authorized_role'] or 'none'}`.",
+        f"- Excluded damage role: `{decision['excluded_damage_role'] or 'none'}`.",
+        f"- Beneficial role: `{decision['beneficial_role'] or 'none'}`.",
         f"- Mean C30-C27 AUC: `{decision['mean_C30_minus_C27_AUC']:.10f}`.",
         f"- Shortcut safety: `{decision['shortcut_pass']}`.",
         "",
         "## Closure Evidence",
         "",
     ]
-    for row in decision["role_rows"]:
+    for row in decision["damage_rows"]:
         role_lines.append(
             f"- `{row['role']}` via `{row['closure_combination']}`: major negative in "
-            f"`{row['major_negative_seed_count']}/3` seeds; AUC gain "
+            f"`{row['major_negative_seed_count']}/3` seeds; directional recovery in "
+            f"`{row['directional_recovery_seed_count']}/3`; AUC gain "
             f"`{row['closure_mean_AUC_gain_vs_111']:.10f}`; damage reduction "
             f"`{row['closure_material_damage_reduction_fraction']:.10f}`; mean inversions reduced "
             f"`{row['closure_mean_inversion_reduction']:.3f}`; supported `{row['role_damage_supported']}`."
+        )
+    role_lines.extend(["", "## Direct Single-Role Benefit", ""])
+    for row in decision["benefit_rows"]:
+        role_lines.append(
+            f"- `{row['role']}` via `{row['single_role_combination']}`: material AUC benefit in "
+            f"`{row['material_AUC_benefit_seed_count']}/3` seeds; mean AUC gain "
+            f"`{row['mean_AUC_gain_vs_000']:.10f}`; damage reduction "
+            f"`{row['material_damage_reduction_fraction_vs_000']:.10f}`; mean inversion change "
+            f"`{row['mean_inversion_change_vs_000']:.3f}`; supported "
+            f"`{row['single_role_benefit_supported']}`."
         )
     role_lines.extend(
         [
@@ -800,7 +967,8 @@ def write_reports(
             "# C31-A Route Decision",
             "",
             "- `C31B_ONE_ROLE_ADAPTER_AUTHORIZED`",
-            f"- `authorized_role = {decision['authorized_role']}`",
+            f"- `beneficial_role = {decision['beneficial_role']}`",
+            f"- `excluded_damage_role = {decision['excluded_damage_role'] or 'none'}`",
             "- `KEEP_DEMA_C17_STRICT_BEST` remains binding until a later formal route is validated.",
             "- C31-A does not launch the next phase.",
         ]
@@ -811,6 +979,8 @@ def write_reports(
             "- `C31B_NOT_AUTHORIZED`",
             "- `STOP_VISIT_TEXT_ADAPTER_ROUTE`",
             "- `KEEP_DEMA_C17_STRICT_BEST`",
+            f"- `excluded_damage_role = {decision['excluded_damage_role'] or 'none'}`",
+            f"- `beneficial_role = {decision['beneficial_role'] or 'none'}`",
             "- No later phase is launched automatically.",
         ]
     (output / "c31a_route_decision.md").write_text(
@@ -823,8 +993,10 @@ def write_reports(
         "",
         f"- Analysis gate: `{gate['status']}` (`{gate['passed']}/{gate['total']}`).",
         f"- Primary label: `{decision['primary_label']}`.",
+        f"- Benefit label: `{decision['benefit_label'] or 'none'}`.",
         f"- Authorization: `{decision['authorization']}`.",
-        f"- Authorized role: `{decision['authorized_role'] or 'none'}`.",
+        f"- Excluded damage role: `{decision['excluded_damage_role'] or 'none'}`.",
+        f"- Beneficial role: `{decision['beneficial_role'] or 'none'}`.",
         f"- C27 `000` AUC mean: `{summary_index.at['000', 'AUC_mean']:.10f}`.",
         f"- C30 `111` AUC mean: `{summary_index.at['111', 'AUC_mean']:.10f}`.",
         f"- C30-C27 mean AUC: `{decision['mean_C30_minus_C27_AUC']:.10f}`.",
@@ -896,7 +1068,9 @@ def main() -> None:
     interactions = interaction_summary(patient_shapley, pair_shapley, introduced)
     strata = build_text_strata(predictions, patient_shapley)
     shortcuts = build_shortcut_audit(predictions)
-    decision = role_decision(metrics, summary, introduced, interactions, shortcuts)
+    decision = role_decision(
+        metrics, summary, inversions, introduced, interactions, shortcuts
+    )
 
     metrics.to_csv(output / "c31a_factorial_metrics_by_seed.csv", index=False)
     summary.to_csv(output / "c31a_factorial_metrics_summary.csv", index=False)
@@ -924,8 +1098,10 @@ def main() -> None:
             {
                 "status": "C31A_REPORT_COMPLETE",
                 "primary_label": decision["primary_label"],
+                "benefit_label": decision["benefit_label"],
                 "authorization": decision["authorization"],
-                "authorized_role": decision["authorized_role"],
+                "excluded_damage_role": decision["excluded_damage_role"],
+                "beneficial_role": decision["beneficial_role"],
                 "introduced_pairs": len(introduced),
                 "material_positive_damage_cases": len(positive_damage),
             }

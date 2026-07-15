@@ -2747,3 +2747,15 @@
 - Shortcut variables, patient IDs, labels, correctness, saved predictions, visit count, image count, dates, ranks, and evidence-presence summaries are audit and stratification fields only. They never enter the adapter, role intervention, frozen mechanism forward, Shapley calculation, or any predictive component.
 - The server analysis can start only after exactly `24/24` static and runtime checks return `C31A_ANALYSIS_AUTHORIZED`. Passing the gate authorizes the complete validation analysis immediately, but never authorizes training.
 - Final output is reporting-only under `analysis_reports/phase_c31a_dema/`. C31-B remains blocked unless one and only one predefined role satisfies every gate; no later phase is launched automatically.
+
+### Corrected Authorization Contract
+
+- The corrected C31-A contract supersedes the earlier C31-B authorization logic. Localizing a damaging role and authorizing a beneficial role are separate decisions with opposite meanings.
+- A role localized by the `111` versus role-closed comparisons can only be reported as `excluded_damage_role`; it can never be authorized as the sole adapter destination merely because closing it recovers performance.
+- C31-B can be authorized only by exactly one direct single-role combination: R1 uses `100`, R4 uses `010`, and R5 uses `001`, each compared only with official C27 `000` under the fixed multi-seed AUC, positive-damage, ranking, sensitivity, and shortcut gates.
+- The fixed single-role benefit alternatives are mean AUC gain at least `0.003`, or mean AUC at least C27 mean minus `0.001` together with material positive-damage reduction of at least `20%`. At least two seeds must improve beyond minor variation.
+- A beneficial role must have mean inversions no more than C27 plus `3`, aggregate repaired pairs at least introduced pairs, no seed inversion increase above `10`, no aggregate material positive-damage increase, and no seed sensitivity drop above `0.05`.
+- If multiple single roles satisfy the benefit gate, the result is `C31A_MULTIPLE_SINGLE_ROLE_BENEFITS` and C31-B is not authorized. No post-hoc best-role selection is allowed.
+- Reports must separately export `excluded_damage_role` and `beneficial_role`. If both are the same non-none role, the analysis is invalid and C31-B is not authorized.
+- Pairwise margins and their exact Shapley decomposition use positive-minus-negative logits, as required by the corrected contract; inversion counts remain invariant to the monotone sigmoid transform.
+- A damaging-role label does not itself authorize C31-B. `C31B_ONE_ROLE_ADAPTER_AUTHORIZED` requires one uniquely beneficial, non-damaging role; otherwise `C31B_NOT_AUTHORIZED`, `STOP_VISIT_TEXT_ADAPTER_ROUTE`, and `KEEP_DEMA_C17_STRICT_BEST` remain binding.
