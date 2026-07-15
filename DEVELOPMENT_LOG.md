@@ -3479,3 +3479,10 @@
 - C59 uses BCE with logits only, independent formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct multiseed execution after an exact gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, ranking loss, or C27/C37 visit-level route is authorized.
 - The trainable scope is limited to the shared multimodal instance encoder, patient readout, and classifier under a `5,000,000` parameter limit. Promotion requires the goal AUC gates plus positive-preservation, ranking, shortcut, health, capacity, and patient-level split/Test gates. If C59 fails, record the formal result and continue to the next genuinely different whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C59-PMESE is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### Implementation Before Formal Run
+
+- Added `dmea_ht/c59_pmese.py`, `configs/dema_ht_c59_pmese_multiseed.yaml`, `scripts/gate_phase_c59_pmese.py`, `scripts/train_phase_c59.py`, and `scripts/collect_phase_c59_report.py`.
+- The implementation keeps the C17 source stack under `no_grad`, creates one per-visit multimodal evidence token from normalized raw/aligned image, text, and bio states, then applies fixed latest/history/set moments before one patient readout and classifier. No audit-only field is read by the model.
+- The gate checks frozen source scope, finite outputs under modality-missing probes, nonzero trainable-head gradients with zero source gradients, shortcut exclusion, fixed stream and patient-level set contract, BCE-only training, Validation/Test isolation, and direct single-model multiseed execution.
+- Local Python compilation, YAML parsing, a no-data fixed-set-statistics shape/finite check, and `git diff --check` passed. The exact server gate and three-seed formal results remain pending; no C59 conclusion or Test result is valid before Validation freeze and reporting-only Test.
