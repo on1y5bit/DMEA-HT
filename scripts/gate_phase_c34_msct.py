@@ -167,6 +167,7 @@ def run_runtime_checks(
         "single_visit_seen": False,
         "multi_visit_seen": False,
         "gradient_norms_by_seed": {},
+        "probe_gradient_norms_by_seed": {},
     }
 
     for seed in SEEDS:
@@ -299,15 +300,31 @@ def run_runtime_checks(
         model.train(True)
         model.zero_grad(set_to_none=True)
         probe_batches = [train_batch, *gradient_probe_batches(train_batch)]
-        for probe_batch in probe_batches:
+        probe_details: List[Dict[str, Any]] = []
+        for probe_index, probe_batch in enumerate(probe_batches):
             output = model(probe_batch)
             loss = F.binary_cross_entropy_with_logits(output["logit"], probe_batch["label"])
             if not bool(torch.isfinite(loss)):
                 runtime["gradient_contract"] = False
+                probe_details.append(
+                    {
+                        "probe": probe_index,
+                        "loss": float("nan"),
+                        "norms": trainable_gradient_norms(model),
+                    }
+                )
                 continue
             loss.backward()
+            probe_details.append(
+                {
+                    "probe": probe_index,
+                    "loss": float(loss.detach().cpu()),
+                    "norms": trainable_gradient_norms(model),
+                }
+            )
         norms = trainable_gradient_norms(model)
         details["gradient_norms_by_seed"][str(seed)] = norms
+        details["probe_gradient_norms_by_seed"][str(seed)] = probe_details
         runtime["gradient_contract"] &= all(
             np.isfinite(value) and value > 0.0 for value in norms.values()
         )
@@ -455,6 +472,7 @@ def main() -> None:
         "single_visit_seen": bool(details["single_visit_seen"]),
         "multi_visit_seen": bool(details["multi_visit_seen"]),
         "gradient_norms_by_seed": details["gradient_norms_by_seed"],
+        "probe_gradient_norms_by_seed": details["probe_gradient_norms_by_seed"],
         "checks": [{"name": name, "passed": bool(value)} for name, value in checks],
     }
     (report_dir / "c34_gate.json").write_text(
