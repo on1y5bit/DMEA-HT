@@ -3508,3 +3508,10 @@
 - C60 uses BCE with logits only, independent formal seeds `[0, 42, 3407]`, EMA-only Validation-AUC checkpoint selection, direct multiseed execution after an exact gate, and reporting-only Test after Validation freeze. No smoke, pilot, sweep, threshold tuning, secondary metric, or Test-based selection is authorized.
 - The trainable scope remains the C59 multimodal instance encoder, patient readout, and classifier under a `5,000,000` parameter limit. Promotion requires the goal AUC gates plus positive-preservation, ranking, shortcut, health, capacity, and patient-level split/Test gates. If C60 fails, record the formal result and continue to the next genuinely different whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C60-EMASE is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### Implementation Before Formal Run
+
+- Added `dmea_ht/c60_emase.py`, `configs/dema_ht_c60_emase_multiseed.yaml`, `scripts/gate_phase_c60_emase.py`, `scripts/train_phase_c60.py`, and `scripts/collect_phase_c60_report.py`.
+- The implementation reuses the C59 patient evidence-set model as one model, updates one EMA state after every optimizer step, evaluates EMA weights for Validation AUC selection, and saves only the selected EMA state for reporting-only Test. No prediction or checkpoint combination is performed.
+- The gate checks the frozen C17 source scope, finite modality-missing outputs, trainable-head gradients, shortcut exclusion, fixed patient-level evidence route, exact EMA decay/contract, BCE-only training, Validation/Test isolation, and direct single-model multiseed execution.
+- Local Python compilation, YAML parsing, a no-data EMA arithmetic check, and `git diff --check` passed. The exact server gate and three-seed formal results remain pending; no C60 conclusion or Test result is valid before Validation freeze and reporting-only Test.
