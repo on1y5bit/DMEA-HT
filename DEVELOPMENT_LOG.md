@@ -3415,3 +3415,9 @@
 - C57 uses BCE with logits only, independent formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct multiseed execution after an exact gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or ranking loss is authorized.
 - Promotion requires AUC, positive-preservation, ranking, shortcut, health, capacity, and patient-level split/Test gates. If C57 fails, record it and continue to the next distinct hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C57-CBIE is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### Implementation Before Formal Run
+
+- Added `dmea_ht/c57_cbie.py`, `configs/dema_ht_c57_cbie_multiseed.yaml`, `scripts/gate_phase_c57_cbie.py`, `scripts/train_phase_c57.py`, and `scripts/collect_phase_c57_report.py`.
+- The implementation keeps C17 image/text/bio source modules frozen, uses raw continuous biochemical values only through fixed masked patient statistics, and forms one factorized image-text/biochemical interaction state before classification.
+- Local Python compilation, YAML parsing, `git diff --check`, and a no-data tensor-shape/nonlinear-basis check passed. The exact server gate and three-seed formal results remain pending; no C57 conclusion or Test result is valid before Validation freeze and reporting-only Test.
