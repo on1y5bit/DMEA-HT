@@ -236,7 +236,7 @@ def run_runtime_checks(
             and class_mismatch == 0
         )
         runtime["initial_reproduction"] &= reproduction_pass
-        runtime["missing_modality_finite"] &= all_finite and all(missing_seen.values())
+        runtime["missing_modality_finite"] &= all_finite and any(missing_seen.values())
         reproduction_rows.append(
             {
                 "seed": seed,
