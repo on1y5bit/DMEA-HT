@@ -1,0 +1,27 @@
+phase: goal_data_limit_audit
+
+project:
+  name: dema_ht_goal_data_limit_c53
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  expected_manifest_sha256: cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b
+  output_dir: analysis_reports/goal_data_limit_c53
+  candidate_models: [C47, C49, C50, C51]
+  seeds: [0, 42, 3407]
+  models:
+    C17:
+      run_dir: runs/dema_ht_c17_formal_multiseed
+    C27:
+      run_dir: runs/dema_ht_c27_vtme_multiseed
+    C47:
+      run_dir: runs/dema_ht_c47_drfe_multiseed
+      decision_json: analysis_reports/phase_c47_dema/c47_validation_decision.json
+    C49:
+      run_dir: runs/dema_ht_c49_creb_multiseed
+      decision_json: analysis_reports/phase_c49_dema/c49_validation_decision.json
+    C50:
+      run_dir: runs/dema_ht_c50_cbif_multiseed
+      decision_json: analysis_reports/phase_c50_dema/c50_validation_decision.json
+    C51:
+      run_dir: runs/dema_ht_c51_hrme_multiseed
+      decision_json: analysis_reports/phase_c51_dema/c51_validation_decision.json
