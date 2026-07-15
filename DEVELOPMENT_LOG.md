@@ -3063,3 +3063,14 @@
 
 - Because C41 is another healthy, shortcut-safe whole-model hypothesis below `0.89`, the Validation-only audit will be rerun over C17/C27/C38/C39/C40/C41. The recheck will preserve the same manifest, patient alignment, Test isolation, common-hard-patient, error-concentration, and evidence-enrichment criteria.
 - The goal remains active until this expanded audit either supports `DEMA_HT_AUC_090_DATA_LIMIT_SUSPECTED` under all six stop conditions or authorizes another genuinely different overall model hypothesis.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C42-E2E-PET
+
+### Pre-Edit Contract
+
+- The expanded C38-C41 Validation-only audit remains `DATA_LIMIT_AUDIT_INCONCLUSIVE`: candidate means are all below `0.89`, but common hard positives are `10/47`, common hard patients are `17/94`, and no evidence stratum is enriched. The fixed C17 source representation is therefore the next unresolved bottleneck rather than a proven data limit.
+- C42 tests end-to-end patient evidence learning as a new overall model. It loads the C17 checkpoint only as initialization, then jointly updates the image encoder, text encoder, biochemical encoder, and their evidence projectors together with a patient-level evidence graph readout. This is not a projector-only adjustment and does not reuse the C27/C37 temporal scorer.
+- Each visit produces image, report, and biochemical evidence nodes. Fixed latest/history/delta/dispersion statistics create fourteen patient evidence tokens; one self-attention evidence graph and one patient query organize these tokens into a patient state. No learned visit score, visit-count feature, patient ID, padding field, or missingness shortcut is used.
+- The sole loss is BCE with logits. Formal seeds remain `[0, 42, 3407]`, with one independently initialized-from-C17 single model and Validation-AUC checkpoint per seed. The new model uses one fixed training configuration, direct parallel execution after its gate, and reporting-only Test after the frozen Validation decision. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, or closed-route micro-variant is authorized.
+- C42 promotion requires mean Validation AUC `>= 0.9000`, at least `2/3` seeds `>= 0.9000`, std `<= 0.025`, positive safety versus C17, ranking safety versus C27, shortcut safety, finite training health, and patient-level split/Test isolation. If it fails, its result is added to the expanded audit and the goal continues unless all data-limit stop conditions are finally evidenced.
+- Starting implementation commit for C42-E2E-PET will be recorded below before server execution.
