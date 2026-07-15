@@ -1,9 +1,10 @@
 {
   "phase": "C31-A",
-  "status": "C31A_REPRODUCTION_FAIL",
-  "passed": 23,
+  "status": "C31A_ANALYSIS_AUTHORIZED",
+  "reproduction_status": "C31A_REPRODUCTION_ACCEPTABLE",
+  "passed": 24,
   "total": 24,
-  "git_commit": "a72ad893c3df4bf967871f65d88c39dd3b31fea4",
+  "git_commit": "7778e75491f8f3f9aae99bcde9a7640fd476c9f2",
   "branch": "main",
   "project": "/home/linruixin/chen/project/DMEA-HT",
   "device": "cuda",
@@ -54,7 +55,7 @@
     },
     {
       "name": "12_111_reproduces_official_c30",
-      "passed": false
+      "passed": true
     },
     {
       "name": "13_threshold_classes_exact",
@@ -112,7 +113,7 @@
     "ids_labels_aligned": true,
     "balanced_validation": true,
     "c27_reproduced": true,
-    "c30_reproduced": false,
+    "c30_reproduced": true,
     "classes_reproduced": true,
     "adapter_once": true,
     "projector_twice": true,

@@ -1,9 +1,12 @@
 {
   "phase": "C31-A",
-  "primary_label": "C31A_REPRODUCTION_FAIL",
+  "primary_label": "C31A_ADAPTER_EFFECT_TOO_SMALL_FOR_LOCALIZATION",
+  "benefit_label": null,
   "authorization": "C31B_NOT_AUTHORIZED",
+  "excluded_damage_role": null,
+  "beneficial_role": null,
   "route": "STOP_VISIT_TEXT_ADAPTER_ROUTE",
   "strict_best": "KEEP_DEMA_C17_STRICT_BEST",
-  "full_analysis_run": false,
-  "training_run": false
+  "full_analysis_run": true,
+  "c31b_run": false
 }
