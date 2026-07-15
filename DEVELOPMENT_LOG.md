@@ -3095,3 +3095,15 @@
 - The Validation decision was frozen before Test as `C42_POSITIVE_DAMAGE`; reporting-only Test AUC mean/std was `0.8280423280 +/- 0.0171416923`. No C42 deployment checkpoint was selected. `ensemble_used`, threshold tuning, and Test-based selection remained false.
 - Because C42 failed positive/ranking safety, it is not evidence for the data-limit stop condition. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, the goal remains active, and the next round must be a genuinely different whole-model hypothesis rather than C42 graph or C27/C37 visit-level refinement.
 - The server received commit `34c68fc` through a verified Git bundle fallback after two GitHub pull attempts timed out; the repository was fast-forwarded and the final report completed without retraining.
+
+## 2026-07-16 Goal DEMA_HT_AUC_090_PLUS: Phase C43-MCFE
+
+### Pre-Edit Contract
+
+- C42's end-to-end patient evidence graph improved mean AUC over C17 but produced a substantive seed-42 positive collapse and seed-0 ranking damage. The unresolved failure is therefore unstable cross-modal organization, not a reason to revisit C42, C27, or C37 micro-variants.
+- C43 tests a different overall mechanism: within each chronological visit, continuous biochemical values condition image and report evidence through low-capacity FiLM modulation, then a joint image-text-bio interaction state is formed with an explicit image-text product term. Only after this local cross-modal mechanism flow does the model apply fixed patient-level latest/history/delta/dispersion statistics and a single patient readout.
+- C43 is not C40's patient-level biochemical query over already pooled image/report tokens, does not create pairwise relation tokens, does not use a patient evidence graph, and does not learn a visit score. The C17 encoders and pre-propagation evidence projectors remain frozen; only the biochemical conditioner, two modality FiLM blocks, cross-modal fusion, fixed-trajectory encoder, patient readout, and classifier are trainable.
+- Missing biochemical values are zeroed only for finite continuous conditioning; the missingness mask and validity flags are not concatenated as classifier features. Dates, patient IDs, visit counts, raw image/report counts, padding fields, source folders, saved predictions, and Test artifacts remain excluded from model inputs.
+- C43 uses BCE with logits only, formal seeds `[0, 42, 3407]`, one Validation-AUC-selected checkpoint per independent model, direct parallel execution after an exact gate, and reporting-only Test after the Validation decision. No ensemble, averaging, calibration, threshold tuning, AUPRC, smoke, pilot, sweep, or closed-route micro-variant is authorized.
+- Promotion requires the goal AUC gates plus positive preservation versus C17, ranking safety versus C27, shortcut safety, finite training health, capacity, and patient-level split/Test isolation. If C43 fails, its result will be recorded and the goal will continue to the next distinct whole-model hypothesis unless the complete data-limit stop criteria are evidenced.
+- Starting implementation commit for C43-MCFE will be recorded below before server execution.
