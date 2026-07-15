@@ -3456,3 +3456,13 @@
 - The implementation keeps the C17 source stack under `no_grad`, forms fixed patient-level image/text trajectory statistics and masked continuous-bio nonlinear statistics, projects each modality to rank 32, and exposes only the declared pairwise/triple tensor products to one patient readout and classifier.
 - The gate checks the frozen source scope, finite outputs under modality-missing probes, nonzero trainable-head gradients with zero source gradients, shortcut exclusion, fixed stream/chronology contract, BCE-only training, Validation/Test isolation, and direct single-model multiseed execution.
 - Local Python compilation, YAML parsing, and `git diff --check` passed. The exact server gate and three-seed formal results remain pending; no C58 conclusion or Test result is valid before Validation freeze and reporting-only Test.
+
+### C58 Formal Result And Decision
+
+- The C58 gate passed exactly `11/11` on the canonical server. Direct parallel formal seeds `[0, 42, 3407]` completed in the `ma` environment on the NVIDIA GeForce RTX 5090; Validation-selected epochs were seed `0: 14`, seed `42: 6`, and seed `3407: 5`.
+- C58 Validation AUC was `0.8601177003 / 0.8619284744 / 0.8678134903`, mean/std `0.8632865550 +/- 0.0040236281`. The mean changed versus C17 by `-0.0063377094` and versus C27 by `-0.0190131281`; no seed reached `0.9000`, so the goal AUC gate failed.
+- Positive preservation failed: C17 TP-to-C58-FN / FN-to-C58-TP was `9/6`, `12/2`, and `3/4`; sensitivity changes were `-0.0638297872`, `-0.2127659574`, and `+0.0212765957`, with aggregate counts `24/12`. Seed 42 crossed the substantive sensitivity-loss bound.
+- Ranking safety failed. C27/C58 inversion counts were `217/309`, `284/305`, and `279/292`; repaired/introduced pairs were `120/212`, `101/122`, and `125/138`, aggregate `346/472`. Every seed introduced more inversions than it repaired, and seed 0 increased inversions by `92`.
+- Training health passed `9/9`, capacity passed, and selected-structure shortcut safety passed for all seeds. The shortcut-only label AUC was `0.2833861476`; raw visit/image associations remained audit-only. Reporting-only Test AUC mean/std was `0.7870370370 +/- 0.0224000628`.
+- Validation was frozen before Test as `C58_POSITIVE_DAMAGE`; no deployment checkpoint was selected. The strict best remains `KEEP_DEMA_C17_STRICT_BEST`, and no ensemble, threshold tuning, or Test-based selection was used.
+- C58 is not evidence for the data-limit stop condition because AUC, positive preservation, and ranking safety all failed. The goal remains active; the three-way tensor route is rejected and the next hypothesis must use a more conservative evidence path.
