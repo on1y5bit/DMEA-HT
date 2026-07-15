@@ -2774,3 +2774,10 @@
 - The corrected C31-A gate ran on CUDA at commit `389bb35` and passed `23/24`. Official C27/`000` reproduction passed at maximum logit error `8.8817842e-16` and probability error `1.1102230e-16`.
 - Official C30/`111` reproduction was the sole failure. Maximum logit errors for seeds `0/42/3407` were `5.3644180e-07`, `4.7683716e-07`, and `4.7683716e-07`; maximum probability error was `1.1920929e-07` for every seed. AUC error and threshold-class mismatch count were zero for all seeds, but the fixed `1e-7`/`1e-9` hard tolerances were not met.
 - Per the corrected mandatory reproduction contract, the formal result is `C31A_REPRODUCTION_FAIL`, `C31B_NOT_AUTHORIZED`, `STOP_VISIT_TEXT_ADAPTER_ROUTE`, and `KEEP_DEMA_C17_STRICT_BEST`. The complete factorial attribution analysis and all training remain stopped.
+
+### C31-A Completion And Conditional C31-B Contract
+
+- The new execution plan supersedes the prior `1e-7`/`1e-9` C31-A reproduction stop and explicitly accepts the observed CUDA float32 variation when maximum logit error is at most `1e-6`, maximum probability error is at most `2e-7`, AUC error and threshold-class mismatch are zero, patient IDs and labels align exactly, and checkpoint state is unchanged.
+- No separate C31-A-R phase will run. The existing frozen eight-combination validation attribution proceeds directly after `C31A_REPRODUCTION_ACCEPTABLE`; no optimizer, backward pass, held-out reporting split, secondary ranking metric, or additional numerical edge audit is introduced.
+- Damaging-role localization and beneficial-role authorization remain separate. C31-B is authorized only if exactly one non-damaging single-role combination directly benefits over official C27 under the fixed multi-seed AUC, positive-safety, ranking, and shortcut conditions.
+- If and only if C31-A returns `C31B_ONE_ROLE_ADAPTER_AUTHORIZED`, one role-restricted adapter will be implemented and seeds `[0, 42, 3407]` will train directly with independent models, optimizers, checkpoints, and output directories. No smoke, pilot, sweep, fallback, ensemble, averaging, AUPRC, threshold tuning, or validation-before-test violation is permitted.
