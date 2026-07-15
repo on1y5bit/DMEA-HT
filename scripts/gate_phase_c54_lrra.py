@@ -19,7 +19,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
 from dmea_ht.c47_drfe import C47DRFEModel  # noqa: E402
-from dmea_ht.c54_lrra import C54LRRAModel, HEAD_PREFIXES, trainable_parameter_count  # noqa: E402
+from dmea_ht.c54_lrra import (  # noqa: E402
+    C54LRRAModel,
+    HEAD_PREFIXES,
+    LowRankAdapter,
+    trainable_parameter_count,
+)
 from dmea_ht.config import load_config  # noqa: E402
 from dmea_ht.mechanism_evidence_alignment import TEXT_MASK_KEYS  # noqa: E402
 from dmea_ht.visit_data import read_jsonl  # noqa: E402
@@ -90,8 +95,9 @@ def main() -> None:
     trainable_counts: Dict[str, int] = {}
     gradient_rows: List[Dict[str, Any]] = []
     source_text = inspect.getsource(C54LRRAModel)
+    adapter_text = inspect.getsource(LowRankAdapter)
     inherited_text = inspect.getsource(C47DRFEModel)
-    route_text = source_text + inherited_text
+    route_text = source_text + adapter_text + inherited_text
     for seed in SEEDS:
         set_seed(seed)
         model = C54LRRAModel(config, seed).to(device)
@@ -150,7 +156,8 @@ def main() -> None:
         )
     ) and bool(config["c54"]["shortcut_fields_used_as_inputs"] is False)
     route_pass = (
-        all(term in source_text for term in ("LowRankAdapter", "stream_adapters", "adapter_rank", "self.down", "self.up", "trajectory_encoder"))
+        all(term in source_text for term in ("stream_adapters", "adapter_rank", "trajectory_encoder"))
+        and all(term in adapter_text for term in ("LowRankAdapter", "self.down", "self.up"))
         and all(term in inherited_text for term in ("latest_mask", "history_mask", "variance", "log2", "raw_image", "aligned_image"))
         and list(config["c54"]["stream_order"]) == ["raw_image", "raw_text", "raw_bio", "aligned_image", "aligned_text", "aligned_bio"]
         and int(config["c54"]["adapter_rank"]) == 32
