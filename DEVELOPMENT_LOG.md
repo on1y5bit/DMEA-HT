@@ -3386,3 +3386,9 @@
 - C56 uses BCE with logits only, independent formal seeds `[0, 42, 3407]`, Validation-AUC checkpoint selection, direct multiseed execution after an exact gate, and reporting-only Test after Validation freeze. No ensemble, averaging, calibration, threshold tuning, secondary metric, smoke, pilot, sweep, EMA, or ranking loss is authorized.
 - The trainable scope is limited to the support readout and opposition head, with a hard limit of `5,000,000` trainable parameters. Promotion requires AUC, positive-preservation, ranking, shortcut, health, capacity, and patient-level split/Test gates. If C56 fails, record it and continue to the next distinct hypothesis unless the complete data-limit stop criteria are evidenced.
 - Starting implementation for C56-PPEK is authorized after this contract; local static checks, exact gate, direct formal seeds, Validation freeze, and reporting-only Test are required.
+
+### Implementation Before Formal Run
+
+- Added `dmea_ht/c56_ppek.py`, `configs/dema_ht_c56_ppek_multiseed.yaml`, `scripts/gate_phase_c56_ppek.py`, `scripts/train_phase_c56.py`, and `scripts/collect_phase_c56_report.py`.
+- The implementation keeps the C17 source stack under `no_grad`, computes the fixed support/opposition kernel moments, and applies the declared bounded opposition penalty `0.75 * tanh(softplus(score))` in one forward.
+- Local Python compilation, YAML parsing, `git diff --check`, and a no-data tensor/penalty-bound check passed. The exact server gate and three-seed formal results remain pending; no C56 conclusion or Test result is valid before Validation freeze and reporting-only Test.
