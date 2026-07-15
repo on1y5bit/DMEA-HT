@@ -2908,3 +2908,17 @@
 - Validation decision was frozen before Test as `DEMA_C35_COORDINATE_COLLAPSE`, with `KEEP_DEMA_C17_STRICT_BEST` and `STOP_C35_MTSA_TUNING`. No C35 deployment checkpoint was selected.
 - Reporting-only Test started after the frozen decision and finished at `2026-07-15T20:54:44+08:00`. Test AUC was `0.7896825397 / 0.7947845805 / 0.7840136054`, mean/std `0.7894935752 +/- 0.0053879733`; Test did not alter the decision, checkpoint, threshold, or deployment.
 - Final server artifacts are under `runs/dema_ht_c35_mtsa_multiseed/` and `analysis_reports/phase_c35_dema/`, including `phase_c35_dema_final_report.md`, `c35_validation_decision.json`, coordinate/anchor health audits, positive-preservation audit, inversion summary, and shortcut audit.
+
+## 2026-07-15 Phase C36-JTSA Joint Mechanism-Trajectory State Anchoring
+
+### Pre-Edit Contract
+
+- C35-MTSA completed with mean Validation AUC `0.8294854384 +/- 0.0044431664`, below C17 and C27. It failed positive preservation and pairwise ranking safety; M5 temporal-text scalar coordinates were constant or numerically near-constant across the formal seeds. The binding decision is `DEMA_C35_COORDINATE_COLLAPSE`, `KEEP_DEMA_C17_STRICT_BEST`, and `STOP_C35_MTSA_TUNING`.
+- The C35 limitation is treated as an independent per-mechanism scalar bottleneck, not as a reason to tune M5 alone. C36-JTSA is the decisive disease-state-anchor experiment and tests whether five high-dimensional mechanism trajectories should form one joint patient state before anchoring.
+- C36 retains only the C17 image/text/bio encoders and complete C17 pre-propagation evidence projectors as frozen inputs. C17 propagation/readout modules, C27-C35 prediction modules, and saved predictions are excluded from the C36 predictor.
+- The five real mechanism streams remain M1 morphology (image morphology, text support, text nonspecific morphology), M2 immune, M3 function, M4 opposition, and M5 temporal text. M1 uses a fixed valid-source arithmetic mean; missing mechanisms use learned fallback tokens and missing is not treated as negative evidence.
+- Five independent `256 -> 32` mechanism visit projectors produce `[B,V,5,32]`. Each mechanism independently forms a fixed log2 ordinal-recency latest/history/delta trajectory `[B,5,96]`, then a separate `96 -> 32` trajectory embedder produces `[B,5,32]`. No scalar per-mechanism coordinate is permitted.
+- The five embeddings are concatenated in fixed M1-M5 order to `[B,160]` and passed through exactly one low-capacity `LayerNorm(160) -> Linear(160,64) -> GELU -> Dropout -> Linear(64,32) -> LayerNorm(32)` patient-state projector. Symmetric non-HT/HT anchors in this single `[32]` state are the only readout; BCE with logits is the only loss.
+- Formal seeds remain `[0,42,3407]`, each an independent single-model replicate with Validation-AUC checkpoint selection. Exactly `20/20` gate checks must authorize direct formal execution. No branch, worktree, project copy, smoke, pilot, variant, sweep, ensemble, averaging, secondary metric, AUPRC, calibration, threshold tuning, auxiliary loss, or Test-based selection is allowed.
+- Small seed variations below the fixed materiality thresholds are recorded only. If C36 fails promotion, `STOP_DISEASE_STATE_ANCHOR_ROUTE` becomes binding and no C36-v2 or larger state route is authorized.
+- Starting implementation commit: `7655bd9`. C36 implementation, gate, training, final decision, deployment status, and final commit will be recorded below after execution.
