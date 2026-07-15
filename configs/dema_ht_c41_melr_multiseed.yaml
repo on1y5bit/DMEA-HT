@@ -34,7 +34,7 @@ c41:
   fixed_recency_kernel: inverse_log2_age
   learned_visit_score: false
   shortcut_fields_used_as_inputs: false
-  trainable_parameter_limit: 1000000
+  trainable_parameter_limit: 2000000
 
 training:
   seeds: [0, 42, 3407]
