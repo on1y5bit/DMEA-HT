@@ -186,7 +186,10 @@ def prediction_row(
         "visit_count_audit_only": int(batch["visit_mask"].detach().cpu().numpy()[index].sum()),
         "evidence_valid_count": int(arrays["evidence_valid"][index].sum()),
         "bio_valid_count": int(
-            bool(arrays["latest_bio_valid"][index]) or bool(arrays["history_bio_valid"][index])
+            np.logical_or(
+                np.asarray(arrays["latest_bio_valid"][index], dtype=bool),
+                np.asarray(arrays["history_bio_valid"][index], dtype=bool),
+            ).sum()
         ),
         "patient_state_norm": float(np.linalg.norm(arrays["patient_state"][index])),
         "patient_state_component_std": float(np.std(arrays["patient_state"][index])),
