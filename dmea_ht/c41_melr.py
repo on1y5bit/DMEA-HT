@@ -57,10 +57,11 @@ def _masked_mean(
 
 
 class FrozenC17ModalitySources(nn.Module):
-    """Frozen source encoders and pre-propagation evidence projectors."""
+    """C17 source encoders/projectors with a compatibility trainable mode."""
 
-    def __init__(self, config: Dict[str, Any], seed: int) -> None:
+    def __init__(self, config: Dict[str, Any], seed: int, trainable: bool = False) -> None:
         super().__init__()
+        self.predictive_trainable = bool(trainable)
         model_cfg = dict(config["model"])
         hidden_dim = int(model_cfg["hidden_dim"])
         dropout = float(model_cfg["dropout"])
@@ -88,11 +89,12 @@ class FrozenC17ModalitySources(nn.Module):
             _prefixed_state(state, "mechanism_evidence_alignment.bio."), strict=True
         )
         for parameter in self.parameters():
-            parameter.requires_grad_(False)
-        self.eval()
+            parameter.requires_grad_(self.predictive_trainable)
+        if not self.predictive_trainable:
+            self.eval()
 
     def train(self, mode: bool = True) -> "FrozenC17ModalitySources":
-        super().train(False)
+        super().train(mode if self.predictive_trainable else False)
         return self
 
 

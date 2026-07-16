@@ -25,6 +25,7 @@ class C61CBPIModel(C59PMESEModel):
         translated = dict(config)
         translated["c59"] = dict(config["c61"])
         super().__init__(translated, seed)
+        self.end_to_end = bool(config.get("end_to_end", False))
         delattr(self, "instance_encoder")
 
         model_cfg = dict(config["model"])
@@ -95,8 +96,11 @@ class C61CBPIModel(C59PMESEModel):
         return features, available & source["visit_mask"].bool()
 
     def forward(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
-        with torch.no_grad():
+        if self.end_to_end:
             source = self._source_states(batch)
+        else:
+            with torch.no_grad():
+                source = self._source_states(batch)
 
         multimodal_features, visit_valid = self._multimodal_features(source)
         multimodal_token = self.multimodal_encoder(multimodal_features)

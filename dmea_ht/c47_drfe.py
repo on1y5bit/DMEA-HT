@@ -27,7 +27,8 @@ class C47DRFEModel(nn.Module):
         dropout = float(model_cfg["dropout"])
         self.hidden_dim = hidden_dim
         self.seed = int(seed)
-        self.sources = FrozenC17ModalitySources(config, seed)
+        self.end_to_end = bool(config.get("end_to_end", False))
+        self.sources = FrozenC17ModalitySources(config, seed, trainable=self.end_to_end)
         self.stream_encoder = nn.Sequential(
             nn.LayerNorm(hidden_dim * 4),
             nn.Linear(hidden_dim * 4, hidden_dim),
@@ -54,7 +55,7 @@ class C47DRFEModel(nn.Module):
 
     def train(self, mode: bool = True) -> "C47DRFEModel":
         nn.Module.train(self, mode)
-        self.sources.eval()
+        self.sources.train(mode if self.end_to_end else False)
         return self
 
     def _source_states(self, batch: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:

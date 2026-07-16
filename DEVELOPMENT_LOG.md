@@ -3575,3 +3575,18 @@
 - Final delivery commit: `277f6a044fd31e0c90a6f518d9681138f0b44ae4`.
 - `FINAL_C61_DELIVERY_PASS`, `GOAL_REACHED_DEMA_HT_AUC_090_PLUS`, `FREEZE_DEMA_C61_CBPI_FINAL`, and `STOP_FURTHER_OPTIMIZATION` are active.
 - Further model optimization is stopped.
+
+## 2026-07-16 Phase C62-E2E-CBPI Full End-to-End Training
+
+- The updated training contract rejects partial freezing as an acceptable final-model strategy.
+- C61-CBPI remains a historical partially frozen reference with mean Validation AUC `0.9085559077`, and is not relabeled as the full-training final model.
+- C62 retains the C61 architecture and initializes each formal seed from its corresponding C61 Validation-selected checkpoint.
+- Every parameterized module contributing to the final patient logit is intended to train from the first optimizer step: image encoder, text encoder, bio encoder, evidence projectors, C61 evidence organization, multimodal instance encoder, continuous-bio encoder, joint instance encoder, patient readout, and classifier.
+- C62 must keep all predictive parameters in nonzero-learning-rate optimizer groups, show finite nonzero real-batch gradients, and show nonzero selected-checkpoint updates by module group.
+- No predictive module may be frozen, kept eval-only, wrapped in `torch.no_grad`, detached, assigned zero learning rate, or activated by gradual unfreezing.
+- The fixed continuous biochemical basis remains `[x, tanh(x), x*tanh(x)]`; patient-level fixed set statistics remain unchanged.
+- BCE with logits is the only loss. Formal seeds are `[0,42,3407]`, with Validation AUC as the only checkpoint-selection metric.
+- No smoke, pilot, partial-freeze variant, gradual-unfreezing variant, sweep, EMA, ensemble, averaging, AUPRC, calibration, threshold tuning, or Test-based selection is authorized.
+- Test remains reporting-only after the Validation decision is frozen.
+- Added `configs/dema_ht_c62_e2e_cbpi_multiseed.yaml`, `scripts/c62_common.py`, `scripts/gate_phase_c62_e2e_cbpi.py`, `scripts/train_phase_c62.py`, and `scripts/collect_phase_c62_report.py`.
+- Local implementation and the 20-check C62 Gate are pending server execution; no C62 training result is valid before the Gate and full-training audits pass.
