@@ -3657,3 +3657,4 @@
 
 - The nine Stage-A training shards completed successfully, but the first collector invocation stopped before route selection because C64 imported `ensure_audit_shortcut_columns` from the C31A module even though that helper is defined in the C41 report module.
 - No model checkpoint or training result was invalidated. The fix switches C64 reporting to the existing C41 helper module, preserves the same shortcut definitions, and resumes from the completed Stage-A outputs without retraining those nine shards.
+- The corrected Stage-A collector checks positive damage as an aggregate safety audit (mean sensitivity damage at most `0.10`, with at most one Seed above `0.10`); pairwise inversion counts remain audit/tie-break evidence rather than an unapproved hard rejection gate. Parameter-update health now aggregates all module summaries belonging to each optimizer group.

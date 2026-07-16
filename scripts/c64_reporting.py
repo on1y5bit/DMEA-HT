@@ -168,7 +168,11 @@ def parameter_health(run_dir: Path, candidate: str) -> Dict[str, Any]:
     update_ok = True
     for group in expected_groups:
         rows = summaries[summaries["optimizer_group"].astype(str) == group]
-        update_ok &= len(rows) == 1 and bool(rows.iloc[0]["updated"]) and bool(rows.iloc[0]["finite"])
+        update_ok &= (
+            len(rows) > 0
+            and rows["updated"].map(bool_value).all()
+            and rows["finite"].map(bool_value).all()
+        )
     diagnostics_path = run_dir / "patient_diagnostics_val.csv"
     prediction_ok = False
     if diagnostics_path.exists():

@@ -48,9 +48,9 @@ def final_health(run_dir: Path, candidate: str, seed: int) -> Dict[str, Any]:
     updates = pd.read_csv(run_dir / "parameter_update_audit.csv")
     summaries = updates[updates["kind"].astype(str) == "module_summary"]
     update_pass = all(
-        len(summaries[summaries["optimizer_group"].astype(str) == group]) == 1
-        and bool(summaries.loc[summaries["optimizer_group"].astype(str) == group, "updated"].iloc[0])
-        and bool(summaries.loc[summaries["optimizer_group"].astype(str) == group, "finite"].iloc[0])
+        len(summaries[summaries["optimizer_group"].astype(str) == group]) > 0
+        and summaries.loc[summaries["optimizer_group"].astype(str) == group, "updated"].map(reporting.bool_value).all()
+        and summaries.loc[summaries["optimizer_group"].astype(str) == group, "finite"].map(reporting.bool_value).all()
         for group in expected
     )
     gradient = pd.read_csv(run_dir / "gradient_connectivity.csv")

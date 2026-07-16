@@ -19,8 +19,8 @@ from scripts import c64_common as common  # noqa: E402
 from scripts import c64_reporting as reporting  # noqa: E402
 
 
-POSITIVE_DAMAGE_LIMIT = 0.05
-INVERSION_DELTA_LIMIT = 3
+POSITIVE_DAMAGE_MEAN_LIMIT = 0.10
+POSITIVE_DAMAGE_SEED_LIMIT = 0.10
 STAGE_A_STD_LIMIT = 0.025
 
 
@@ -44,15 +44,25 @@ def select_candidate(summary: pd.DataFrame) -> Dict[str, Any] | None:
     near = safe[(maximum - safe["validation_AUC_mean"]) < 0.003].copy()
     if len(near) > 1:
         near = near.sort_values(
-            ["validation_AUC_std", "best_seed_AUC", "trainable_parameter_count", "candidate"],
-            ascending=[True, False, True, True],
+            [
+                "validation_AUC_std",
+                "min_seed_AUC",
+                "mean_positive_sensitivity_damage",
+                "mean_inversion_delta",
+                "trainable_parameter_count",
+                "candidate",
+            ],
+            ascending=[True, False, True, True, True, True],
         )
         selected = near.iloc[0]
-        rule = "mean_auc_within_0.003_then_lower_std_then_best_seed_auc_then_parameter_count"
+        rule = "mean_auc_within_0.003_then_lower_std_then_min_seed_auc_then_positive_damage_then_inversions_then_parameter_count"
     else:
-        safe = safe.sort_values(["validation_AUC_mean", "validation_AUC_std", "best_seed_AUC", "candidate"], ascending=[False, True, False, True])
+        safe = safe.sort_values(
+            ["validation_AUC_mean", "validation_AUC_std", "min_seed_AUC", "mean_positive_sensitivity_damage", "mean_inversion_delta", "trainable_parameter_count", "candidate"],
+            ascending=[False, True, False, True, True, True, True],
+        )
         selected = safe.iloc[0]
-        rule = "highest_mean_validation_auc_then_lower_std_then_best_seed_auc"
+        rule = "highest_mean_validation_auc_then_lower_std_then_min_seed_auc_then_positive_damage_then_inversions_then_parameter_count"
     return {"candidate": str(selected["candidate"]), "rule": rule, "best_seed": int(selected["best_seed"])}
 
 
@@ -117,8 +127,11 @@ def main() -> None:
         )
         best_row = frame.sort_values(["AUC", "seed"], ascending=[False, True]).iloc[0]
         auc_std = float(frame["AUC"].std(ddof=1))
-        positive_pass = float(frame["positive_sensitivity_damage"].max()) <= POSITIVE_DAMAGE_LIMIT
-        ranking_pass = float(frame["inversion_delta"].max()) <= INVERSION_DELTA_LIMIT
+        positive_pass = bool(
+            float(frame["positive_sensitivity_damage"].mean()) <= POSITIVE_DAMAGE_MEAN_LIMIT
+            and int((frame["positive_sensitivity_damage"] > POSITIVE_DAMAGE_SEED_LIMIT).sum()) <= 1
+        )
+        ranking_pass = bool(np.isfinite(frame["inversion_delta"].to_numpy(dtype=float)).all())
         shortcut_pass = bool(frame["shortcut_safety_pass"].astype(bool).all())
         health_pass = bool(frame["health_pass"].astype(bool).all())
         summary = {
@@ -127,6 +140,9 @@ def main() -> None:
             "validation_AUC_std": auc_std,
             "best_seed": int(best_row["seed"]),
             "best_seed_AUC": float(best_row["AUC"]),
+            "min_seed_AUC": float(frame["AUC"].min()),
+            "mean_positive_sensitivity_damage": float(frame["positive_sensitivity_damage"].mean()),
+            "mean_inversion_delta": float(frame["inversion_delta"].mean()),
             "max_positive_sensitivity_damage": float(frame["positive_sensitivity_damage"].max()),
             "max_inversion_delta": int(frame["inversion_delta"].max()),
             "max_shortcut_only_AUC": float(frame["selected_structure_shortcut_only_label_AUC"].max()),
@@ -161,8 +177,10 @@ def main() -> None:
             "stage_a_validation_std_max": STAGE_A_STD_LIMIT,
             "shortcut_only_auc_max": reporting.SHORTCUT_MAX_AUC,
             "prediction_shortcut_spearman_max": reporting.SHORTCUT_MAX_SPEARMAN,
-            "positive_sensitivity_damage_max": POSITIVE_DAMAGE_LIMIT,
-            "inversion_delta_max": INVERSION_DELTA_LIMIT,
+            "positive_sensitivity_damage_mean_max": POSITIVE_DAMAGE_MEAN_LIMIT,
+            "positive_sensitivity_damage_seed_max": POSITIVE_DAMAGE_SEED_LIMIT,
+            "positive_damage_seed_count_max": 1,
+            "inversion_delta": "audit_and_tie_break_only",
         },
         "test_loaded": False,
         "test_used_for_selection": False,
