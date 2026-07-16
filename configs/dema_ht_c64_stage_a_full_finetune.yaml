@@ -1,0 +1,99 @@
+phase: c64
+candidate: C_FULL_LOW_LR
+
+project:
+  name: dema_ht_c64_stage_a_full_finetune
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  stage_a_output_dir: runs/dema_ht_c64_stage_a
+  cv_output_dir: runs/dema_ht_c64_cv
+  final_output_dir: runs/dema_ht_c64_final
+  report_dir: analysis_reports/phase_c64_dema
+
+model:
+  name: dema_ht
+  variant: c61_cbpi
+  architecture: c61_cbpi
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_visit: 4
+  image_size: 224
+  dropout: 0.10
+  mea_num_heads: 4
+
+c17:
+  c17_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_{seed}_best.pt
+
+initialization:
+  mode: c61_checkpoint_warm_start
+  c61_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c61_cbpi_multiseed/checkpoints/seed_{seed}_best.pt
+  c61_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c61_cbpi_multiseed
+  use_c63_checkpoint: false
+  use_c62_checkpoint: false
+  saved_prediction_input: false
+  saved_representation_input: false
+
+c61:
+  hypothesis: continuous_biochemical_patient_instance_fusion
+  source: c61_validation_checkpoint_warm_start
+  stream_order: [raw_image, raw_text, raw_bio, aligned_image, aligned_text, aligned_bio]
+  instance_input: modality_mean_resolution_gap_pairwise_products
+  instance_dim: 128
+  continuous_bio_projection_dim: 128
+  bio_basis_order: 3
+  patient_dim: 128
+  classifier_hidden_dim: 64
+  learned_visit_score: false
+  temporal_attention: false
+  router: false
+  visit_selector: false
+  shortcut_fields_used_as_inputs: false
+  missingness_as_classifier_feature: false
+
+training:
+  seeds: [0, 42, 3407]
+  batch_size: 4
+  effective_batch_size: 4
+  gradient_accumulation_steps: 1
+  base_lr: 0.0001
+  weight_decay: 0.0005
+  max_epochs: 60
+  patience: 15
+  primary_metric: val_AUC
+  checkpoint_metric: val_auc
+  num_workers: 2
+  dataloader_seeded: true
+
+learning_rate_factors:
+  image_text_encoders: 0.05
+  bio_source_encoder: 0.10
+  evidence_projectors: 0.25
+  c61_task_path: 1.00
+
+loss:
+  bce_only: true
+
+evaluation:
+  test_reporting_only: true
+  test_locked_until_final_contract: true
+  auprc: false
+
+deployment:
+  one_checkpoint: true
+  one_model: true
+  one_forward: true
+  ensemble: false
+  prediction_averaging: false
+  checkpoint_averaging: false
+
+historical:
+  c17_mean_validation_auc: 0.8696242643730194
+  c27_mean_validation_auc: 0.8822996831145314
+  c61_mean_validation_auc: 0.9085559076505206
+  c62_mean_validation_auc: 0.9078014184397163
+
+audit:
+  c17_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed
+  c27_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c27_vtme_multiseed
