@@ -3628,3 +3628,11 @@
 - Aggregate positive preservation was C17 TP-to-C63 FN / FN-to-C63 TP `9/16`; C27-to-C63 repaired/introduced pairs were `360/276`.
 - Reporting-only Test AUC was `0.8272864701 +/- 0.0235403020`; Test was run after the Validation decision and did not affect selection or promotion.
 - Canonical completion evidence: `runs/dema_ht_c63_from_base_e2e_cbpi_multiseed/reports/run_status.json` is `COMPLETE`, and the log ends with `C63_FROM_BASE_E2E_DIRECT_MULTI_SEED_COMPLETE`.
+
+### C63 Data Volume And Runtime Audit
+
+- The canonical manifest `manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl` contains `780` lines and `780` unique patient IDs with no duplicate patient rows. The split is train `602 (301/301)`, Validation `94 (47/47)`, and Test `84 (42/42)`.
+- The manifest contains `1,932` historical visits, with `1-6` visits per patient and mean `2.476923`. It contains exactly `4` image paths per visit (`7,728` image paths total), matching `max_images_per_visit: 4`; no referenced image path is missing.
+- The ma-environment DataLoader uses the full split lengths: train `602` samples / `151` batches, Validation `94` / `24`, and Test `84` / `21`, all at batch size `4`. The loader has no subset, row limit, or batch truncation; the training loop iterates each loader completely.
+- A read-only decode audit successfully loaded all `7,728` referenced images with `0` failures. There are `1,929` nonempty report visits and `1,932` dated biochemical visit records.
+- The run was fast because the dataset is `602` training patients rather than a large population, the custom model is about `14.37M` trainable parameters, the RTX 5090 processed `151` training batches per epoch, and the predeclared `patience: 10` stopped the seeds at epochs `18/16/24` rather than the `50`-epoch upper bound. This audit found no evidence of data truncation or silent image-read failure.
