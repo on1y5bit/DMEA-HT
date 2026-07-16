@@ -104,7 +104,12 @@ def freeze_validation_decision(config: Mapping[str, Any], run_dir: Path, report_
     gate_pass = gate.get("status") == "C62_E2E_CBPI_DIRECT_MULTI_SEED_AUTHORIZED" and int(gate.get("passed", 0)) == int(gate.get("total", 0)) == 20
     inventory = pd.read_csv(run_dir / "reports" / "trainable_parameter_inventory.csv")
     per_seed_parameter_count = inventory.groupby("seed")["parameter_count"].sum() if "seed" in inventory.columns else pd.Series(dtype=float)
-    capacity_pass = not inventory.empty and not per_seed_parameter_count.empty and int(per_seed_parameter_count.max()) <= int(config["c62"]["trainable_parameter_limit"]) and inventory["requires_grad"].astype(bool).all()
+    capacity_pass = bool(
+        not inventory.empty
+        and not per_seed_parameter_count.empty
+        and int(per_seed_parameter_count.max()) <= int(config["c62"]["trainable_parameter_limit"])
+        and inventory["requires_grad"].astype(bool).all()
+    )
     auc_values = comparisons["AUC"].to_numpy(dtype=float)
     mean_auc = float(auc_values.mean())
     std_auc = float(auc_values.std(ddof=1))
