@@ -3652,3 +3652,8 @@
 - The canonical server C64 gate passed `92/92` with status `C64_STAGED_TUNING_CV_AUTHORIZED`. It verified the exact manifest hash, C61 checkpoint warm-start paths, candidate freeze scopes, positive optimizer factors, and real-batch finite nonzero gradients plus real updates for all candidate-seed combinations.
 - Formal execution is authorized to start as a detached Stage-A -> CV -> fixed-epoch final-training autorun. No Test loader is authorized before the final training contract is frozen.
 - Launch evidence: the canonical server detached autorun is running from commit `d71c88b`, with log `c64_autorun_20260716.log`; Stage A has spawned all nine candidate-seed training shards. This session intentionally stops status polling after normal training start.
+
+### C64 Stage-A Collection Recovery
+
+- The nine Stage-A training shards completed successfully, but the first collector invocation stopped before route selection because C64 imported `ensure_audit_shortcut_columns` from the C31A module even though that helper is defined in the C41 report module.
+- No model checkpoint or training result was invalidated. The fix switches C64 reporting to the existing C41 helper module, preserves the same shortcut definitions, and resumes from the completed Stage-A outputs without retraining those nine shards.

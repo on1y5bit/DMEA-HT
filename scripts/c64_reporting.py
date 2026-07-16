@@ -12,7 +12,7 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 
 from scripts import c64_common as common
-from scripts import collect_phase_c31a_report as base
+from scripts import collect_phase_c41_report as base
 from scripts import train_phase_c40 as core
 
 
