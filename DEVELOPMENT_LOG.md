@@ -3572,6 +3572,6 @@
 - Seed42 single-checkpoint Validation reproduction passed with max absolute saved-vs-rerun probability error `0.0`.
 - Final delivery artifacts were generated at `analysis_reports/final_c61_delivery/` on the canonical server checkout.
 - Delivery tooling commit: `0ce679049ad4daab4418f691e5f5c78d6fd7681f`.
-- Final delivery commit: to be recorded in the follow-up metadata commit.
+- Final delivery commit: `277f6a044fd31e0c90a6f518d9681138f0b44ae4`.
 - `FINAL_C61_DELIVERY_PASS`, `GOAL_REACHED_DEMA_HT_AUC_090_PLUS`, `FREEZE_DEMA_C61_CBPI_FINAL`, and `STOP_FURTHER_OPTIMIZATION` are active.
 - Further model optimization is stopped.
