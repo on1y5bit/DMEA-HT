@@ -3590,3 +3590,18 @@
 - Test remains reporting-only after the Validation decision is frozen.
 - Added `configs/dema_ht_c62_e2e_cbpi_multiseed.yaml`, `scripts/c62_common.py`, `scripts/gate_phase_c62_e2e_cbpi.py`, `scripts/train_phase_c62.py`, and `scripts/collect_phase_c62_report.py`.
 - Local implementation and the 20-check C62 Gate are pending server execution; no C62 training result is valid before the Gate and full-training audits pass.
+
+## 2026-07-16 Phase C62-E2E-CBPI Execution Result
+
+- The implementation commit was `aa0edbc`; the server Gate ran on the follow-up audit-vector fix commit `6027583`. The report-serialization fix was `037f88a`; all three commits are on `main` and pushed to GitHub.
+- The server-side GitHub pull hit a repeated GnuTLS receive failure, so the exact pushed commits were transferred by verified Git bundle and fast-forwarded on the canonical server checkout. No local training was run.
+- The first formal launch reached the first training batch for all three seeds but failed only while serializing the seven-dimensional biochemical validity audit field. The incomplete output was preserved as `runs/dema_ht_c62_e2e_cbpi_multiseed_failed_audit_vector_20260716`; it is not a result.
+- After the fix, the C62 Gate passed `20/20` with status `C62_E2E_CBPI_DIRECT_MULTI_SEED_AUTHORIZED` on CUDA/NVIDIA RTX 5090. The manifest hash was `cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b`; patient-level counts were train `602 (301/301)`, Validation `94 (47/47)`, Test `84 (42/42)`.
+- The Gate found `14,370,220` trainable parameters per seed and zero frozen predictive parameters. Optimizer groups were: modality encoders `27` tensors / `12,914,304` parameters at `5e-6`; evidence source modules `42` tensors / `993,793` parameters at `1e-5`; C61 task-specific path `30` tensors / `462,123` parameters at `1e-4`; all with weight decay `1e-4`.
+- C61 initialization reproduction passed for all seeds with exact patient IDs, labels, classes, and maximum probability differences of `2.384e-7` (seed 0), `1.192e-7` (seed 42), and `1.192e-7` (seed 3407), all within the `1e-6` contract.
+- Direct full end-to-end training completed for seeds `[0, 42, 3407]`. Validation-selected epochs/AUC were: seed 0 epoch `18`, `0.9094612947`; seed 42 epoch `7`, `0.9049343594`; seed 3407 epoch `4`, `0.9090086012`.
+- Validation mean/std AUC was `0.9078014184 +/- 0.0024932415`; the AUC gate passed. Mean AUC differences were `-0.0007544892` vs C61, `+0.0255017353` vs C27, and `+0.0381771541` vs C17.
+- Full-training health passed `24/24` rows. Every predictive group had finite nonzero gradients and nonzero selected-checkpoint updates across all seeds; group relative update ranges were modality encoders `3.966e-5` to `9.534e-5`, evidence source modules `0.002615` to `0.005320`, and C61 task-specific path `0.014890` to `0.032516`.
+- Positive safety passed with aggregate C17 TP-to-C62 FN / FN-to-C62 TP `9/19`; ranking safety passed with C27-to-C62 repaired/introduced pairs `395/226`; shortcut safety passed with maximum shortcut-only label AUC `0.2833861476`.
+- Reporting-only Test completed after Validation freeze with mean/std AUC `0.8456160242 +/- 0.0059004138`; it did not affect selection or promotion.
+- Final decision: `PROMOTE_DEMA_C62_E2E_CBPI_FULL_TRAINING_COMPLIANT`. C61 remains `HISTORICAL_PARTIALLY_FROZEN_REFERENCE`, not the C62 full-training model and not replaced as a strict-best result. The single deployment checkpoint is seed `3407`: `/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c62_e2e_cbpi_multiseed/checkpoints/seed_3407_best.pt`.
