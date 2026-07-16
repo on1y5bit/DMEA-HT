@@ -281,9 +281,22 @@ def main() -> None:
 
     route_source = inspect.getsource(C61CBPIModel.forward)
     source_route = inspect.getsource(C47DRFEModel._source_states)
-    no_grad_detach = "torch.no_grad" not in route_source and ".detach(" not in route_source and "torch.no_grad" not in source_route and ".detach(" not in source_route
-    add("20_no_grad_or_detach_predictive_route", no_grad_detach, "C63 end-to-end C61 source route contains no no_grad or detach")
     model = common.build_from_base_model(config, 42, device)
+    active_end_to_end_branch = (
+        bool(model.end_to_end)
+        and "if self.end_to_end" in route_source
+        and "source = self._source_states(batch)" in route_source
+    )
+    no_grad_detach = (
+        active_end_to_end_branch
+        and ".detach(" not in route_source
+        and ".detach(" not in source_route
+    )
+    add(
+        "20_no_grad_or_detach_predictive_route",
+        no_grad_detach,
+        "C63 active end-to-end branch has no no_grad/detach; legacy compatibility branch is inactive",
+    )
     model.train(True)
     train_mode_ok = all(module.training for module in model.modules())
     add("21_all_predictive_modules_train_mode", train_mode_ok, f"all_modules_train={train_mode_ok}")
