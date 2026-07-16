@@ -3605,3 +3605,14 @@
 - Positive safety passed with aggregate C17 TP-to-C62 FN / FN-to-C62 TP `9/19`; ranking safety passed with C27-to-C62 repaired/introduced pairs `395/226`; shortcut safety passed with maximum shortcut-only label AUC `0.2833861476`.
 - Reporting-only Test completed after Validation freeze with mean/std AUC `0.8456160242 +/- 0.0059004138`; it did not affect selection or promotion.
 - Final decision: `PROMOTE_DEMA_C62_E2E_CBPI_FULL_TRAINING_COMPLIANT`. C61 remains `HISTORICAL_PARTIALLY_FROZEN_REFERENCE`, not the C62 full-training model and not replaced as a strict-best result. The single deployment checkpoint is seed `3407`: `/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c62_e2e_cbpi_multiseed/checkpoints/seed_3407_best.pt`.
+
+## 2026-07-16 Phase C63-FS-CBPI From-Base End-to-End Training
+
+- The user requested a clean from-base retraining. C61 is retained as `HISTORICAL_PARTIALLY_FROZEN_REFERENCE`; C62 is reclassified as `HISTORICAL_FULL_PARAMETER_WARM_START_REFERENCE` because it initialized from C61 Validation-selected task checkpoints.
+- C63 is the first from-base full-training candidate. It must not load any checkpoint trained on the current HT task, including C13, C17, C27, C37, C59, C61, or C62 checkpoints.
+- The existing image/text/bio encoders and evidence projectors are project-specific modules without a frozen public-pretrained source in this repository. C63 therefore uses deterministic per-Seed random initialization for every task-specific module; public pretrained backbone source is `NONE`.
+- C63 retains the C61-CBPI architecture, fixed continuous biochemical basis `[x, tanh(x), x*tanh(x)]`, fixed patient-level set statistics, patient-level split/labels/manifest, BCEWithLogitsLoss, Validation-AUC-only checkpoint selection, and reporting-only Test.
+- All predictive parameters must be trainable from optimizer step 1 with no freeze, eval-only route, `torch.no_grad`, detach, zero learning rate, or gradual unfreezing. Optimizer groups are image/text encoders `1.00 * base_lr`, bio encoder plus evidence projectors `0.50 * base_lr`, and C61 task-specific path `1.00 * base_lr`.
+- Formal Seeds are `[0,42,3407]`; the fixed formal budget is `50` epochs with the predeclared Validation-AUC patience rule. No smoke, pilot, sweep, fallback, ensemble, EMA, distillation, ranking loss, AUPRC, or Test-based selection is authorized.
+- Added `configs/dema_ht_c63_from_base_e2e_cbpi_multiseed.yaml`, `scripts/c63_common.py`, `scripts/gate_phase_c63_from_base_e2e_cbpi.py`, `scripts/train_phase_c63.py`, and `scripts/collect_phase_c63_report.py`. The from-base model path is implemented as an explicit compatibility branch; legacy C61/C62 checkpoint loading remains available only when `from_base` is false.
+- Execution status at log time: local implementation checks passed; the 24-check server Gate and direct three-Seed training are pending.

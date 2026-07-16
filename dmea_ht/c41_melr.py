@@ -62,6 +62,11 @@ class FrozenC17ModalitySources(nn.Module):
     def __init__(self, config: Dict[str, Any], seed: int, trainable: bool = False) -> None:
         super().__init__()
         self.predictive_trainable = bool(trainable)
+        initialization = dict(config.get("initialization", {}))
+        self.from_base = bool(
+            config.get("from_base", False) or initialization.get("mode") == "from_base"
+        )
+        self.initialization_type = "random_task_specific" if self.from_base else "task_checkpoint_compatibility"
         model_cfg = dict(config["model"])
         hidden_dim = int(model_cfg["hidden_dim"])
         dropout = float(model_cfg["dropout"])
@@ -74,20 +79,21 @@ class FrozenC17ModalitySources(nn.Module):
         self.text_projector = TextEvidenceRoleProjector(hidden_dim, dropout)
         self.bio_projector = BioEvidenceProjector(hidden_dim, dropout)
 
-        checkpoint = Path(str(config["c17"]["c17_checkpoint"]).replace("{seed}", str(seed)))
-        state = _checkpoint_state(checkpoint)
-        self.image_encoder.load_state_dict(_prefixed_state(state, "base_model.image_encoder."), strict=True)
-        self.text_encoder.load_state_dict(_prefixed_state(state, "base_model.text_encoder."), strict=True)
-        self.bio_encoder.load_state_dict(_prefixed_state(state, "base_model.bio_encoder."), strict=True)
-        self.image_projector.load_state_dict(
-            _prefixed_state(state, "mechanism_evidence_alignment.image."), strict=True
-        )
-        self.text_projector.load_state_dict(
-            _prefixed_state(state, "mechanism_evidence_alignment.text."), strict=True
-        )
-        self.bio_projector.load_state_dict(
-            _prefixed_state(state, "mechanism_evidence_alignment.bio."), strict=True
-        )
+        if not self.from_base:
+            checkpoint = Path(str(config["c17"]["c17_checkpoint"]).replace("{seed}", str(seed)))
+            state = _checkpoint_state(checkpoint)
+            self.image_encoder.load_state_dict(_prefixed_state(state, "base_model.image_encoder."), strict=True)
+            self.text_encoder.load_state_dict(_prefixed_state(state, "base_model.text_encoder."), strict=True)
+            self.bio_encoder.load_state_dict(_prefixed_state(state, "base_model.bio_encoder."), strict=True)
+            self.image_projector.load_state_dict(
+                _prefixed_state(state, "mechanism_evidence_alignment.image."), strict=True
+            )
+            self.text_projector.load_state_dict(
+                _prefixed_state(state, "mechanism_evidence_alignment.text."), strict=True
+            )
+            self.bio_projector.load_state_dict(
+                _prefixed_state(state, "mechanism_evidence_alignment.bio."), strict=True
+            )
         for parameter in self.parameters():
             parameter.requires_grad_(self.predictive_trainable)
         if not self.predictive_trainable:

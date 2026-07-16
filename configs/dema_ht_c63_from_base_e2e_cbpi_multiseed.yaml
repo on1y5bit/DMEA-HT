@@ -1,0 +1,94 @@
+phase: c63
+from_base: true
+end_to_end: true
+
+project:
+  name: dema_ht_c63_from_base_e2e_cbpi_multiseed
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  output_dir: runs/dema_ht_c63_from_base_e2e_cbpi_multiseed
+  report_dir: analysis_reports/phase_c63_dema
+
+initialization:
+  mode: from_base
+  use_dema_task_checkpoint: false
+  use_c61_checkpoint: false
+  use_c62_checkpoint: false
+  public_pretrained_backbone_only: true
+  use_public_pretrained_backbone: false
+  public_pretrained_backbones: []
+  random_initialize_task_specific_modules: true
+  saved_prediction_input: false
+  saved_representation_input: false
+  task_checkpoint_allowlist: []
+
+model:
+  name: dema_ht
+  variant: c61_cbpi
+  architecture: c61_cbpi
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_visit: 4
+  image_size: 224
+  dropout: 0.10
+  mea_num_heads: 4
+
+c61:
+  hypothesis: continuous_biochemical_patient_instance_fusion
+  source: from_base_random_raw_and_prepropagated_states_plus_raw_continuous_bio
+  stream_order: [raw_image, raw_text, raw_bio, aligned_image, aligned_text, aligned_bio]
+  instance_input: modality_mean_resolution_gap_pairwise_products
+  instance_dim: 128
+  continuous_bio_projection_dim: 128
+  bio_basis_order: 3
+  patient_dim: 128
+  classifier_hidden_dim: 64
+  learned_visit_score: false
+  temporal_attention: false
+  router: false
+  visit_selector: false
+  shortcut_fields_used_as_inputs: false
+  missingness_as_classifier_feature: false
+
+historical:
+  c61_mean_validation_auc: 0.9085559076505206
+  c62_mean_validation_auc: 0.9078014184397163
+  c27_mean_validation_auc: 0.8822996831145314
+  c17_mean_validation_auc: 0.8696242643730194
+  c61_test_mean_auc: 0.8631897203
+  c62_test_mean_auc: 0.8456160242
+
+training:
+  seeds: [0, 42, 3407]
+  batch_size: 4
+  effective_batch_size: 4
+  gradient_accumulation_steps: 1
+  lr: 0.0001
+  weight_decay: 0.0001
+  epochs: 50
+  patience: 10
+  primary_metric: val_AUC
+  checkpoint_metric: val_auc
+  num_workers: 2
+  evaluate_test_after_validation_decision: true
+  dataloader_seeded: true
+
+learning_rate_groups:
+  image_text_encoders: 1.00
+  bio_encoder_and_evidence_projectors: 0.50
+  c61_task_specific_path: 1.00
+
+loss:
+  bce_only: true
+
+evaluation:
+  test_reporting_only: true
+  auprc: false
+
+deployment:
+  one_checkpoint: true
+  one_model: true
+  one_forward: true
+  ensemble: false
