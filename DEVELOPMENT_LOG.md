@@ -3618,3 +3618,13 @@
 - Execution status: local implementation checks passed. After the active end-to-end route audit was corrected, the canonical server Gate passed exactly `24/24` at commit `74f7d29` with status `C63_FROM_BASE_E2E_DIRECT_MULTI_SEED_AUTHORIZED`.
 - The formal run is authorized as direct multi-seed training for seeds `[0,42,3407]`, with `50` epochs, BCEWithLogitsLoss, Validation-AUC-only checkpoint selection, and reporting-only Test. It is launched detached after this log update; no smoke or pilot run is used.
 - C63 formal Validation/Test results remain pending and must be appended only after the detached driver completes its own training and collection stages.
+
+### C63 Formal Result And Decision
+
+- The detached C63 driver completed direct full end-to-end training for seeds `[0,42,3407]` on CUDA/NVIDIA GeForce RTX 5090. Each seed completed with from-base initialization and no task checkpoint loaded; the selected epochs were seed `0: 8`, seed `42: 6`, and seed `3407: 14`.
+- Validation AUC was `0.9031235853 / 0.8918062472 / 0.8899954731`, mean/std `0.8949751019 +/- 0.0071146372`. The mean improved versus C17 by `+0.0253508375` and versus C27 by `+0.0126754187`, but the AUC target gate was not reached.
+- The final decision is `DEMA_C63_FROM_BASE_AUC_TARGET_NOT_REACHED`; no deployment checkpoint was selected. C61 remains the historical partially frozen reference and C62 remains the historical full-parameter warm-start reference.
+- Full-training health passed `72/72`; frozen predictive parameters were `0`, all optimizer groups had positive learning rates and nonzero selected-checkpoint updates, and the maximum shortcut-only label AUC was `0.2833861476`.
+- Aggregate positive preservation was C17 TP-to-C63 FN / FN-to-C63 TP `9/16`; C27-to-C63 repaired/introduced pairs were `360/276`.
+- Reporting-only Test AUC was `0.8272864701 +/- 0.0235403020`; Test was run after the Validation decision and did not affect selection or promotion.
+- Canonical completion evidence: `runs/dema_ht_c63_from_base_e2e_cbpi_multiseed/reports/run_status.json` is `COMPLETE`, and the log ends with `C63_FROM_BASE_E2E_DIRECT_MULTI_SEED_COMPLETE`.
