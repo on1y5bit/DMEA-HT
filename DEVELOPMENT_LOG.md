@@ -3556,3 +3556,22 @@
 - Validation was frozen before Test as `GOAL_REACHED_DEMA_HT_AUC_090_PLUS`; Test was not used for selection, and no ensemble, threshold tuning, or prediction/checkpoint averaging was used. The median Validation seed is seed `42`; the single deployment checkpoint is `/home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c61_cbpi_multiseed/checkpoints/seed_42_best.pt`.
 - Freeze evidence on the canonical server: commit `ec0aec77ebeaf299f928874ab6e57ce991d65dbe`; manifest SHA-256 `cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b`; config SHA-256 `c784dd0bfd7269683f4b1cd04c0636538c77cc6e4a18b678b16a533ecd813317`; deployment checkpoint SHA-256 `57e00f284b3334936e2c9eccf02d9035cfa64173a663c0a1339b141ca48c5bd6`.
 - `GOAL_REACHED_DEMA_HT_AUC_090_PLUS`: freeze C61-CBPI as the final model, retain only the seed-42 checkpoint for one-checkpoint/one-model/one-forward deployment, and stop further optimization.
+
+## 2026-07-16 Final C61 Reproducible Delivery
+
+- Goal `DEMA_HT_AUC_090_PLUS` was reached by `DEMA-HT C61-CBPI`.
+- Formal Validation AUC was `0.8981439565 / 0.9013128112 / 0.9262109552`, mean/std `0.9085559077 +/- 0.0153715952`.
+- Two of three formal seeds reached `0.9000` and the AUC standard deviation was below `0.025`.
+- Positive-preservation, pairwise-ranking, training-health, capacity, shortcut-safety, patient-level split-isolation, and Test-isolation gates passed.
+- Reporting-only Test AUC was `0.8631897203 +/- 0.0082993920` and did not alter the frozen Validation decision.
+- The representative deployment checkpoint is the median-Validation seed `42` checkpoint.
+- Seed `3407` was not selected merely because it had the highest Validation AUC.
+- Deployment uses one checkpoint, one model, and one forward, with no ensemble or averaging.
+- Model implementation commit, manifest hash, config hash, and deployment-checkpoint hash were frozen.
+- Final delivery verification passed: `FINAL_C61_DELIVERY_PASS`, `18/18` checks passed.
+- Seed42 single-checkpoint Validation reproduction passed with max absolute saved-vs-rerun probability error `0.0`.
+- Final delivery artifacts were generated at `analysis_reports/final_c61_delivery/` on the canonical server checkout.
+- Delivery tooling commit: `0ce679049ad4daab4418f691e5f5c78d6fd7681f`.
+- Final delivery commit: to be recorded in the follow-up metadata commit.
+- `FINAL_C61_DELIVERY_PASS`, `GOAL_REACHED_DEMA_HT_AUC_090_PLUS`, `FREEZE_DEMA_C61_CBPI_FINAL`, and `STOP_FURTHER_OPTIMIZATION` are active.
+- Further model optimization is stopped.
