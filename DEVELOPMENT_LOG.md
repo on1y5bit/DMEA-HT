@@ -3661,3 +3661,11 @@
 - Recovered Stage-A collection selected `A_CBPI_HEAD_ONLY`: mean/std Validation AUC `0.9126301494 +/- 0.0197272599`; Candidate B was `0.9074996228 +/- 0.0179390817`; Candidate C was `0.9091594990 +/- 0.0069298099`. All three passed the declared Stage-A safety and update audits; A was selected by highest mean Validation AUC.
 - The completed Stage-A outputs are retained as the authoritative Stage-A evidence. The next action is direct five-fold patient-level CV for the selected A route only; Test remains unread.
 - Direct C64 CV has now been launched for `5 folds x 3 Seeds = 15` shards from server commit `1c175f3`, with log `c64_cv_20260716.log`; the CV stage is the current active stage and Test remains unread.
+
+## 2026-07-17 C64 CV Gate Result
+
+- All `15/15` C64 patient-level CV fold-seed shards completed and produced run status/results; this was a completed CV stage, not an interrupted training process.
+- The OOF collector returned status `C64_OOF_GENERALIZATION_GATE_FAIL` for selected candidate `A_CBPI_HEAD_ONLY`. Mean OOF AUC was `0.9251993`, but OOF standard deviation was `0.0528677`, exceeding the declared maximum `0.0200`.
+- The remaining reported checks passed: `2/3` seed OOF AUC values reached `0.8900`, minimum fold AUC was `0.8463265` against the `0.8400` floor, and shortcut safety, parameter-update health, coverage, and Test-not-loaded checks passed.
+- Because the OOF stability gate failed, the C64 contract correctly stopped before fixed-epoch final training. No final checkpoint was produced, Test was not loaded or used for selection, and no final Test AUC is available.
+- Evidence paths: `analysis_reports/phase_c64_dema/c64_cv_decision.json`, `runs/dema_ht_c64_cv`, and server log `c64_cv_20260716.log`. The next action requires reviewing or revising the CV stability gate; no additional training was authorized by this run.
