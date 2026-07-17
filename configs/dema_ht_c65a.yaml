@@ -1,0 +1,26 @@
+phase: c65a
+
+project:
+  name: dema_ht_c65a_variance_attribution
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  c64_cv_output_dir: runs/dema_ht_c64_cv
+  c64_report_dir: analysis_reports/phase_c64_dema
+  c61_config: configs/dema_ht_c61_cbpi_multiseed.yaml
+  c61_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c61_cbpi_multiseed/checkpoints/seed_{seed}_best.pt
+  report_dir: analysis_reports/phase_c65a_dema
+
+folds:
+  count: 5
+  seed: 20260716
+  development_patient_count: 696
+
+formal_seeds: [0, 42, 3407]
+
+analysis:
+  knn_k: 10
+  c65b_mean_cka_max: 0.90
+  c65b_mean_distance_spearman_max: 0.90
+  c65b_seed_plus_interaction_min: 0.40
+  c65b_cross_seed_probability_spearman_max: 0.80
+  test_loaded: false
