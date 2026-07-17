@@ -26,6 +26,9 @@ SEEDS = c65a.SEEDS
 FOLD_COUNT = c65a.FOLD_COUNT
 FOLD_SEED = c65a.FOLD_SEED
 
+write_json = c65a.write_json
+write_markdown = c65a.write_markdown
+
 
 def resolve_path(value: str | Path) -> Path:
     return c65a.resolve_path(value)
