@@ -3698,3 +3698,10 @@
 - All `sources.*` image/text/bio encoders and evidence projectors are frozen, excluded from the optimizer, and kept in evaluation mode. The exact C64 loss, optimizer, learning-rate factors, batch size, `60`-epoch maximum, patient-level folds, and patience `15` are retained.
 - A dedicated C65-B gate will verify the common checkpoint, exact reused folds, freeze scope, positive head learning rate, finite nonzero head gradients, and real head parameter updates on a real development batch. This gate does not load Test and is not a smoke or pilot run.
 - Formal execution is direct `5 folds x 3 head Seeds = 15` CV shards. Test and C65-C fixed-epoch final training remain locked until the C65-B OOF gate passes all predeclared criteria, including OOF std `<=0.0200` and strictly below the C64 `0.0528677` baseline.
+
+### C65-B Gate And Formal CV Launch
+
+- The C65-B common-backbone Gate passed with status `C65B_COMMON_BACKBONE_CV_AUTHORIZED` for all three head Seeds. It verified the exact C61 seed-42 source checkpoint, frozen `sources.*` scope, trainable C61 task path, positive optimizer learning rate, finite real-batch loss, absent frozen-source gradients, and nonzero head updates; `test_loaded=false`.
+- A first Gate invocation exposed and was corrected as a reporting-writer export omission in `c65b_common.py`; the corrected implementation is commit `dfa3a92`, pushed to GitHub and fast-forwarded to the server.
+- Formal C65-B CV was launched directly as `5 folds x 3 head Seeds = 15` shards from server commit `dfa3a92`, with log `c65b_cv_20260717.log`. Launch verification found all `15` shard processes, `15` run-status files, and active CUDA allocations of approximately `1.25-1.67 GiB` per shard.
+- No smoke or pilot was run. Test, fixed-epoch final training, and C65-C remain locked until the C65-B collector completes and its OOF gate passes.
