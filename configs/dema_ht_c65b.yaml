@@ -1,0 +1,92 @@
+phase: c65b
+
+project:
+  name: dema_ht_c65_common_backbone_cv
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  c64_cv_output_dir: runs/dema_ht_c64_cv
+  c65a_report_dir: analysis_reports/phase_c65a_dema
+  cv_output_dir: runs/dema_ht_c65_common_backbone_cv
+  final_output_dir: runs/dema_ht_c65_common_backbone_final
+  report_dir: analysis_reports/phase_c65_dema
+
+model:
+  name: dema_ht
+  variant: c61_cbpi
+  architecture: c61_cbpi
+  hidden_dim: 256
+  text_vocab_size: 50000
+  text_max_length: 256
+  bio_dim: 7
+  max_images_per_visit: 4
+  image_size: 224
+  dropout: 0.10
+  mea_num_heads: 4
+
+c17:
+  c17_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c17_formal_multiseed/checkpoints/seed_{seed}_best.pt
+
+c61:
+  hypothesis: continuous_biochemical_patient_instance_fusion
+  source: c61_seed42_common_frozen_backbone
+  stream_order: [raw_image, raw_text, raw_bio, aligned_image, aligned_text, aligned_bio]
+  instance_input: modality_mean_resolution_gap_pairwise_products
+  instance_dim: 128
+  continuous_bio_projection_dim: 128
+  bio_basis_order: 3
+  patient_dim: 128
+  classifier_hidden_dim: 64
+  learned_visit_score: false
+  temporal_attention: false
+  router: false
+  visit_selector: false
+  shortcut_fields_used_as_inputs: false
+  missingness_as_classifier_feature: false
+
+initialization:
+  mode: c61_seed42_common_frozen_backbone_independent_head
+  common_c61_checkpoint: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c61_cbpi_multiseed/checkpoints/seed_42_best.pt
+  common_backbone_seed: 42
+
+training:
+  seeds: [0, 42, 3407]
+  batch_size: 4
+  effective_batch_size: 4
+  gradient_accumulation_steps: 1
+  base_lr: 0.0001
+  weight_decay: 0.0005
+  max_epochs: 60
+  patience: 15
+  primary_metric: val_AUC
+  checkpoint_metric: val_auc
+  num_workers: 2
+  dataloader_seeded: true
+
+learning_rate_factors:
+  image_text_encoders: 0.0
+  bio_source_encoder: 0.0
+  evidence_projectors: 0.0
+  c61_task_path: 1.0
+
+loss:
+  bce_only: true
+
+evaluation:
+  test_reporting_only: true
+  test_locked_until_oof_gate: true
+  auprc: false
+
+audit:
+  c61_run_dir: /home/linruixin/chen/project/DMEA-HT/runs/dema_ht_c61_cbpi_multiseed
+  c64_oof_std: 0.05286769928504071
+  positive_damage_mean_max: 0.10
+  positive_damage_seed_max: 0.10
+  positive_damage_seed_count_max: 1
+
+deployment:
+  one_checkpoint: true
+  one_model: true
+  one_forward: true
+  ensemble: false
+  prediction_averaging: false
+  checkpoint_averaging: false

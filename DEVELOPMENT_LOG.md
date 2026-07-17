@@ -3680,3 +3680,21 @@
 - If authorized, C65-B must use the single predeclared C61 seed-42 Validation-selected checkpoint as a common frozen backbone, train only independent head Seeds `[0,42,3407]` over the exact C64 folds with the exact C64 settings and patience `15`; no smoke, pilot, ensemble, averaging, threshold tuning, AUPRC, or Test-based selection is permitted.
 - C65-B requires mean OOF AUC `>= 0.9000`, at least `2/3` head Seed OOF AUC values `>= 0.9000`, OOF std `<= 0.0200` and lower than C64, minimum fold AUC `>= 0.8400`, prediction stability `>= 0.80`, shortcut safety, complete parameter-update health, and Test unread before C65-C authorization.
 - C65-C, if authorized, freezes the per-seed median selected epoch from C65-B, trains all `696` development patients without Early Stopping, and evaluates Test exactly once per final checkpoint. The deployment route remains one checkpoint, one model, one forward, with no ensemble.
+
+### C65-A Result And C65-B Authorization
+
+- C65-A OOF reproduction passed for all three Seeds and all five reused C64 folds. Patient IDs, labels, fold assignments, finite predictions, and recorded AUC values were reproduced; Test remained unread.
+- Mean cross-Seed OOF probability Spearman was `0.8192487`; mean error Jaccard was `0.3054313`, and mean inversion Jaccard was `0.1767768`.
+- The read-only frozen C61 source representation comparison used the same `696` development patients and the representation immediately before the C64 task head. Mean linear CKA was `0.7939590`, mean patient-distance Spearman was `0.8468001`, and mean `k=10` neighbor Jaccard was `0.5110364`.
+- The balanced `5 x 3` C64 AUC variance decomposition attributed `0.8208214` to the Seed main effect, `0.1400802` to the Fold main effect, and `0.0390983` to Seed-by-Fold interaction/residual; Seed plus interaction accounted for `0.8599198` of total variation.
+- The predeclared C65-A material-variance conditions passed through both frozen-representation criteria and the Seed-plus-interaction criterion. The route is `C65A_MIXED_VARIANCE`, and the decision is `C65B_COMMON_BACKBONE_CV_AUTHORIZED`.
+- C65-B must now use only the C61 seed-42 Validation-selected checkpoint as the common frozen source backbone; head Seeds `[0,42,3407]` are independently initialized and trained over the exact C64 folds with patience `15`. No Test loader is authorized before the C65-B OOF gate and final-training contract.
+- Server evidence: `analysis_reports/phase_c65a_dema/c65a_route_decision.json`, `phase_c65a_final_report.md`, and `c65a_frozen_source_representation_seed_{0,42,3407}.npz`.
+
+## 2026-07-17 Phase C65-B Common-Backbone CV Pre-execution
+
+- C65-B is authorized by the completed C65-A route decision. The common frozen source backbone is exactly the C61 seed-42 Validation-selected checkpoint; no C61 seed-0 or seed-3407 source parameters may enter the route.
+- Each formal head Seed `[0,42,3407]` is independently initialized from the same architecture and random Seed, while only the C64 head/task path is trainable: multimodal encoder, continuous biochemical encoder, joint instance encoder, patient readout, and classifier.
+- All `sources.*` image/text/bio encoders and evidence projectors are frozen, excluded from the optimizer, and kept in evaluation mode. The exact C64 loss, optimizer, learning-rate factors, batch size, `60`-epoch maximum, patient-level folds, and patience `15` are retained.
+- A dedicated C65-B gate will verify the common checkpoint, exact reused folds, freeze scope, positive head learning rate, finite nonzero head gradients, and real head parameter updates on a real development batch. This gate does not load Test and is not a smoke or pilot run.
+- Formal execution is direct `5 folds x 3 head Seeds = 15` CV shards. Test and C65-C fixed-epoch final training remain locked until the C65-B OOF gate passes all predeclared criteria, including OOF std `<=0.0200` and strictly below the C64 `0.0528677` baseline.
