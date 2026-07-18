@@ -10,6 +10,7 @@ project:
   nested_cv_output_dir: runs/dema_ht_c66_nested_cv
   final_output_dir: runs/dema_ht_c66_final
   report_dir: analysis_reports/phase_c66a_dema
+  oof_report_dir: analysis_reports/phase_c66_dema
 
 data_contract:
   manifest_sha256: cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b
@@ -48,6 +49,60 @@ initialization_contract:
   task_specific_modules:
     required_initialization: deterministic_seed_random
 
+generic_initialization:
+  image:
+    provider: torchvision
+    source: torchvision.models.resnet50
+    version: ResNet50_Weights.IMAGENET1K_V1
+    local_weight_path: /home/linruixin/.cache/torch/hub/checkpoints/resnet50-11ad3fa6.pth
+    sha256: 11ad3fa62ca79e40addfd354a8ec4b7c75143b3038b8d2a807fbc68deab379ca
+  text:
+    provider: huggingface_transformers
+    source: stable-diffusion-v1-5/stable-diffusion-v1-5
+    snapshot_revision: 451f4fe16113bff5a5d2269ed5ad43b0592e9a14
+    tokenizer_path: /home/linruixin/.cache/huggingface/hub/models--stable-diffusion-v1-5--stable-diffusion-v1-5/snapshots/451f4fe16113bff5a5d2269ed5ad43b0592e9a14/tokenizer
+    text_encoder_path: /home/linruixin/.cache/huggingface/hub/models--stable-diffusion-v1-5--stable-diffusion-v1-5/snapshots/451f4fe16113bff5a5d2269ed5ad43b0592e9a14/text_encoder
+    local_weight_path: /home/linruixin/.cache/huggingface/hub/models--stable-diffusion-v1-5--stable-diffusion-v1-5/snapshots/451f4fe16113bff5a5d2269ed5ad43b0592e9a14/text_encoder/model.safetensors
+    sha256: d008943c017f0092921106440254dbbe00b6a285f7883ec8ba160c3faad88334
+    transformers_version: 5.9.0
+    max_length: 77
+
+model:
+  name: dema_ht_c66_lffc
+  hidden_dim: 256
+  instance_dim: 128
+  text_vocab_size: 50000
+  text_max_length: 256
+  clip_max_length: 77
+  bio_dim: 7
+  max_images_per_visit: 4
+  image_size: 224
+  dropout: 0.10
+  mea_num_heads: 4
+
+c61:
+  hypothesis: continuous_biochemical_patient_instance_fusion
+  source: c66_fold_local_public_generic_source
+  stream_order: [raw_image, raw_text, raw_bio, aligned_image, aligned_text, aligned_bio]
+  instance_input: modality_mean_resolution_gap_pairwise_products
+  instance_dim: 128
+  continuous_bio_projection_dim: 128
+  bio_basis_order: 3
+  patient_dim: 128
+  classifier_hidden_dim: 64
+  learned_visit_score: false
+  temporal_attention: false
+  router: false
+  visit_selector: false
+  shortcut_fields_used_as_inputs: false
+  missingness_as_classifier_feature: false
+
+data_loader:
+  batch_size: 2
+  num_workers: 0
+  pin_memory: true
+  dataloader_seeded: true
+
 source_learning:
   max_epochs: 60
   patience: 15
@@ -58,6 +113,8 @@ source_learning:
     bio_source_encoder: 0.10
     evidence_projectors: 0.25
     source_task_path: 1.00
+  base_lr: 0.0001
+  weight_decay: 0.0005
 
 route_training:
   max_epochs: 60
@@ -78,6 +135,8 @@ route_training:
       bio_source_encoder: 0.05
       evidence_projectors: 0.10
       cbpi_task_path: 1.00
+  base_lr: 0.0001
+  weight_decay: 0.0005
 
 evaluation:
   primary_metric: AUC
@@ -85,3 +144,28 @@ evaluation:
   threshold_tuning: false
   ensemble: false
   prediction_averaging: false
+  positive_sensitivity_damage_definition: one_minus_sensitivity_at_fixed_0_5_threshold
+  shortcut_only_label_auc_max: 0.55
+  max_abs_prediction_shortcut_spearman: 0.35
+
+oof_gate:
+  mean_auc_min: 0.9000
+  seed_auc_min: 0.9000
+  seed_auc_count_min: 2
+  std_auc_max: 0.0250
+  any_seed_auc_min: 0.8700
+  minimum_fold_auc_min: 0.8400
+  mean_cross_seed_spearman_min: 0.80
+  any_seed_positive_sensitivity_damage_max: 0.10
+
+final_selection:
+  majority_route_fold_count: 3
+  pooled_inner_mean_tie_delta: 0.003
+  source_epoch_rule: median_across_five_outer_folds_per_seed
+  route_epoch_rule: median_across_five_outer_folds_per_seed
+
+final_test_gate:
+  mean_auc_min: 0.9000
+  seed_auc_min: 0.9000
+  seed_auc_count_min: 2
+  std_auc_max: 0.0250

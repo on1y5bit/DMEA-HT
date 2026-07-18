@@ -3730,3 +3730,13 @@
 - No C13-C65 task checkpoint, saved prediction, or representation is used as initialization or model input.
 - No smoke, pilot, ensemble, averaging, AUPRC, threshold tuning, or Test-based selection is used.
 - Final target remains mean Test AUC >=0.90, at least two of three Seeds >=0.90, and std <=0.025.
+
+### C66-A Leakage-Free Protocol Authorization
+
+- Server-side C66-A completed at commit `40e8095` with `C66A_LEAKAGE_FREE_NESTED_CV_AUTHORIZED`; all `17/17` fail-closed checks passed.
+- The audit read only `c64_fold_patient_inventory.csv` and `fold_assignments.json`, reconstructing all `602` prior C61 Train and `94` prior C61 Validation patients in the 696-patient development pool. No development patient was never used by C61.
+- Per outer fold, prior C61 Train/Validation exposure was `119/21`, `119/21`, `126/14`, `118/20`, and `120/18`; this is retained as the explicit reason C64/C65 are not strict leakage-free OOF estimates.
+- C66 nested splits reused outer seed `20260716`, retain fold sizes `140/140/140/138/138`, and create patient-level stratified inner validation splits using seeds `20260718` through `20260722`.
+- All five folds verified zero outer-validation overlap with fold-local source training, inner validation, route/epoch selection, and outer-train refitting. Every development patient will receive one outer prediction per formal Seed only.
+- C66-A did not open the full manifest, parse Test rows, create a Test DataLoader, load any C13-C65 task checkpoint, or use historical predictions/representations as model input.
+- Public generic initialization pre-audit found a local ImageNet ResNet-50 weight (`ResNet50_Weights.IMAGENET1K_V1`, SHA256 `11ad3fa62ca79e40addfd354a8ec4b7c75143b3038b8d2a807fbc68deab379ca`) and a local Stable Diffusion v1.5 CLIP text encoder snapshot `451f4fe16113bff5a5d2269ed5ad43b0592e9a14` (SHA256 `d008943c017f0092921106440254dbbe00b6a285f7883ec8ba160c3faad88334`, transformers `5.9.0`). C66 runtime preflight must reverify these before training.
