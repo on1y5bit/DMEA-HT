@@ -3740,3 +3740,10 @@
 - All five folds verified zero outer-validation overlap with fold-local source training, inner validation, route/epoch selection, and outer-train refitting. Every development patient will receive one outer prediction per formal Seed only.
 - C66-A did not open the full manifest, parse Test rows, create a Test DataLoader, load any C13-C65 task checkpoint, or use historical predictions/representations as model input.
 - Public generic initialization pre-audit found a local ImageNet ResNet-50 weight (`ResNet50_Weights.IMAGENET1K_V1`, SHA256 `11ad3fa62ca79e40addfd354a8ec4b7c75143b3038b8d2a807fbc68deab379ca`) and a local Stable Diffusion v1.5 CLIP text encoder snapshot `451f4fe16113bff5a5d2269ed5ad43b0592e9a14` (SHA256 `d008943c017f0092921106440254dbbe00b6a285f7883ec8ba160c3faad88334`, transformers `5.9.0`). C66 runtime preflight must reverify these before training.
+
+### C66 Runtime Preflight And Formal Launch
+
+- The C66 runtime preflight passed on server commit `af1a3c5` with `C66_RUNTIME_PUBLIC_INITIALIZATION_AUTHORIZED`. It reverified both public weight SHA256 values and instantiated the C66 source architecture without patient data, optimizer steps, task checkpoints, historical predictions/representations, or Test access.
+- Formal C66 nested CV launched directly through `scripts/run_phase_c66_nested_cv.sh` under `/home/linruixin/chen/conda/envs/ma/bin/python`. The launcher executes only the predeclared three formal Seeds `[0,42,3407]`, with no smoke, seed-0 pilot, sweep, ensemble, or prediction averaging.
+- Launch confirmation found the three fold-0 inner-source processes active concurrently (`2037920`, `2037921`, `2037922`), each using the public generic source initialization and approximately `8.1`, `9.3`, and `8.2 GiB` GPU memory respectively.
+- The driver performs fold-local source training, Route F/E inner comparison, frozen route/epoch decisions, and fixed-epoch outer refits. It stops before final training if the leakage-free OOF gate fails; Test remains locked until all OOF conditions pass and all three final checkpoints are frozen.
