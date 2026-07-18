@@ -3705,3 +3705,12 @@
 - A first Gate invocation exposed and was corrected as a reporting-writer export omission in `c65b_common.py`; the corrected implementation is commit `dfa3a92`, pushed to GitHub and fast-forwarded to the server.
 - Formal C65-B CV was launched directly as `5 folds x 3 head Seeds = 15` shards from server commit `dfa3a92`, with log `c65b_cv_20260717.log`. Launch verification found all `15` shard processes, `15` run-status files, and active CUDA allocations of approximately `1.25-1.67 GiB` per shard.
 - No smoke or pilot was run. Test, fixed-epoch final training, and C65-C remain locked until the C65-B collector completes and its OOF gate passes.
+
+### C65-B OOF Result And Stop Decision
+
+- All `15/15` C65-B fold-seed training shards completed. The collector returned `C65_COMMON_BACKBONE_STABILITY_FAIL` through the declared fail-closed gate; the nonzero collector exit was an expected gate stop, not a training crash.
+- Per-head-Seed OOF AUC was `0.7889500` (Seed `0`), `0.8036894` (Seed `42`), and `0.8010635` (Seed `3407`). Mean OOF AUC was `0.7979010`, with std `0.0078622`.
+- OOF stability itself passed: std was below both `0.0200` and the C64 baseline `0.0528677`; mean cross-Seed probability Spearman was `0.8504583`; shortcut safety, patient coverage, and parameter-update health passed.
+- Performance and positive-safety gates failed: no head Seed reached OOF AUC `0.9000`, minimum fold AUC was `0.7897959`, and positive sensitivity damage exceeded `0.10` for two of three head Seeds (`0.1063830`, `0.1063830`, `0.0638298`).
+- Because the C65-B OOF gate failed, no fixed-epoch final-training contract was written, no C65-C final training was started, and Test was not loaded or evaluated. The C65 plan forbids continuing with C65-v2 on the same Test after this failure.
+- Final status: `C65_COMMON_BACKBONE_STABILITY_FAIL`; evidence is in `analysis_reports/phase_c65_dema/c65_cv_decision.json`, `c65_oof_metrics_by_seed.csv`, `c65_positive_preservation.csv`, and server log `c65b_cv_20260717.log`.
