@@ -3756,3 +3756,11 @@
 - The recovery fixes route factor lookup and defines health at the declared optimizer-group level: nonzero selected-epoch group gradient, finite group state, trainable group, and nonzero aggregate group update. Per-parameter update rows remain preserved for audit.
 - A dedicated reconciliation command may update only the `training_health_pass` field of already completed C66 inner-source statuses after rereading their immutable gradient and parameter-update audit files. It does not construct a dataset, run an optimizer, load a checkpoint beyond existing artifacts, or access Test.
 - After server-side unit checks and reconciliation pass, the existing driver resumes from the completed fold-0 source artifacts; it does not rerun them and continues with the three formal Seeds only.
+
+### C66 Route-Stage Recovery Result
+
+- The server checkout fast-forwarded to `b30876b` through a verified incremental Git bundle. The server `ma` environment passed both C66 recovery unit tests and syntax compilation.
+- The fold-0 completed inner-source shards for Seeds `0`, `42`, and `3407` passed reconciliation from their recorded gradient-connectivity and parameter-update audits. Each status is now health-authorized with `test_loaded=false` and no model, prediction, or checkpoint recomputation.
+- The repaired direct nested-CV driver resumed as PID `2064521`. It recognized the completed source artifacts and launched exactly the three predeclared Route F fold-0 workers for Seeds `0`, `42`, and `3407` as PIDs `2064727`, `2064728`, and `2064729`.
+- Launch verification found active CUDA allocations of approximately `2.1`, `2.6`, and `2.3 GiB`, respectively; each Route F log completed public-weight loading without a traceback. No Test loader, final training, or Test evaluation has been started.
+- This session stops status polling after the verified formal restart. The driver remains fail-closed: any later stage failure stops before the locked Test gate.
