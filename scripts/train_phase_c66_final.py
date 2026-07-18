@@ -25,10 +25,6 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def bool_value(value: Any) -> bool:
-    return str(value).strip().lower() in {"1", "true", "yes"}
-
-
 def contract(config: Mapping[str, Any]) -> Dict[str, Any]:
     path = protocol.resolve_path(config["project"]["final_output_dir"]) / "final_training_contract.json"
     if not path.exists():
@@ -40,18 +36,7 @@ def contract(config: Mapping[str, Any]) -> Dict[str, Any]:
 
 
 def health(gradient: pd.DataFrame, updates: pd.DataFrame, stage: str, route: str | None, epoch: int) -> bool:
-    expected = common.expected_groups(stage, route)
-    selected = gradient[gradient["epoch"].astype(int) == int(epoch)]
-    gradient_ok = True
-    for group in expected:
-        rows = selected[selected["optimizer_group"].astype(str) == group]
-        gradient_ok &= len(rows) > 0 and float(rows["max_norm"].max()) > 0.0
-    summary = updates[updates["kind"].astype(str) == "module_summary"]
-    update_ok = True
-    for group in expected:
-        rows = summary[summary["optimizer_group"].astype(str) == group]
-        update_ok &= len(rows) == 1 and bool_value(rows.iloc[0]["updated"]) and bool_value(rows.iloc[0]["finite"])
-    return bool(gradient_ok and update_ok)
+    return common.training_health_pass(gradient, updates, stage, int(epoch), route)
 
 
 def main() -> None:

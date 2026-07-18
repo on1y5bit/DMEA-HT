@@ -39,19 +39,9 @@ def completed(run_dir: Path) -> bool:
 
 
 def health(gradient: pd.DataFrame, updates: pd.DataFrame, stage: str, selected_epoch: int | None) -> bool:
-    expected = common.expected_groups("source")
-    gradient_ok = True
-    if selected_epoch is not None:
-        selected = gradient[gradient["epoch"].astype(int) == int(selected_epoch)]
-        for group in expected:
-            group_rows = selected[selected["optimizer_group"].astype(str) == group]
-            gradient_ok &= len(group_rows) > 0 and float(group_rows["max_norm"].max()) > 0.0
-    summary = updates[updates["kind"].astype(str) == "module_summary"]
-    update_ok = True
-    for group in expected:
-        group_rows = summary[summary["optimizer_group"].astype(str) == group]
-        update_ok &= len(group_rows) == 1 and bool(group_rows.iloc[0]["updated"]) and bool(group_rows.iloc[0]["finite"])
-    return bool(gradient_ok and update_ok)
+    if selected_epoch is None:
+        raise ValueError("C66 source health requires a selected epoch")
+    return common.training_health_pass(gradient, updates, stage, int(selected_epoch))
 
 
 def checkpoint_payload(

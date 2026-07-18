@@ -310,8 +310,8 @@ def optimizer_and_inventory(
     model: torch.nn.Module, config: Mapping[str, Any], stage: str, route: str | None = None
 ) -> tuple[torch.optim.Optimizer, pd.DataFrame, pd.DataFrame]:
     section = dict(config["source_learning"] if stage == "source" else config["route_training"])
-    factors = dict(section["learning_rate_factors"])
     if stage == "source":
+        factors = dict(section["learning_rate_factors"])
         factors = {
             "image_text_encoders": float(factors["image_text_encoders"]),
             "bio_source_encoder": float(factors["bio_source_encoder"]),
@@ -433,6 +433,71 @@ def parameter_update_audit(model: torch.nn.Module, before: Mapping[str, torch.Te
             }
         )
     return pd.concat([frame, pd.DataFrame(summaries)], ignore_index=True)
+
+
+def _bool_value(value: Any) -> bool:
+    return str(value).strip().lower() in {"1", "true", "yes"}
+
+
+def training_health_details(
+    gradient: pd.DataFrame,
+    updates: pd.DataFrame,
+    stage: str,
+    selected_epoch: int,
+    route: str | None = None,
+) -> pd.DataFrame:
+    """Verify gradient connectivity and aggregate optimizer-group updates.
+
+    Some imported evidence modules contain role branches that are unavailable for
+    a particular batch. They remain visible in the per-parameter audit, but the
+    health gate is intentionally defined at the declared optimizer-group level.
+    """
+    expected = sorted(expected_groups(stage, route))
+    selected = gradient[gradient["epoch"].astype(int) == int(selected_epoch)]
+    summary = updates[updates["kind"].astype(str) == "module_summary"]
+    rows = []
+    for group in expected:
+        gradient_rows = selected[selected["optimizer_group"].astype(str) == group]
+        summary_rows = summary[summary["optimizer_group"].astype(str) == group]
+        gradient_values = pd.to_numeric(gradient_rows.get("max_norm"), errors="coerce")
+        update_values = pd.to_numeric(summary_rows.get("delta_l2"), errors="coerce")
+        gradient_nonzero = bool(
+            len(gradient_rows) > 0 and np.isfinite(gradient_values).all() and float(gradient_values.max()) > 0.0
+        )
+        aggregate_update_nonzero = bool(
+            len(summary_rows) == 1 and np.isfinite(update_values).all() and float(update_values.iloc[0]) > 0.0
+        )
+        aggregate_finite = bool(
+            len(summary_rows) == 1 and _bool_value(summary_rows.iloc[0]["finite"])
+        )
+        aggregate_trainable = bool(
+            len(summary_rows) == 1 and _bool_value(summary_rows.iloc[0]["requires_grad"])
+        )
+        rows.append(
+            {
+                "optimizer_group": group,
+                "selected_epoch": int(selected_epoch),
+                "selected_epoch_gradient_nonzero": gradient_nonzero,
+                "aggregate_update_nonzero": aggregate_update_nonzero,
+                "aggregate_finite": aggregate_finite,
+                "aggregate_trainable": aggregate_trainable,
+                "training_health_pass": bool(
+                    gradient_nonzero and aggregate_update_nonzero and aggregate_finite and aggregate_trainable
+                ),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def training_health_pass(
+    gradient: pd.DataFrame,
+    updates: pd.DataFrame,
+    stage: str,
+    selected_epoch: int,
+    route: str | None = None,
+) -> bool:
+    details = training_health_details(gradient, updates, stage, selected_epoch, route)
+    return bool(len(details) > 0 and details["training_health_pass"].astype(bool).all())
 
 
 def move_batch(batch: Mapping[str, Any], target_device: torch.device) -> Dict[str, Any]:

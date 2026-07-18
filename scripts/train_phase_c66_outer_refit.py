@@ -27,23 +27,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def bool_value(value: Any) -> bool:
-    return str(value).strip().lower() in {"1", "true", "yes"}
-
-
 def route_health(gradient: pd.DataFrame, updates: pd.DataFrame, route: str, epoch: int) -> bool:
-    expected = common.expected_groups("route", route)
-    selected = gradient[gradient["epoch"].astype(int) == int(epoch)]
-    gradient_ok = True
-    for group in expected:
-        rows = selected[selected["optimizer_group"].astype(str) == group]
-        gradient_ok &= len(rows) > 0 and float(rows["max_norm"].max()) > 0.0
-    summary = updates[updates["kind"].astype(str) == "module_summary"]
-    update_ok = True
-    for group in expected:
-        rows = summary[summary["optimizer_group"].astype(str) == group]
-        update_ok &= len(rows) == 1 and bool_value(rows.iloc[0]["updated"]) and bool_value(rows.iloc[0]["finite"])
-    return bool(gradient_ok and update_ok)
+    return common.training_health_pass(gradient, updates, "route", int(epoch), route)
 
 
 def decision(config: Mapping[str, Any], fold: int) -> Dict[str, Any]:
