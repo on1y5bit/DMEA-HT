@@ -3714,3 +3714,19 @@
 - Performance and positive-safety gates failed: no head Seed reached OOF AUC `0.9000`, minimum fold AUC was `0.7897959`, and positive sensitivity damage exceeded `0.10` for two of three head Seeds (`0.1063830`, `0.1063830`, `0.0638298`).
 - Because the C65-B OOF gate failed, no fixed-epoch final-training contract was written, no C65-C final training was started, and Test was not loaded or evaluated. The C65 plan forbids continuing with C65-v2 on the same Test after this failure.
 - Final status: `C65_COMMON_BACKBONE_STABILITY_FAIL`; evidence is in `analysis_reports/phase_c65_dema/c65_cv_decision.json`, `c65_oof_metrics_by_seed.csv`, `c65_positive_preservation.csv`, and server log `c65b_cv_20260717.log`.
+
+## 2026-07-18 Phase C66-LFFC Pre-execution Contract
+
+- C65-B completed all 15 common-backbone CV runs and returned `C65_COMMON_BACKBONE_STABILITY_FAIL`.
+- Common-backbone OOF AUC was `0.7979010 +/- 0.0078622`; stability passed, but performance and positive-safety failed.
+- C65-C was not authorized and Test remained unread.
+- C66 records that C64/C65 reused task-trained C61 checkpoints inside a new five-fold partition of the 696-patient development pool.
+- Because C61 was trained on original Train 602 and selected using original Validation 94, C64/C65 are not treated as strict leakage-free OOF estimates.
+- C64 OOF `0.9251993` is retained only as evidence that some seed-specific backbone-head combinations have high potential.
+- C66 trains each source backbone entirely inside its outer fold from public generic initialization.
+- C66 compares exactly two routes: fold-local frozen source plus CBPI, and fold-local end-to-end low-LR CBPI.
+- Route/epoch selection uses inner Validation only; outer validation is evaluated once after fixed-epoch refitting.
+- All inner Early Stopping uses patience 15. Outer refits and final training use fixed epochs.
+- No C13-C65 task checkpoint, saved prediction, or representation is used as initialization or model input.
+- No smoke, pilot, ensemble, averaging, AUPRC, threshold tuning, or Test-based selection is used.
+- Final target remains mean Test AUC >=0.90, at least two of three Seeds >=0.90, and std <=0.025.

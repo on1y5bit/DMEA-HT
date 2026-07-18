@@ -1,0 +1,87 @@
+phase: c66
+stage: source_learning
+
+project:
+  name: dema_ht_c66_leakage_free_fold_local_coadaptation
+  data_root: /data/csb/DMEA-HT/HT_2025.12_25
+  manifest: /data/csb/DMEA-HT/HT_2025.12_25/manifest_distmatch_structmatch_evidence_v2_c27_visit_level.jsonl
+  c64_cv_output_dir: runs/dema_ht_c64_cv
+  c64_report_dir: analysis_reports/phase_c64_dema
+  nested_cv_output_dir: runs/dema_ht_c66_nested_cv
+  final_output_dir: runs/dema_ht_c66_final
+  report_dir: analysis_reports/phase_c66a_dema
+
+data_contract:
+  manifest_sha256: cc19e7d1088a5df79b937fc8db4196300796a2adbfe2cb49f42be0f99b4a5b9b
+  development_patient_count: 696
+  locked_test_patient_count: 84
+  test_reading_before_final_gate: false
+
+formal_seeds: [0, 42, 3407]
+
+outer_folds:
+  count: 5
+  seed: 20260716
+  expected_sizes: [140, 140, 140, 138, 138]
+
+inner_validation:
+  fraction: 0.20
+  seed_base: 20260718
+  patient_level: true
+  stratified_by_label: true
+
+initialization_contract:
+  prohibited_task_checkpoint_range: C13-C65
+  task_checkpoint_initialization: forbidden
+  historical_prediction_input: forbidden
+  historical_representation_input: forbidden
+  image_encoder:
+    required_initialization: public_generic_pretrained_before_training
+    runtime_source_record_required: true
+    runtime_version_record_required: true
+    runtime_sha256_record_required: true
+  text_encoder:
+    required_initialization: public_generic_pretrained_before_training
+    runtime_source_record_required: true
+    runtime_version_record_required: true
+    runtime_sha256_record_required: true
+  task_specific_modules:
+    required_initialization: deterministic_seed_random
+
+source_learning:
+  max_epochs: 60
+  patience: 15
+  loss: BCEWithLogitsLoss_only
+  checkpoint_metric: inner_validation_auc
+  learning_rate_factors:
+    image_text_encoders: 0.05
+    bio_source_encoder: 0.10
+    evidence_projectors: 0.25
+    source_task_path: 1.00
+
+route_training:
+  max_epochs: 60
+  patience: 15
+  loss: BCEWithLogitsLoss_only
+  checkpoint_metric: inner_validation_auc
+  route_f:
+    source_frozen: true
+    learning_rate_factors:
+      image_text_encoders: 0.00
+      bio_source_encoder: 0.00
+      evidence_projectors: 0.00
+      cbpi_task_path: 1.00
+  route_e:
+    source_frozen: false
+    learning_rate_factors:
+      image_text_encoders: 0.02
+      bio_source_encoder: 0.05
+      evidence_projectors: 0.10
+      cbpi_task_path: 1.00
+
+evaluation:
+  primary_metric: AUC
+  auprc: false
+  threshold_tuning: false
+  ensemble: false
+  prediction_averaging: false
